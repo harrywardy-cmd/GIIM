@@ -1,0 +1,26 @@
+Name,Vendor,LicenceModel,TotalSeats,OktaGroup
+Microsoft 365 E3,Microsoft,PerUser,1600,LIC-M365-E3
+Microsoft Visio,Microsoft,PerUser,60,APP-Visio
+Microsoft Project,Microsoft,PerUser,40,APP-Project
+Power BI Pro,Microsoft,PerUser,150,APP-PowerBI-Pro
+Adobe Acrobat Pro,Adobe,PerUser,200,APP-Acrobat-Pro
+Adobe Creative Cloud,Adobe,PerUser,25,APP-Adobe-CC
+Xero,Xero,PerUser,80,APP-Xero
+SAP GUI,SAP,PerUser,300,
+Salesforce,Salesforce,PerUser,250,APP-Salesforce
+Zendesk,Zendesk,PerUser,120,APP-Zendesk
+Workday,Workday,Site,,APP-Workday
+DocuSign,DocuSign,PerUser,50,APP-DocuSign
+Tableau Desktop,Salesforce,PerUser,30,APP-Tableau
+Snowflake,Snowflake,PerUser,60,APP-Snowflake
+Jira,Atlassian,PerUser,200,APP-Jira
+Confluence,Atlassian,PerUser,400,APP-Confluence
+Zoom,Zoom,PerUser,300,APP-Zoom
+Slack,Salesforce,PerUser,500,APP-Slack
+Manhattan WMS,Manhattan,PerUser,150,
+Blue Yonder,Blue Yonder,PerUser,40,
+Legal Matter Manager,LexisNexis,PerUser,20,
+Figma,Figma,PerUser,30,APP-Figma
+Shopify Admin,Shopify,PerUser,40,APP-Shopify
+Azure Portal (Admin),Microsoft,Free,,APP-Azure-Admins
+ServiceDesk Plus Technician,ManageEngine,PerUser,60,APP-SDP-Tech

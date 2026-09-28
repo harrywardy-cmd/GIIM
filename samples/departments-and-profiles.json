@@ -1,0 +1,1295 @@
+[
+  {
+    "department": {
+      "code": "FIN",
+      "name": "Finance"
+    },
+    "profiles": [
+      {
+        "name": "Finance - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-FIN"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Xero",
+            "groupName": "APP-Xero"
+          },
+          {
+            "type": "Application",
+            "description": "SAP GUI",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Acrobat Pro",
+            "groupName": "APP-Acrobat-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "HR",
+      "name": "Human Resources"
+    },
+    "profiles": [
+      {
+        "name": "Human Resources - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-HR"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Workday",
+            "groupName": "APP-Workday"
+          },
+          {
+            "type": "Application",
+            "description": "DocuSign",
+            "groupName": "APP-DocuSign"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Acrobat Pro",
+            "groupName": "APP-Acrobat-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "IT",
+      "name": "Information Technology"
+    },
+    "profiles": [
+      {
+        "name": "Information Technology - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-IT"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Jira",
+            "groupName": "APP-Jira"
+          },
+          {
+            "type": "Application",
+            "description": "Confluence",
+            "groupName": "APP-Confluence"
+          },
+          {
+            "type": "Application",
+            "description": "ServiceDesk Plus Technician",
+            "groupName": "APP-SDP-Tech"
+          },
+          {
+            "type": "Application",
+            "description": "Azure Portal (Admin)",
+            "groupName": "APP-Azure-Admins"
+          },
+          {
+            "type": "Application",
+            "description": "Microsoft Visio",
+            "groupName": "APP-Visio"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "MKT",
+      "name": "Marketing"
+    },
+    "profiles": [
+      {
+        "name": "Marketing - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-MKT"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Creative Cloud",
+            "groupName": "APP-Adobe-CC"
+          },
+          {
+            "type": "Application",
+            "description": "Figma",
+            "groupName": "APP-Figma"
+          },
+          {
+            "type": "Application",
+            "description": "Salesforce",
+            "groupName": "APP-Salesforce"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "LEG",
+      "name": "Legal"
+    },
+    "profiles": [
+      {
+        "name": "Legal - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-LEG"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Legal Matter Manager",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "DocuSign",
+            "groupName": "APP-DocuSign"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Acrobat Pro",
+            "groupName": "APP-Acrobat-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "PRC",
+      "name": "Procurement"
+    },
+    "profiles": [
+      {
+        "name": "Procurement - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-PRC"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "SAP GUI",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "DocuSign",
+            "groupName": "APP-DocuSign"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "OPS",
+      "name": "Operations"
+    },
+    "profiles": [
+      {
+        "name": "Operations - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-OPS"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Microsoft Project",
+            "groupName": "APP-Project"
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "SAL",
+      "name": "Sales"
+    },
+    "profiles": [
+      {
+        "name": "Sales - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-SAL"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Salesforce",
+            "groupName": "APP-Salesforce"
+          },
+          {
+            "type": "Application",
+            "description": "Zoom",
+            "groupName": "APP-Zoom"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "CS",
+      "name": "Customer Service"
+    },
+    "profiles": [
+      {
+        "name": "Customer Service - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-CS"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Zendesk",
+            "groupName": "APP-Zendesk"
+          },
+          {
+            "type": "Application",
+            "description": "Salesforce",
+            "groupName": "APP-Salesforce"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "PAY",
+      "name": "Payroll"
+    },
+    "profiles": [
+      {
+        "name": "Payroll - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-PAY"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Workday",
+            "groupName": "APP-Workday"
+          },
+          {
+            "type": "Application",
+            "description": "Xero",
+            "groupName": "APP-Xero"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Acrobat Pro",
+            "groupName": "APP-Acrobat-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "PROP",
+      "name": "Property"
+    },
+    "profiles": [
+      {
+        "name": "Property - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-PROP"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Microsoft Project",
+            "groupName": "APP-Project"
+          },
+          {
+            "type": "Application",
+            "description": "DocuSign",
+            "groupName": "APP-DocuSign"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "SC",
+      "name": "Supply Chain"
+    },
+    "profiles": [
+      {
+        "name": "Supply Chain - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-SC"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Blue Yonder",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "SAP GUI",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      },
+      {
+        "name": "Supply Chain - Floor Staff",
+        "track": "Light",
+        "items": [
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-SC"
+          },
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 F3",
+            "groupName": "LIC-M365-F3"
+          },
+          {
+            "type": "Application",
+            "description": "Manhattan WMS",
+            "groupName": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "LOG",
+      "name": "Logistics"
+    },
+    "profiles": [
+      {
+        "name": "Logistics - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-LOG"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Manhattan WMS",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "SAP GUI",
+            "groupName": null
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      },
+      {
+        "name": "Logistics - Floor Staff",
+        "track": "Light",
+        "items": [
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-LOG"
+          },
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 F3",
+            "groupName": "LIC-M365-F3"
+          },
+          {
+            "type": "Application",
+            "description": "Manhattan WMS",
+            "groupName": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "WHS",
+      "name": "Health \u0026 Safety"
+    },
+    "profiles": [
+      {
+        "name": "Health \u0026 Safety - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-WHS"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Confluence",
+            "groupName": "APP-Confluence"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "RISK",
+      "name": "Risk \u0026 Compliance"
+    },
+    "profiles": [
+      {
+        "name": "Risk \u0026 Compliance - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-RISK"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "Application",
+            "description": "Confluence",
+            "groupName": "APP-Confluence"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "DATA",
+      "name": "Data \u0026 Analytics"
+    },
+    "profiles": [
+      {
+        "name": "Data \u0026 Analytics - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-DATA"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "Application",
+            "description": "Tableau Desktop",
+            "groupName": "APP-Tableau"
+          },
+          {
+            "type": "Application",
+            "description": "Snowflake",
+            "groupName": "APP-Snowflake"
+          },
+          {
+            "type": "Application",
+            "description": "Jira",
+            "groupName": "APP-Jira"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "ECOM",
+      "name": "eCommerce"
+    },
+    "profiles": [
+      {
+        "name": "eCommerce - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-ECOM"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Shopify Admin",
+            "groupName": "APP-Shopify"
+          },
+          {
+            "type": "Application",
+            "description": "Figma",
+            "groupName": "APP-Figma"
+          },
+          {
+            "type": "Application",
+            "description": "Jira",
+            "groupName": "APP-Jira"
+          },
+          {
+            "type": "Application",
+            "description": "Confluence",
+            "groupName": "APP-Confluence"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "MER",
+      "name": "Merchandise"
+    },
+    "profiles": [
+      {
+        "name": "Merchandise - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-MER"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "SAP GUI",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "Blue Yonder",
+            "groupName": null
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "EXEC",
+      "name": "Executive"
+    },
+    "profiles": [
+      {
+        "name": "Executive - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-EXEC"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Power BI Pro",
+            "groupName": "APP-PowerBI-Pro"
+          },
+          {
+            "type": "Application",
+            "description": "DocuSign",
+            "groupName": "APP-DocuSign"
+          },
+          {
+            "type": "Application",
+            "description": "Adobe Acrobat Pro",
+            "groupName": "APP-Acrobat-Pro"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "department": {
+      "code": "FAC",
+      "name": "Facilities"
+    },
+    "profiles": [
+      {
+        "name": "Facilities - Default",
+        "track": "Full",
+        "items": [
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 E3",
+            "groupName": "LIC-M365-E3"
+          },
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-FAC"
+          },
+          {
+            "type": "Hardware",
+            "description": "Standard laptop",
+            "hardwareCategory": "Laptop"
+          },
+          {
+            "type": "Hardware",
+            "description": "24\u0022 monitor",
+            "hardwareCategory": "Monitor"
+          },
+          {
+            "type": "Hardware",
+            "description": "USB-C dock",
+            "hardwareCategory": "Dock"
+          },
+          {
+            "type": "Hardware",
+            "description": "Mobile phone",
+            "hardwareCategory": "Phone"
+          },
+          {
+            "type": "Application",
+            "description": "Confluence",
+            "groupName": "APP-Confluence"
+          },
+          {
+            "type": "ManualTask",
+            "description": "Book building access card with Facilities"
+          }
+        ]
+      },
+      {
+        "name": "Facilities - Floor Staff",
+        "track": "Light",
+        "items": [
+          {
+            "type": "OktaGroup",
+            "description": "Department group",
+            "groupName": "DEPT-FAC"
+          },
+          {
+            "type": "LicenceGroup",
+            "description": "Microsoft 365 F3",
+            "groupName": "LIC-M365-F3"
+          },
+          {
+            "type": "Application",
+            "description": "Manhattan WMS",
+            "groupName": null
+          }
+        ]
+      }
+    ]
+  }
+]

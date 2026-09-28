@@ -1,0 +1,10 @@
+@Giim.Api_HostAddress = http://localhost:5080
+
+GET {{Giim.Api_HostAddress}}/health
+
+###
+
+GET {{Giim.Api_HostAddress}}/api/assets?search=5CG&page=1&pageSize=50
+Accept: application/json
+
+###

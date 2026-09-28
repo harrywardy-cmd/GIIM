@@ -1,0 +1,3 @@
+[*.cs]
+# Underscored test names (Given_When_Then) are the xUnit convention.
+dotnet_diagnostic.CA1707.severity = none

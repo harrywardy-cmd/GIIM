@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Giim.Api/Giim.Api.csproj" />
+    <Project Path="src/Giim.Connectors/Giim.Connectors.csproj" />
+    <Project Path="src/Giim.Domain/Giim.Domain.csproj" />
+    <Project Path="src/Giim.Infrastructure/Giim.Infrastructure.csproj" />
+    <Project Path="src/Giim.Workers/Giim.Workers.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Giim.Domain.Tests/Giim.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
