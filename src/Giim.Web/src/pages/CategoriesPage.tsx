@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { PageHeader } from '../PageHeader'
 
 type Category = {
   id: string
@@ -55,10 +56,10 @@ export function CategoriesPage() {
 
   return (
     <>
-      <h2>Asset categories</h2>
-      <p className="muted">
-        Kinds of kit with serial numbers. Things without serials belong on the Stock page instead.
-      </p>
+      <PageHeader
+        title="Asset categories"
+        subtitle="Kinds of kit with serial numbers. Things without serials belong on the Stock page instead."
+      />
       {error && <p className="error">{error}</p>}
 
       <table>

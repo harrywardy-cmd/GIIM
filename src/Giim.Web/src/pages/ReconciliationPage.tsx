@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { PageHeader } from '../PageHeader'
 import { statusText } from '../status'
 
 type Finding = 'IntuneOnly' | 'NotInIntune' | 'Stale' | 'OwnerMismatch' | 'StatusConflict'
@@ -102,10 +103,10 @@ export function ReconciliationPage() {
 
   return (
     <>
-      <h2>Intune reconciliation</h2>
-      <p className="muted">
-        Compares the register with Intune by serial number. Read-only: nothing is changed in Intune.
-      </p>
+      <PageHeader
+        title="Intune reconciliation"
+        subtitle="Compares the register with Intune by serial number. Read-only: nothing is changed in Intune."
+      />
 
       <div className="sync-bar">
         <span className={last?.status === 'Failed' ? 'error' : 'muted'}>

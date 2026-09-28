@@ -39,7 +39,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 1. ✅ **Extended lifecycle statuses** (N1): Received, Ready to deploy, Stolen, Retired
 2. ✅ **Asset timeline** (N2): append-only events with technician, ticket, previous and new values
 3. **Locations** as a managed list (N8)
-4. ◐ **Asset details page** (N9, first version with timeline and actions) and **UI refresh** to the mockup style (N22)
+4. ◐ **Asset details page** (N9) and ✅ **UI refresh** to the mockup style (N22): sidebar, top bar with global search, cards, pill badges
 5. ✅ **Assign / return workflow** (N3) with **accessory bundles** (N4): tracked accessories, stock items, condition, missing items; return requests
 6. ✅ **Repair records** (N5), ✅ **lost / stolen** (N6), ✅ **retirement and disposal** with data sanitisation and certificate (N7)
 7. ◐ **Global search** including ticket number (N10) and a **tickets view** (N20). Done so far: **Add asset** by hand with scanner-friendly serial entry and duplicate check, exact serial/tag lookup (Enter or scan opens the device), serial search ignoring spaces/dashes, owners history per asset
@@ -48,7 +48,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 
 ## Phase 1C: Visibility (new, from the brief)
 
-1. **Dashboard** (N17): summary cards, status chart, warranty expiring, recent activity
+1. ✅ **Dashboard** (N17): summary cards, status chart, needs-attention list, warranty expiring, recent activity (trend arrows need history snapshots; later)
 2. ◐ **Employee profile page** (N19): details, manager, assigned assets and assignment history done; requests arrive with Phase 2
 3. **Reports** (N18) with CSV / Excel export: inventory, repairs, warranty, technician activity
    (request reports are added in Phase 2)

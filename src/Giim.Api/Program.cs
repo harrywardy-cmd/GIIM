@@ -33,5 +33,6 @@ app.MapCategoryEndpoints();
 app.MapStockEndpoints();
 app.MapIntuneEndpoints();
 app.MapPeopleEndpoints();
+app.MapDashboardEndpoints();
 
 app.Run();

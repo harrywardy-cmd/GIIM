@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Plus } from 'lucide-react'
 import { api } from '../api'
+import { PageHeader } from '../PageHeader'
 import { StatusBadge } from '../StatusBadge'
 import { AddAssetForm } from './AddAssetForm'
 import { AssetDetailsPage } from './AssetDetailsPage'
@@ -17,8 +19,8 @@ type Asset = {
   legacyAssignedTo: string | null
 }
 
-export function AssetsPage() {
-  const [search, setSearch] = useState('')
+export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
+  const [search, setSearch] = useState(initialSearch)
   const [assets, setAssets] = useState<Asset[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -75,12 +77,15 @@ export function AssetsPage() {
 
   return (
     <>
-      <div className="page-header">
-        <h2>Assets</h2>
-        <button className="primary" onClick={() => setAdding(true)}>
-          + Add asset
-        </button>
-      </div>
+      <PageHeader
+        title="Assets"
+        subtitle="Every tracked device, who has it and where it is in its lifecycle."
+        actions={
+          <button className="primary" onClick={() => setAdding(true)}>
+            <Plus size={16} /> Add asset
+          </button>
+        }
+      />
       <input
         type="search"
         placeholder="Search or scan serial, asset tag, model or person (Enter opens an exact match)"

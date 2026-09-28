@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { PageHeader } from '../PageHeader'
 
 type StockLevel = {
   id: string
@@ -57,8 +58,7 @@ export function StockPage() {
 
   return (
     <>
-      <h2>Stock</h2>
-      <p className="muted">Items without serial numbers. Levels are counted from every stock movement.</p>
+      <PageHeader title="Stock" subtitle="Items without serial numbers. Levels are counted from every stock movement." />
       {error && <p className="error">{error}</p>}
 
       <div className="stats">

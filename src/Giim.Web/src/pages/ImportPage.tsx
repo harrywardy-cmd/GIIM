@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageHeader } from '../PageHeader'
 
 const fields = [
   { key: 'SerialNumber', label: 'Serial number', required: true },
@@ -116,11 +117,10 @@ export function ImportPage() {
 
   return (
     <>
-      <h2>Import asset register</h2>
-      <p className="muted">
-        Upload an Excel (.xlsx) register. Nothing is saved until you press Import, and assets already in the
-        register are never overwritten.
-      </p>
+      <PageHeader
+        title="Import asset register"
+        subtitle="Upload an Excel (.xlsx) register. Nothing is saved until you press Import, and assets already in the register are never overwritten."
+      />
 
       <input type="file" accept=".xlsx" disabled={busy} onChange={(e) => choose(e.target.files?.[0] ?? null)} />
       {busy && <p className="muted">Working…</p>}

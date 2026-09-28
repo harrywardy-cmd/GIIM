@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { PageHeader } from '../PageHeader'
 import { LegacyOwnersPanel } from './LegacyOwnersPanel'
 import { PersonProfile } from './PersonProfile'
 
@@ -71,13 +72,15 @@ export function PeoplePage() {
 
   return (
     <>
-      <h2>People</h2>
-      <div className="sync-bar">
-        <span className="muted">Staff come from the directory (sample file now, Active Directory later).</span>
-        <button onClick={sync} disabled={syncing}>
-          {syncing ? 'Syncing…' : 'Sync directory'}
-        </button>
-      </div>
+      <PageHeader
+        title="People"
+        subtitle="Staff come from the directory (sample file now, Active Directory later)."
+        actions={
+          <button onClick={sync} disabled={syncing}>
+            {syncing ? 'Syncing…' : 'Sync directory'}
+          </button>
+        }
+      />
       {message && <p className="success">{message}</p>}
       {error && <p className="error">{error}</p>}
 
