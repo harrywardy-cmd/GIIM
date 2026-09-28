@@ -145,3 +145,13 @@ button.link { border: 0; background: none; padding: 0; margin: 0; color: var(--a
 .person-Pending { background: #dcecff; color: #174a8c; }
 .person-Leaving { background: #fff4d6; color: #7a5200; }
 .person-Left { background: #e8e8ec; color: #55555f; }
+
+.stacked { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); position: relative; }
+.picker { list-style: none; margin: 4px 0 0; padding: 4px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); max-height: 240px; overflow-y: auto; min-width: 320px; }
+.picker button { display: block; width: 100%; text-align: left; margin: 0; border: 0; background: none; padding: 6px 8px; color: var(--text); }
+.picker button:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.accessory-list { list-style: none; padding: 0; margin: 8px 0; }
+.accessory-list li { display: flex; align-items: center; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--border); }
+.accessory-list button { margin-top: 0; }
+input.qty { width: 64px; }
+.action-form h4 { margin: 16px 0 4px; }

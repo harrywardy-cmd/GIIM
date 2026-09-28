@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { StatusBadge } from '../StatusBadge'
 import { statusText } from '../status'
+import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
 
 type TimelineEvent = {
   id: number
@@ -13,7 +14,7 @@ type TimelineEvent = {
   ticketNumber: string | null
   summary: string
   note: string | null
-  details: Record<string, string | null> | null
+  details: Record<string, string | string[] | null> | null
 }
 
 type AssetDetails = {
@@ -34,15 +35,26 @@ type AssetDetails = {
   assignedTo: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string } | null
   lastSeenInIntune: string | null
   nextStatuses: string[]
+  currentAssignment: {
+    id: string
+    assignedAt: string
+    assignedBy: string | null
+    ticketNumber: string | null
+    notes: string | null
+    accessories: AccessoryLine[]
+  } | null
   timeline: TimelineEvent[]
 }
 
-type Action = 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'AddNote'
+type Action = 'Assign' | 'Return' | 'RequestReturn' | 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'AddNote'
 
 /** Which actions are offered depends on where the asset is in its lifecycle. */
 function availableActions(a: AssetDetails): { action: Action; label: string }[] {
   const next = new Set(a.nextStatuses)
   const actions: { action: Action; label: string }[] = []
+  if (a.status === 'ReadyToDeploy') actions.push({ action: 'Assign', label: 'Assign' })
+  if (a.status === 'Assigned' || a.status === 'ReturnRequested') actions.push({ action: 'Return', label: 'Return' })
+  if (next.has('ReturnRequested')) actions.push({ action: 'RequestReturn', label: 'Request return' })
   if (next.has('ReadyToDeploy')) actions.push({ action: 'MarkReady', label: 'Mark ready to deploy' })
   if (next.has('Wiped')) actions.push({ action: 'MarkWiped', label: 'Record wipe' })
   if (a.status === 'Lost' || a.status === 'Stolen') actions.push({ action: 'Recover', label: 'Recovered' })
@@ -58,7 +70,22 @@ const detailLabels: Record<string, string> = {
   ReportedBy: 'Reported by',
   PoliceReference: 'Police reference',
   WhereFound: 'Where found',
+  Location: 'Location',
+  Accessories: 'Accessories',
+  IssuedWith: 'Issued with',
+  DueDate: 'Due',
+  Condition: 'Condition',
+  ReturnedBy: 'Returned by',
+  PreviousHolder: 'Returned from',
+  Missing: 'Missing',
+  LegacyName: 'Spreadsheet name',
+  MatchedBy: 'Matched by',
 }
+
+/** Internal ids and names already in the summary are not repeated in the timeline. */
+const hiddenDetails = new Set(['PersonId', 'PreviousHolderId', 'PersonName'])
+
+const detailText = (v: string | string[] | null) => (Array.isArray(v) ? v.join(', ') : v)
 
 const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString('en-AU') : '-')
 
@@ -67,6 +94,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   const [error, setError] = useState<string | null>(null)
   const [refresh, setRefresh] = useState(0)
   const [action, setAction] = useState<Action | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   useEffect(() => {
     api<AssetDetails>(`/api/assets/${assetId}`)
@@ -116,6 +144,28 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                 '-'
               )}
             </dd>
+            {asset.currentAssignment && (
+              <>
+                <dt>Assigned</dt>
+                <dd>
+                  {formatDate(asset.currentAssignment.assignedAt)}
+                  <div className="muted small">
+                    by {asset.currentAssignment.assignedBy ?? '-'}
+                    {asset.currentAssignment.ticketNumber && <> · ticket {asset.currentAssignment.ticketNumber}</>}
+                  </div>
+                </dd>
+                <dt>Accessories</dt>
+                <dd>
+                  {asset.currentAssignment.accessories.length === 0
+                    ? 'None recorded'
+                    : asset.currentAssignment.accessories.map((x) => (
+                        <div key={x.id} className="small">
+                          ✓ {x.label}
+                        </div>
+                      ))}
+                </dd>
+              </>
+            )}
             <dt>Purchased</dt>
             <dd>{formatDate(asset.purchaseDate)}</dd>
             <dt>Warranty expires</dt>
@@ -127,6 +177,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
           </dl>
 
           <h3>Actions</h3>
+          {notice && <p className="success">{notice}</p>}
           <div className="action-buttons">
             {availableActions(asset).map((a) => (
               <button key={a.action} className={action === a.action ? 'primary' : ''} onClick={() => setAction(a.action)}>
@@ -134,9 +185,34 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               </button>
             ))}
           </div>
-          <p className="muted small">Assign, return, repair and retire arrive in the next steps.</p>
+          <p className="muted small">Repair and retirement arrive in the next step.</p>
 
-          {action && (
+          {action === 'Assign' && (
+            <AssignForm
+              assetId={asset.id}
+              expectedStatus={asset.status}
+              onDone={() => {
+                setAction(null)
+                setRefresh((n) => n + 1)
+              }}
+              onCancel={() => setAction(null)}
+            />
+          )}
+          {action === 'Return' && (
+            <ReturnForm
+              assetId={asset.id}
+              expectedStatus={asset.status}
+              holderName={asset.assignedTo?.displayName ?? asset.legacyAssignedTo}
+              accessories={asset.currentAssignment?.accessories ?? []}
+              onDone={(missing) => {
+                setAction(null)
+                setNotice(missing.length ? `Returned. Missing: ${missing.join(', ')}` : 'Returned with everything accounted for.')
+                setRefresh((n) => n + 1)
+              }}
+              onCancel={() => setAction(null)}
+            />
+          )}
+          {action && action !== 'Assign' && action !== 'Return' && (
             <ActionForm
               key={action}
               asset={asset}
@@ -171,10 +247,10 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                 </div>
                 {e.details &&
                   Object.entries(e.details)
-                    .filter(([, v]) => v)
+                    .filter(([k, v]) => v && !hiddenDetails.has(k) && !(Array.isArray(v) && v.length === 0))
                     .map(([k, v]) => (
                       <div key={k} className="small">
-                        {detailLabels[k] ?? k}: {v}
+                        {detailLabels[k] ?? k}: {detailText(v)}
                       </div>
                     ))}
                 {e.note && <div className="small timeline-note">{e.note}</div>}
@@ -205,6 +281,7 @@ function ActionForm({
   const [reportedBy, setReportedBy] = useState('')
   const [policeReference, setPoliceReference] = useState('')
   const [whereFound, setWhereFound] = useState('')
+  const [dueDate, setDueDate] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -223,6 +300,7 @@ function ActionForm({
           reportedBy: reportedBy || null,
           policeReference: policeReference || null,
           whereFound,
+          dueDate: dueDate || null,
         },
       })
       onDone()
@@ -263,6 +341,12 @@ function ActionForm({
           <label>
             Police reference
             <input value={policeReference} onChange={(e) => setPoliceReference(e.target.value)} />
+          </label>
+        )}
+        {action === 'RequestReturn' && (
+          <label>
+            Due back by
+            <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </label>
         )}
         {action === 'Recover' && (

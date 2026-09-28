@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AssetImportService>();
         services.AddScoped<AssetLifecycleService>();
+        services.AddScoped<AssignmentService>();
         services.AddScoped<PeopleSyncService>();
         services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();

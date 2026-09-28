@@ -110,6 +110,60 @@ public sealed class Asset : Entity
             new { WhereFound = whereFound.Trim() });
     }
 
+    // ---- Issue and return ------------------------------------------------------------------------------------
+
+    /// <param name="issuedWith">Set when this asset is an accessory issued with another asset, e.g. a dock with a laptop.</param>
+    public AssetEvent Assign(ActionContext context, Guid personId, string personName, string? location,
+        IReadOnlyList<string> accessories, string? issuedWith = null)
+    {
+        ArgumentNullException.ThrowIfNull(accessories);
+        if (Status != AssetStatus.ReadyToDeploy)
+            throw new DomainException($"{DisplayName} is {Status}; only assets that are ready to deploy can be assigned.");
+
+        var summary = issuedWith is null ? $"Assigned to {personName}" : $"Assigned to {personName} with {issuedWith}";
+        var assetEvent = Transition(AssetStatus.Assigned, AssetEventType.Assigned, context, summary, new
+        {
+            PersonId = personId,
+            PersonName = personName,
+            Location = string.IsNullOrWhiteSpace(location) ? null : location.Trim(),
+            Accessories = accessories,
+            IssuedWith = issuedWith,
+        });
+
+        AssignedToPersonId = personId;
+        if (!string.IsNullOrWhiteSpace(location)) Location = location.Trim();
+        return assetEvent;
+    }
+
+    /// <summary>Asks for the asset back, e.g. when the holder is leaving. The asset stays with them until returned.</summary>
+    public AssetEvent RequestReturn(ActionContext context, DateOnly? dueDate) =>
+        Transition(AssetStatus.ReturnRequested, AssetEventType.ReturnRequested, context,
+            dueDate is null ? "Return requested" : $"Return requested by {dueDate:d MMM yyyy}",
+            new { DueDate = dueDate, PersonId = AssignedToPersonId });
+
+    /// <param name="missing">Accessories that should have come back with the asset but didn't.</param>
+    public AssetEvent Return(ActionContext context, AssetCondition condition, string? returnedBy, string? previousHolder,
+        IReadOnlyList<string> missing)
+    {
+        ArgumentNullException.ThrowIfNull(missing);
+
+        var summary = $"Returned ({condition.ToString().ToLowerInvariant()})"
+            + (previousHolder is null ? "" : $" from {previousHolder}")
+            + (missing.Count == 0 ? "" : $"; missing: {string.Join(", ", missing)}");
+
+        var assetEvent = Transition(AssetStatus.Returned, AssetEventType.Returned, context, summary, new
+        {
+            Condition = condition,
+            ReturnedBy = string.IsNullOrWhiteSpace(returnedBy) ? null : returnedBy.Trim(),
+            PreviousHolderId = AssignedToPersonId,
+            PreviousHolder = previousHolder ?? LegacyAssignedTo,
+            Missing = missing,
+        });
+
+        AssignedToPersonId = null;
+        return assetEvent;
+    }
+
     public AssetEvent AddNote(ActionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

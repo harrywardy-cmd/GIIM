@@ -177,8 +177,24 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
         {
             e.HasIndex(a => new { a.PersonId, a.EndedAt });
             e.HasIndex(a => a.AssetId);
+            // Safety net under the domain rules: an asset can only be with one person at a time.
+            e.HasIndex(a => a.AssetId, "UX_Assignments_OneActivePerAsset").IsUnique()
+                .HasFilter("[EndedAt] IS NULL AND [AssetId] IS NOT NULL");
             e.Property(a => a.AssignedBy).HasMaxLength(200);
             e.Property(a => a.Notes).HasMaxLength(1000);
+            e.Property(a => a.ReceivedBy).HasMaxLength(200);
+            e.Property(a => a.ReturnedBy).HasMaxLength(200);
+            e.Property(a => a.ReturnTicketNumber).HasMaxLength(50);
+            e.OwnsMany(a => a.Accessories, acc =>
+            {
+                acc.ToTable("AssignmentAccessories");
+                acc.WithOwner().HasForeignKey("AssignmentId");
+                acc.HasKey(x => x.Id);
+                acc.Property(x => x.Id).ValueGeneratedNever();
+                acc.Property(x => x.Description).HasMaxLength(300);
+                acc.Ignore(x => x.Label);
+                acc.HasIndex(x => x.AccessoryAssetId);
+            });
             e.HasOne<Person>().WithMany().HasForeignKey(a => a.PersonId).OnDelete(DeleteBehavior.Restrict);
             e.HasOne<Asset>().WithMany().HasForeignKey(a => a.AssetId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(a => a.ServiceDeskRequestId);

@@ -12,6 +12,9 @@ public enum AssetEventType
     Recovered,
     NoteAdded,
     OwnerLinked,      // legacy "Assigned To" name matched to a real person
+    Assigned,
+    ReturnRequested,
+    Returned,
 }
 
 /// <summary>Who did it, which ticket, and why. Supplied with every lifecycle action.</summary>
