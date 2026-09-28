@@ -9,7 +9,8 @@ Internal tool for the IT Service Desk. It links ServiceDesk Plus tickets to:
 It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, hybrid Exchange and Microsoft Intune.
 
 > Status: **scaffold**. Structure, domain model and test data only. No integrations are live yet.
-> See [docs/roadmap.md](docs/roadmap.md) for the build plan and [docs/architecture.md](docs/architecture.md) for the design.
+> See [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
+> [docs/lifecycle-gap-analysis.md](docs/lifecycle-gap-analysis.md) for how the asset lifecycle brief maps onto GIIM.
 
 ## Repository layout
 
