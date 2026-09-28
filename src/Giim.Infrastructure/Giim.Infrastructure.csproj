@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Giim.Domain\Giim.Domain.csproj" />
+    <ProjectReference Include="..\Giim.Connectors\Giim.Connectors.csproj" />
   </ItemGroup>
 
   <ItemGroup>

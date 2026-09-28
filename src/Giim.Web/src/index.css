@@ -85,6 +85,13 @@ input:not([type='checkbox']):not([type='file']) {
 }
 input[type='number'] { width: 110px; }
 
+.sync-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.sync-bar button { margin-top: 0; }
+button.stat-button { text-align: left; margin-top: 0; cursor: pointer; font: inherit; color: var(--text); }
+button.stat-button.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.pager { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.pager button { margin-top: 0; }
+
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .nav { border-right: 0; border-bottom: 1px solid var(--border); }

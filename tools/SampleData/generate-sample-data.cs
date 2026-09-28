@@ -9,6 +9,7 @@
 //   sdp-assets-export.csv        mimics a ServiceDesk Plus asset export (partial, some conflicts)
 //   intune-devices.json          mimics Graph /deviceManagement/managedDevices
 //   EXPECTED-ISSUES.md           what reconciliation should find, so the importer can be verified
+//   expected-reconciliation.json the exact Intune-only and stale serials, for automated tests
 
 #:package ClosedXML@0.105.0
 #:property TreatWarningsAsErrors=false
@@ -376,6 +377,13 @@ md.AppendLine();
 md.AppendLine("## Intune-only serials (first 10)");
 foreach (var s in intuneOnly.Take(10)) md.AppendLine($"- `{s}`");
 File.WriteAllText(Path.Combine(outDir, "EXPECTED-ISSUES.md"), md.ToString());
+
+// Exact serials for automated tests (EXPECTED-ISSUES.md only has counts).
+File.WriteAllText(Path.Combine(outDir, "expected-reconciliation.json"), JsonSerializer.Serialize(new
+{
+    intuneOnlySerials = intuneOnly.Order(StringComparer.Ordinal),
+    staleSerials = staleInIntune.Order(StringComparer.Ordinal),
+}, json));
 
 Console.WriteLine(md.ToString());
 

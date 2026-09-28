@@ -12,7 +12,8 @@ namespace Giim.Infrastructure.Tests;
 /// </summary>
 public partial class SampleRegisterImportTests
 {
-    private static readonly string SamplesDir = Path.Combine(FindRepoRoot(), "samples");
+    internal static readonly string RepoRoot = FindRepoRoot();
+    private static readonly string SamplesDir = Path.Combine(RepoRoot, "samples");
 
     private static readonly Lazy<IReadOnlyList<AnalyzedRow>> Rows = new(() =>
     {

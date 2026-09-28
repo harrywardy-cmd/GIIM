@@ -9,7 +9,7 @@
 | Okta | Imports users from AD (AD agent); app access via groups | Okta Management API; Event Hooks for deactivations |
 | Entra ID / M365 | Synced from AD by Entra Connect; licences via group-based licensing | Microsoft Graph |
 | Exchange (hybrid) | Mailbox attributes are owned by on-prem AD | `Enable-RemoteMailbox` via the on-prem agent; Exchange Online for shared-mailbox conversion |
-| Intune | Source of device facts (serial, primary user, last sync, compliance) | Graph delta queries on managed devices |
+| Intune | Source of device facts (serial, primary user, last sync, compliance) | Scheduled full read of Graph managedDevices (`$select`, paged; the endpoint has no delta query) |
 
 ## Identity flow
 
@@ -42,7 +42,7 @@ Key Vault + Managed Identity · Application Insights · Private endpoints · Okt
    People accumulate kit and access over time, so a template-only leaver list misses things.
    See `ChecklistGenerator` in `Giim.Domain`.
 2. **Serial number is the matching key** across Excel, SDP and Intune. Serials are normalised (trimmed, upper-cased) on import.
-3. **The UI never calls external APIs live.** Workers sync into Azure SQL (Graph delta, Okta events, SDP webhooks),
+3. **The UI never calls external APIs live.** Workers sync into Azure SQL (scheduled Intune reads, Okta events, SDP webhooks),
    which keeps the app fast and within API rate limits at 150k+ devices.
 4. **Managed app catalogue vs discovered inventory.** Only catalogue apps (with an owner, licence model and Okta group)
    appear in profiles. Raw Intune app inventory is for reporting only.

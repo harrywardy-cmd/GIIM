@@ -2,7 +2,7 @@
 
 Each phase ends with something usable, and nothing destructive is automated until the data underneath it has been proven correct.
 
-## Phase 0: Scaffold ✅ (current)
+## Phase 0: Scaffold ✅
 
 - Solution structure, domain model, database schema (initial migration)
 - Asset lifecycle and checklist-generation rules, with unit tests
@@ -10,19 +10,21 @@ Each phase ends with something usable, and nothing destructive is automated unti
 - React UI shell with an Assets page
 - Fake test data: 1,500 people, 20 departments, ~4,800 devices, messy Excel register, SDP export, Intune export
 
-## Phase 1: Register and reconciliation (read-only, no risk)
+## Phase 1: Register and reconciliation (read-only, no risk) (current)
 
 Goal: one trustworthy list of who has what.
 
-1. Local database and dev environment running (LocalDB, SQL Developer or Docker)
-2. **Excel importer** with a column-mapping step, serial normalisation, and duplicate/blank detection
-3. **SDP asset import** (API v3, read-only)
-4. **Intune device sync** (Graph delta query, read-only)
-5. **Reconciliation report**: matched / Intune-only / register-only / conflicting owner / stale 90+ days.
-   Verified against `samples/EXPECTED-ISSUES.md`
-6. People import from AD (read-only) and department profile editor
-7. Manual checklists linked to an SDP request ID
-8. Okta SSO for staff login; Azure environment (Bicep) in Australia East
+1. ✅ Local database and dev environment running (Docker SQL Server)
+2. ✅ **Excel importer** with a column-mapping step, serial normalisation, and duplicate/blank detection
+3. ✅ **Asset categories and stock levels**: serialised assets tracked individually; items without serials tracked as stock
+4. ✅ **Intune device sync**: scheduled full read of Graph managedDevices, read-only; removed devices detected
+5. ✅ **Reconciliation report**: not in register / missing from Intune / stale 90+ days / different user / still in use.
+   Verified against `samples/expected-reconciliation.json`
+6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
+7. **SDP asset import** (API v3, read-only)
+8. People import from AD (read-only) and department profile editor
+9. Manual checklists linked to an SDP request ID
+10. Okta SSO for staff login; Azure environment (Bicep) in Australia East
 
 **Exit criteria:** the team uses GIIM as the asset register, and the reconciliation report has been worked through.
 

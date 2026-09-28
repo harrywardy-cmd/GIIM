@@ -1,8 +1,10 @@
+using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Importing;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Stock;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Giim.Infrastructure;
 
@@ -12,8 +14,11 @@ public static class DependencyInjection
     {
         services.AddDbContext<GiimDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+        services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AssetImportService>();
         services.AddScoped<StockService>();
+        services.AddScoped<IntuneSyncService>();
+        services.AddScoped<ReconciliationService>();
 
         return services;
     }

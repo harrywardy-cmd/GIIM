@@ -1,23 +1,29 @@
+using System.Text.Json.Serialization;
+
 namespace Giim.Connectors.Intune;
 
-/// <summary>Microsoft Graph: Intune managed devices. Read-only in Phase 1.</summary>
+/// <summary>
+/// Reads Intune managed devices. Read-only. Graph's managedDevices endpoint has no delta query,
+/// so every sync is a full, paged read of the fields listed in <see cref="IntuneDevice"/>.
+/// </summary>
 public interface IIntuneClient
 {
-    /// <summary>
-    /// Returns devices changed since <paramref name="deltaToken"/> (all devices when null),
-    /// so a sync of 150k devices only fetches what changed.
-    /// </summary>
-    Task<IntuneDeltaPage> GetManagedDevicesAsync(string? deltaToken, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<IntuneDevice> GetManagedDevicesAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed record IntuneDeltaPage(IReadOnlyList<IntuneDevice> Devices, string NextDeltaToken);
-
+/// <summary>Shape of a Graph managedDevice, limited to the fields GIIM requests with $select.</summary>
 public sealed record IntuneDevice(
     string Id,
-    string DeviceName,
-    string SerialNumber,
-    string Manufacturer,
-    string Model,
-    string? PrimaryUserUpn,
-    string ComplianceState,
-    DateTimeOffset LastSyncDateTime);
+    string? DeviceName,
+    string? SerialNumber,
+    string? Manufacturer,
+    string? Model,
+    string? OperatingSystem,
+    string? UserPrincipalName,
+    string? ComplianceState,
+    DateTimeOffset? LastSyncDateTime,
+    DateTimeOffset? EnrolledDateTime);
+
+internal sealed record GraphPage(
+    [property: JsonPropertyName("value")] IReadOnlyList<IntuneDevice> Value,
+    [property: JsonPropertyName("@odata.nextLink")] string? NextLink);
