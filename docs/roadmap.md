@@ -43,8 +43,8 @@ Goal: every asset has a complete, append-only history, and every action records 
 5. ✅ **Assign / return workflow** (N3) with **accessory bundles** (N4): tracked accessories, stock items, condition, missing items; return requests
 6. ✅ **Repair records** (N5), ✅ **lost / stolen** (N6), ✅ **retirement and disposal** with data sanitisation and certificate (N7)
 7. ◐ **Global search** including ticket number (N10) and a **tickets view** (N20). Done so far: **Add asset** by hand with scanner-friendly serial entry and duplicate check, exact serial/tag lookup (Enter or scan opens the device), serial search ignoring spaces/dashes, owners history per asset
-8. **QR codes** (N11): PNG download per asset and a printable A4 label sheet (no label printer); mobile scan-to-open
-   asset page. **Photos and attachments** (N12)
+8. ✅ **QR codes** (N11): QR on each asset page, PNG download, printable A4 label sheets (21 or 65 per sheet, start-at for part-used sheets); scanning opens the asset (phone camera or 2D scanner); links to assets
+   **Photos and attachments** (N12) still to do
 
 ## Phase 1C: Visibility (new, from the brief)
 

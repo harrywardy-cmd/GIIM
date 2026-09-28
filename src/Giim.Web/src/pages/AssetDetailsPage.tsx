@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { Download, Printer } from 'lucide-react'
 import { api } from '../api'
+import { LabelSheet } from './LabelSheet'
 import { StatusBadge } from '../StatusBadge'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
@@ -158,6 +160,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   const [refresh, setRefresh] = useState(0)
   const [action, setAction] = useState<Action | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [printing, setPrinting] = useState(false)
   const done = () => {
     setAction(null)
     setRefresh((n) => n + 1)
@@ -173,6 +176,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   }, [assetId, refresh])
 
   if (!asset) return error ? <p className="error">{error}</p> : <p className="muted">Loading…</p>
+  if (printing) return <LabelSheet assetIds={[asset.id]} onBack={() => setPrinting(false)} />
   const openRepair = asset.repairs.find((r) => r.isOpen)
 
   return (
@@ -243,6 +247,19 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
             <dt>Last seen in Intune</dt>
             <dd>{asset.isIntuneManaged ? formatDate(asset.lastSeenInIntune) : 'Not managed in Intune'}</dd>
           </dl>
+
+          <div className="qr-card">
+            <img src={`/api/assets/${asset.id}/qr.svg`} alt={`QR code for ${asset.assetTag ?? asset.serialNumber}`} />
+            <div className="actions">
+              <span className="muted small">Scan with a phone camera or 2D scanner to open this asset.</span>
+              <a className="button" href={`/api/assets/${asset.id}/qr.png`} download>
+                <Download size={16} /> Download QR
+              </a>
+              <button onClick={() => setPrinting(true)}>
+                <Printer size={16} /> Print label
+              </button>
+            </div>
+          </div>
 
           <h3>Actions</h3>
           {notice && <p className="success">{notice}</p>}

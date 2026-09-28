@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react'
 import { api } from './api'
+import { assetIdFromLink } from './links'
 import { PageHeader } from './PageHeader'
 import { AssetDetailsPage } from './pages/AssetDetailsPage'
 import { AssetsPage } from './pages/AssetsPage'
@@ -66,7 +67,13 @@ const navigation: { section: string; items: NavItem[] }[] = [
 
 export default function App() {
   const [page, setPage] = useState<PageKey>('dashboard')
-  const [openAsset, setOpenAsset] = useState<string | null>(null)
+  // A QR label or shared link opens the asset straight away.
+  const [openAsset, setOpenAssetState] = useState<string | null>(() => assetIdFromLink(window.location.search))
+
+  const setOpenAsset = (id: string | null) => {
+    setOpenAssetState(id)
+    window.history.replaceState(null, '', id ? `?asset=${id}` : window.location.pathname)
+  }
   const [search, setSearch] = useState('')
   const [assetSearch, setAssetSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
@@ -81,6 +88,13 @@ export default function App() {
   const runSearch = async () => {
     const term = search.trim()
     if (!term) return
+    // A 2D scanner reading a GIIM QR label types the whole link.
+    const linked = assetIdFromLink(term)
+    if (linked) {
+      setOpenAsset(linked)
+      setSearch('')
+      return
+    }
     try {
       const found = await api<{ id: string }>(`/api/assets/lookup?code=${encodeURIComponent(term)}`)
       setOpenAsset(found.id)

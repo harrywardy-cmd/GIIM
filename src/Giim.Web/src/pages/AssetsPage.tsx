@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Printer } from 'lucide-react'
 import { api } from '../api'
+import { assetIdFromLink } from '../links'
 import { PageHeader } from '../PageHeader'
 import { StatusBadge } from '../StatusBadge'
 import { AddAssetForm } from './AddAssetForm'
 import { AssetDetailsPage } from './AssetDetailsPage'
+import { LabelSheet } from './LabelSheet'
 
 type Asset = {
   id: string
@@ -26,10 +28,19 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [notFound, setNotFound] = useState<string | null>(null)
+  const [selected, setSelected] = useState<string[]>([])
+  const [printing, setPrinting] = useState<string[] | null>(null)
 
-  /** Enter (or a barcode scanner) on an exact serial or asset tag opens that device directly. */
+  const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
+
+  /** Enter (or a barcode scanner) on an exact serial, asset tag or QR label opens that device directly. */
   const lookup = async () => {
     if (!search.trim()) return
+    const linked = assetIdFromLink(search)
+    if (linked) {
+      setOpenId(linked)
+      return
+    }
     try {
       const found = await api<{ id: string }>(`/api/assets/lookup?code=${encodeURIComponent(search)}`)
       setNotFound(null)
@@ -59,6 +70,7 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
     }
   }, [search, openId])
 
+  if (printing) return <LabelSheet assetIds={printing} onBack={() => setPrinting(null)} />
   if (openId) return <AssetDetailsPage assetId={openId} onBack={() => setOpenId(null)} />
   if (adding)
     return (
@@ -81,9 +93,14 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
         title="Assets"
         subtitle="Every tracked device, who has it and where it is in its lifecycle."
         actions={
-          <button className="primary" onClick={() => setAdding(true)}>
-            <Plus size={16} /> Add asset
-          </button>
+          <>
+            <button disabled={selected.length === 0} onClick={() => setPrinting(selected)}>
+              <Printer size={16} /> Print labels{selected.length > 0 && ` (${selected.length})`}
+            </button>
+            <button className="primary" onClick={() => setAdding(true)}>
+              <Plus size={16} /> Add asset
+            </button>
+          </>
         }
       />
       <input
@@ -110,6 +127,18 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
       <table>
         <thead>
           <tr>
+            <th>
+              <input
+                type="checkbox"
+                aria-label="Select all shown"
+                checked={assets.length > 0 && assets.every((a) => selected.includes(a.id))}
+                onChange={(e) =>
+                  setSelected((s) =>
+                    e.target.checked ? [...new Set([...s, ...assets.map((a) => a.id)])] : s.filter((id) => !assets.some((a) => a.id === id)),
+                  )
+                }
+              />
+            </th>
             <th>Asset tag</th>
             <th>Serial</th>
             <th>Make / model</th>
@@ -122,6 +151,9 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
         <tbody>
           {assets.map((a) => (
             <tr key={a.id} className="clickable" onClick={() => setOpenId(a.id)}>
+              <td onClick={(e) => e.stopPropagation()}>
+                <input type="checkbox" aria-label={`Select ${a.assetTag ?? a.serialNumber}`} checked={selected.includes(a.id)} onChange={() => toggle(a.id)} />
+              </td>
               <td>
                 <button className="link" onClick={() => setOpenId(a.id)}>
                   {a.assetTag ?? a.serialNumber}
@@ -143,7 +175,7 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
           ))}
           {assets.length === 0 && !error && (
             <tr>
-              <td colSpan={7} className="muted">
+              <td colSpan={8} className="muted">
                 No assets found.
               </td>
             </tr>

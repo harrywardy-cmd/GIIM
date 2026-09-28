@@ -50,6 +50,15 @@ cd src/Giim.Web && npm install && npm run dev                 # UI on http://loc
 dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake test data
 ```
 
+## Key settings
+
+| Setting | Purpose |
+|---|---|
+| `ConnectionStrings:Giim` | SQL Server connection (local Docker in development) |
+| `Giim:PublicBaseUrl` | The address staff use to open GIIM, e.g. `https://giim.company.com.au`. **QR labels link here**, so set it before printing labels; a label printed with the wrong address has to be reprinted. Development: `http://localhost:5173` |
+| `Intune:Source` | `File` (sample export) or `Graph` (live), see [docs/intune-app-registration.md](docs/intune-app-registration.md) |
+| `People:FilePath` | Staff directory export used by People sync until the Active Directory source exists |
+
 ## Ground rules
 
 - **Secrets never go in appsettings or git.** Locally use `dotnet user-secrets`; in Azure use Key Vault + Managed Identity.
