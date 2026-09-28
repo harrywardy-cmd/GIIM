@@ -3,11 +3,17 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Giim.Infrastructure.Persistence;
 
-/// <summary>Used only by `dotnet ef` to generate migrations; no database connection is opened.</summary>
+/// <summary>
+/// Used only by `dotnet ef`. Targets the local Docker SQL Server (docker-compose.yml) unless the
+/// ConnectionStrings__Giim environment variable points somewhere else.
+/// </summary>
 internal sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<GiimDbContext>
 {
+    private const string LocalDocker =
+        "Server=localhost,1433;Database=Giim;User Id=sa;Password=Giim-Dev-Passw0rd!;TrustServerCertificate=True";
+
     public GiimDbContext CreateDbContext(string[] args) =>
         new(new DbContextOptionsBuilder<GiimDbContext>()
-            .UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=Giim;Trusted_Connection=True")
+            .UseSqlServer(Environment.GetEnvironmentVariable("ConnectionStrings__Giim") ?? LocalDocker)
             .Options);
 }

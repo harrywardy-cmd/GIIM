@@ -30,11 +30,13 @@ It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, 
 
 - .NET SDK 10.0
 - Node.js 24+
-- SQL Server for local dev: LocalDB (installed with Visual Studio), SQL Server Developer Edition, or a Docker container
+- Docker Desktop (WSL 2 backend) for the local SQL Server
 
 ## Common commands
 
 ```bash
+docker compose up -d                   # start local SQL Server (localhost,1433)
+
 dotnet build Giim.slnx                 # build everything
 dotnet test Giim.slnx                  # run tests
 
@@ -50,5 +52,6 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 ## Ground rules
 
 - **Secrets never go in appsettings or git.** Locally use `dotnet user-secrets`; in Azure use Key Vault + Managed Identity.
+  The only exception is the throwaway SA password for the local Docker SQL container, which works only on your own machine.
 - **No real staff data in the repo.** Use `samples/private/` for real exports.
 - Every automated action that disables, removes or wipes something requires a named approver and is written to the audit log.
