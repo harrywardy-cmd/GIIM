@@ -10,7 +10,7 @@ namespace Giim.Api.Endpoints;
 internal sealed record StockItemRequest(string Name, string? Description, int ReorderLevel, bool IsActive = true);
 
 internal sealed record StockMovementRequest(
-    string Location, StockMovementReason Reason, int Quantity, string? Note, string? ServiceDeskRequestId);
+    Guid LocationId, StockMovementReason Reason, int Quantity, string? Note, string? ServiceDeskRequestId);
 
 internal static class StockEndpoints
 {
@@ -20,8 +20,13 @@ internal static class StockEndpoints
 
         group.MapGet("/", async (StockService stock, CancellationToken ct) => Results.Ok(await stock.GetLevelsAsync(ct)));
 
+        // Places stock can be held: locations marked "holds stock", plus any that still have stock on the books.
         group.MapGet("/locations", async (GiimDbContext db, CancellationToken ct) =>
-            Results.Ok(await db.StockMovements.Select(m => m.Location).Distinct().OrderBy(l => l).ToListAsync(ct)));
+            Results.Ok(await db.Locations.AsNoTracking()
+                .Where(l => (l.IsActive && l.HoldsStock) || db.StockMovements.Where(m => m.LocationId == l.Id).Sum(m => m.Quantity) != 0)
+                .OrderBy(l => l.Name)
+                .Select(l => new { l.Id, l.Name, l.IsActive })
+                .ToListAsync(ct)));
 
         group.MapPost("/items", async (StockItemRequest request, GiimDbContext db, CancellationToken ct) =>
         {
@@ -63,7 +68,7 @@ internal static class StockEndpoints
             var actor = user.Name;
             try
             {
-                var movement = await stock.RecordAsync(id, request.Location ?? "", request.Reason, request.Quantity,
+                var movement = await stock.RecordAsync(id, request.LocationId, request.Reason, request.Quantity,
                     actor, request.Note, request.ServiceDeskRequestId, ct);
                 return Results.Ok(movement);
             }

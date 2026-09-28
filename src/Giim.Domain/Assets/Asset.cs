@@ -11,7 +11,9 @@ public sealed class Asset : Entity
     public required string Model { get; set; }
     public Guid CategoryId { get; set; }
     public AssetCategory? Category { get; set; }
-    public string? Location { get; set; }
+
+    /// <summary>Where the asset is; a managed location, so renaming the location updates every asset.</summary>
+    public Guid? LocationId { get; set; }
 
     public DateOnly? PurchaseDate { get; set; }
     public DateOnly? WarrantyExpiry { get; set; }
@@ -76,9 +78,11 @@ public sealed class Asset : Entity
     /// as imports, so a scanned "5cg 123-abc" matches Intune's "5CG123ABC".
     /// </summary>
     /// <param name="startAs">Received (needs setting up) or ReadyToDeploy (already set up, e.g. existing spare stock).</param>
-    public static (Asset Asset, AssetEvent Event) Receive(NewAsset details, ActionContext context, AssetStatus startAs = AssetStatus.Received)
+    public static (Asset Asset, AssetEvent Event) Receive(NewAsset details, ActionContext context,
+        AssetStatus startAs = AssetStatus.Received, Locations.Location? location = null)
     {
         ArgumentNullException.ThrowIfNull(details);
+        location?.EnsureActive();
         if (startAs is not (AssetStatus.Received or AssetStatus.ReadyToDeploy))
             throw new DomainException("A new asset starts as Received or Ready to deploy.");
 
@@ -109,7 +113,7 @@ public sealed class Asset : Entity
             Manufacturer = manufacturer,
             Model = details.Model.Trim(),
             CategoryId = details.CategoryId,
-            Location = string.IsNullOrWhiteSpace(details.Location) ? null : details.Location.Trim(),
+            LocationId = location?.Id,
             PurchaseDate = details.PurchaseDate,
             WarrantyExpiry = details.WarrantyExpiry,
             Supplier = string.IsNullOrWhiteSpace(details.Supplier) ? null : details.Supplier.Trim(),
@@ -121,7 +125,7 @@ public sealed class Asset : Entity
         var summary = startAs == AssetStatus.Received ? "Received" : "Added as ready to deploy";
         var assetEvent = asset.NewEvent(AssetEventType.Created, context, null, startAs, summary, new
         {
-            asset.Location,
+            Location = location?.Name,
             asset.Supplier,
             PurchaseOrder = string.IsNullOrWhiteSpace(details.PurchaseOrder) ? null : details.PurchaseOrder.Trim(),
         });
@@ -172,25 +176,44 @@ public sealed class Asset : Entity
     // ---- Issue and return ------------------------------------------------------------------------------------
 
     /// <param name="issuedWith">Set when this asset is an accessory issued with another asset, e.g. a dock with a laptop.</param>
-    public AssetEvent Assign(ActionContext context, Guid personId, string personName, string? location,
+    public AssetEvent Assign(ActionContext context, Guid personId, string personName, Locations.Location? location,
         IReadOnlyList<string> accessories, string? issuedWith = null)
     {
         ArgumentNullException.ThrowIfNull(accessories);
         if (Status != AssetStatus.ReadyToDeploy)
             throw new DomainException($"{DisplayName} is {Status}; only assets that are ready to deploy can be assigned.");
+        location?.EnsureActive();
 
         var summary = issuedWith is null ? $"Assigned to {personName}" : $"Assigned to {personName} with {issuedWith}";
         var assetEvent = Transition(AssetStatus.Assigned, AssetEventType.Assigned, context, summary, new
         {
             PersonId = personId,
             PersonName = personName,
-            Location = string.IsNullOrWhiteSpace(location) ? null : location.Trim(),
+            Location = location?.Name,
             Accessories = accessories,
             IssuedWith = issuedWith,
         });
 
         AssignedToPersonId = personId;
-        if (!string.IsNullOrWhiteSpace(location)) Location = location.Trim();
+        if (location is not null) LocationId = location.Id;
+        return assetEvent;
+    }
+
+    /// <summary>Records that the asset has moved, e.g. between offices. No status change.</summary>
+    public AssetEvent MoveTo(ActionContext context, Locations.Location location, string? previousLocationName)
+    {
+        ArgumentNullException.ThrowIfNull(location);
+        location.EnsureActive();
+        if (Status == AssetStatus.Disposed)
+            throw new DomainException($"{DisplayName} has been disposed of.");
+        if (LocationId == location.Id)
+            throw new DomainException($"{DisplayName} is already at {location.Name}.");
+
+        var assetEvent = NewEvent(AssetEventType.Moved, context, null, null,
+            previousLocationName is null ? $"Moved to {location.Name}" : $"Moved from {previousLocationName} to {location.Name}",
+            new { From = previousLocationName, To = location.Name });
+        LocationId = location.Id;
+        UpdatedAt = assetEvent.OccurredAt;
         return assetEvent;
     }
 
@@ -279,7 +302,7 @@ public sealed class Asset : Entity
     public string? DisposalCompany { get; private set; }
     public string? DisposalCertificate { get; private set; }
 
-    public AssetEvent Retire(ActionContext context, string reason, DataSanitisation sanitisation, string? finalLocation)
+    public AssetEvent Retire(ActionContext context, string reason, DataSanitisation sanitisation, Locations.Location? finalLocation)
     {
         if (string.IsNullOrWhiteSpace(reason))
             throw new DomainException("Give a reason for retiring the asset.");
@@ -296,13 +319,13 @@ public sealed class Asset : Entity
         {
             Reason = reason.Trim(),
             DataSanitisation = sanitisation,
-            FinalLocation = string.IsNullOrWhiteSpace(finalLocation) ? null : finalLocation.Trim(),
+            FinalLocation = finalLocation?.Name,
         });
 
         RetiredAt = assetEvent.OccurredAt;
         RetirementReason = reason.Trim();
         DataSanitisation = sanitisation;
-        if (!string.IsNullOrWhiteSpace(finalLocation)) Location = finalLocation.Trim();
+        if (finalLocation is not null) LocationId = finalLocation.Id;
         return assetEvent;
     }
 

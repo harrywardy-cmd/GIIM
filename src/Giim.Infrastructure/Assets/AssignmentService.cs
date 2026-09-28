@@ -11,9 +11,9 @@ namespace Giim.Infrastructure.Assets;
 
 /// <summary>
 /// One accessory to issue: another tracked asset (<see cref="AssetId"/>), a stock item (<see cref="StockItemId"/>,
-/// optionally taken from stock at <see cref="TakeFromStockAt"/>), or free text (<see cref="Description"/>).
+/// optionally taken from stock at <see cref="TakeFromStockAtLocationId"/>), or free text (<see cref="Description"/>).
 /// </summary>
-public sealed record AccessoryRequest(Guid? AssetId, Guid? StockItemId, string? Description, int Quantity = 1, string? TakeFromStockAt = null);
+public sealed record AccessoryRequest(Guid? AssetId, Guid? StockItemId, string? Description, int Quantity = 1, Guid? TakeFromStockAtLocationId = null);
 
 /// <summary>
 /// Issues and returns assets with their accessories. Each call is all-or-nothing: the asset, its accessories,
@@ -22,13 +22,14 @@ public sealed record AccessoryRequest(Guid? AssetId, Guid? StockItemId, string? 
 public sealed class AssignmentService(GiimDbContext db)
 {
     public Task<Assignment> AssignAsync(Guid assetId, Guid personId, AssetStatus? expectedStatus, ActionContext context,
-        string? location, IReadOnlyList<AccessoryRequest> accessories, CancellationToken cancellationToken)
+        Guid? locationId, IReadOnlyList<AccessoryRequest> accessories, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accessories);
 
         return InTransactionAsync(async () =>
         {
             var asset = await LoadAssetAsync(assetId, expectedStatus, cancellationToken);
+            var location = locationId is { } id ? await LoadLocationAsync(id, cancellationToken) : null;
             var person = await db.People.FirstOrDefaultAsync(p => p.Id == personId, cancellationToken)
                 ?? throw new KeyNotFoundException("Person not found.");
             if (person.Status == PersonStatus.Left)
@@ -47,7 +48,7 @@ public sealed class AssignmentService(GiimDbContext db)
     }
 
     public Task<IReadOnlyList<AccessoryLine>> ReturnAsync(Guid assetId, AssetStatus? expectedStatus, ActionContext context,
-        AssetCondition condition, string? returnedBy, IReadOnlySet<Guid> returnedAccessoryIds, string? returnStockTo,
+        AssetCondition condition, string? returnedBy, IReadOnlySet<Guid> returnedAccessoryIds, Guid? returnStockToLocationId,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(returnedAccessoryIds);
@@ -71,8 +72,8 @@ public sealed class AssignmentService(GiimDbContext db)
             {
                 if (line.AccessoryAssetId is { } accessoryId)
                     await ReturnAccessoryAssetAsync(accessoryId, asset, assignment!.PersonId, holderName, condition, returnedBy, context, cancellationToken);
-                else if (line.StockItemId is { } stockItemId && !string.IsNullOrWhiteSpace(returnStockTo))
-                    await MoveStockAsync(stockItemId, returnStockTo, StockMovementReason.Returned, line.Quantity, context,
+                else if (line.StockItemId is { } stockItemId && returnStockToLocationId is { } stockLocationId)
+                    await MoveStockAsync(stockItemId, stockLocationId, StockMovementReason.Returned, line.Quantity, context,
                         $"Returned with {asset.DisplayName}", cancellationToken);
             }
 
@@ -82,7 +83,7 @@ public sealed class AssignmentService(GiimDbContext db)
     }
 
     private async Task<AccessoryLine> IssueAccessoryAsync(AccessoryRequest request, Asset mainAsset, Person person,
-        ActionContext context, string? location, CancellationToken cancellationToken)
+        ActionContext context, Domain.Locations.Location? location, CancellationToken cancellationToken)
     {
         if (request.Quantity < 1)
             throw new DomainException("Accessory quantity must be at least 1.");
@@ -103,8 +104,8 @@ public sealed class AssignmentService(GiimDbContext db)
         {
             var item = await db.StockItems.FirstOrDefaultAsync(s => s.Id == stockItemId, cancellationToken)
                 ?? throw new KeyNotFoundException("Stock item not found.");
-            if (!string.IsNullOrWhiteSpace(request.TakeFromStockAt))
-                await MoveStockAsync(item.Id, request.TakeFromStockAt, StockMovementReason.Issued, request.Quantity, context,
+            if (request.TakeFromStockAtLocationId is { } stockLocationId)
+                await MoveStockAsync(item.Id, stockLocationId, StockMovementReason.Issued, request.Quantity, context,
                     $"Issued to {person.DisplayName} with {mainAsset.DisplayName}", cancellationToken);
             return new AccessoryLine { Description = item.Name, StockItemId = item.Id, Quantity = request.Quantity };
         }
@@ -128,16 +129,20 @@ public sealed class AssignmentService(GiimDbContext db)
         db.AssetEvents.Add(accessory.Return(context with { Note = $"Returned with {mainAsset.DisplayName}" }, condition, returnedBy, holderName, []));
     }
 
-    private async Task MoveStockAsync(Guid stockItemId, string location, StockMovementReason reason, int quantity,
+    private async Task MoveStockAsync(Guid stockItemId, Guid locationId, StockMovementReason reason, int quantity,
         ActionContext context, string note, CancellationToken cancellationToken)
     {
         var item = await db.StockItems.FirstAsync(s => s.Id == stockItemId, cancellationToken);
-        var trimmed = location.Trim();
-        var current = await db.StockMovements.Where(m => m.StockItemId == stockItemId && m.Location == trimmed)
+        var location = await LoadLocationAsync(locationId, cancellationToken);
+        var current = await db.StockMovements.Where(m => m.StockItemId == stockItemId && m.LocationId == locationId)
             .SumAsync(m => m.Quantity, cancellationToken)
-            + db.StockMovements.Local.Where(m => m.StockItemId == stockItemId && m.Location == trimmed).Sum(m => m.Quantity);
-        db.StockMovements.Add(StockMovement.Record(item, trimmed, reason, quantity, current, context.Actor, note, context.TicketNumber));
+            + db.StockMovements.Local.Where(m => m.StockItemId == stockItemId && m.LocationId == locationId).Sum(m => m.Quantity);
+        db.StockMovements.Add(StockMovement.Record(item, location, reason, quantity, current, context.Actor, note, context.TicketNumber));
     }
+
+    private async Task<Domain.Locations.Location> LoadLocationAsync(Guid id, CancellationToken cancellationToken) =>
+        await db.Locations.FirstOrDefaultAsync(l => l.Id == id, cancellationToken)
+        ?? throw new DomainException("That location doesn't exist.");
 
     private async Task<Asset> LoadAssetAsync(Guid assetId, AssetStatus? expectedStatus, CancellationToken cancellationToken)
     {

@@ -122,7 +122,7 @@ public class RepairAndRetirementTests
 
         Assert.Equal(AssetStatus.InRepair, asset.Status);
         Assert.Equal("Beyond repair", e.Summary);
-        asset.Retire(Tech, "Beyond economical repair", DataSanitisation.DriveDestroyed, "IT Store Room");
+        asset.Retire(Tech, "Beyond economical repair", DataSanitisation.DriveDestroyed, null);
         Assert.Equal(AssetStatus.Retired, asset.Status);
     }
 
@@ -133,11 +133,12 @@ public class RepairAndRetirementTests
     {
         var asset = Laptop(AssetStatus.Wiped);
 
-        asset.Retire(Tech, "End of life (5 years)", DataSanitisation.Wiped, "E-waste cage");
+        var cage = new Locations.Location { Name = "E-waste cage" };
+        asset.Retire(Tech, "End of life (5 years)", DataSanitisation.Wiped, cage);
 
         Assert.Equal(AssetStatus.Retired, asset.Status);
         Assert.Equal(DataSanitisation.Wiped, asset.DataSanitisation);
-        Assert.Equal("E-waste cage", asset.Location);
+        Assert.Equal(cage.Id, asset.LocationId);
         Assert.NotNull(asset.RetiredAt);
     }
 

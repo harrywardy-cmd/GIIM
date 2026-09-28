@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { LocationSelect } from '../LocationSelect'
 
 type PersonOption = { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string }
 type AssetOption = { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string }
-type StockOption = { id: string; name: string; total: number; locations: { location: string; quantity: number }[] }
+type StockOption = { id: string; name: string; total: number; locations: { locationId: string; location: string; quantity: number }[] }
 
 type AccessoryDraft =
   | { kind: 'asset'; key: string; assetId: string; label: string }
-  | { kind: 'stock'; key: string; stockItemId: string; label: string; quantity: number; takeFromStockAt: string }
+  | { kind: 'stock'; key: string; stockItemId: string; label: string; quantity: number; fromLocationId: string; fromLocationName: string }
   | { kind: 'text'; key: string; description: string; quantity: number }
 
 export type AccessoryLine = {
@@ -56,7 +57,7 @@ export function AssignForm({
 }) {
   const [personTerm, setPersonTerm] = useState('')
   const [person, setPerson] = useState<PersonOption | null>(null)
-  const [location, setLocation] = useState('')
+  const [locationId, setLocationId] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [note, setNote] = useState('')
   const [accessories, setAccessories] = useState<AccessoryDraft[]>([])
@@ -84,8 +85,12 @@ export function AssignForm({
   const addStock = (id: string) => {
     const item = stock.find((s) => s.id === id)
     if (!item) return
-    const where = [...item.locations].sort((a, b) => b.quantity - a.quantity)[0]?.location ?? ''
-    setAccessories([...accessories, { kind: 'stock', key: key(), stockItemId: id, label: item.name, quantity: 1, takeFromStockAt: where }])
+    // Default to taking it from wherever there is most of it.
+    const where = [...item.locations].sort((a, b) => b.quantity - a.quantity)[0]
+    setAccessories([
+      ...accessories,
+      { kind: 'stock', key: key(), stockItemId: id, label: item.name, quantity: 1, fromLocationId: where?.locationId ?? '', fromLocationName: where?.location ?? '' },
+    ])
   }
 
   const update = (k: string, change: Partial<AccessoryDraft>) =>
@@ -102,12 +107,12 @@ export function AssignForm({
           expectedStatus,
           ticketNumber: ticketNumber || null,
           note: note || null,
-          location: location || null,
+          locationId: locationId || null,
           accessories: accessories.map((a) =>
             a.kind === 'asset'
               ? { assetId: a.assetId }
               : a.kind === 'stock'
-                ? { stockItemId: a.stockItemId, quantity: a.quantity, takeFromStockAt: a.takeFromStockAt || null }
+                ? { stockItemId: a.stockItemId, quantity: a.quantity, takeFromStockAtLocationId: a.fromLocationId || null }
                 : { description: a.description, quantity: a.quantity },
           ),
         },
@@ -173,13 +178,14 @@ export function AssignForm({
                 <label className="inline small">
                   <input
                     type="checkbox"
-                    checked={a.takeFromStockAt !== ''}
+                    checked={a.fromLocationId !== ''}
                     onChange={(e) => {
                       const item = stock.find((s) => s.id === a.stockItemId)
-                      update(a.key, { takeFromStockAt: e.target.checked ? (item?.locations[0]?.location ?? '') : '' })
+                      const from = e.target.checked ? item?.locations[0] : undefined
+                      update(a.key, { fromLocationId: from?.locationId ?? '', fromLocationName: from?.location ?? '' })
                     }}
                   />
-                  take from stock{a.takeFromStockAt && ` at ${a.takeFromStockAt}`}
+                  take from stock{a.fromLocationName && ` at ${a.fromLocationName}`}
                 </label>
               )}
               {a.kind === 'asset' && <span className="muted small"> (assigned too)</span>}
@@ -235,7 +241,7 @@ export function AssignForm({
       <div className="form-row">
         <label>
           Location
-          <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Melbourne Office" />
+          <LocationSelect value={locationId} onChange={setLocationId} allowNone noneLabel="Leave where it is" />
         </label>
         <label>
           Ticket
@@ -273,7 +279,7 @@ export function ReturnForm({
   const [returned, setReturned] = useState<Set<string>>(() => new Set(accessories.map((a) => a.id)))
   const [condition, setCondition] = useState('Good')
   const [returnedBy, setReturnedBy] = useState(holderName ?? '')
-  const [returnStockTo, setReturnStockTo] = useState('IT Store Room')
+  const [returnStockTo, setReturnStockTo] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -301,7 +307,7 @@ export function ReturnForm({
           ticketNumber: ticketNumber || null,
           note: note || null,
           returnedAccessoryIds: [...returned],
-          returnStockTo: hasStock ? returnStockTo || null : null,
+          returnStockToLocationId: hasStock ? returnStockTo || null : null,
         },
       })
       onDone(result.missing)
@@ -351,7 +357,12 @@ export function ReturnForm({
         {hasStock && (
           <label>
             Put stock items back at
-            <input value={returnStockTo} onChange={(e) => setReturnStockTo(e.target.value)} />
+            <LocationSelect
+              value={returnStockTo}
+              onChange={setReturnStockTo}
+              stockOnly
+              onLoaded={(l) => setReturnStockTo((current) => current || (l.find((x) => x.isActive)?.id ?? ''))}
+            />
           </label>
         )}
         <label>

@@ -10,8 +10,10 @@ type StockLevel = {
   isActive: boolean
   total: number
   isLow: boolean
-  locations: { location: string; quantity: number }[]
+  locations: { locationId: string; location: string; quantity: number }[]
 }
+
+type StockLocation = { id: string; name: string; isActive: boolean }
 
 type Movement = {
   id: string
@@ -34,7 +36,7 @@ const reasons = [
 
 export function StockPage() {
   const [levels, setLevels] = useState<StockLevel[]>([])
-  const [locations, setLocations] = useState<string[]>([])
+  const [locations, setLocations] = useState<StockLocation[]>([])
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<StockLevel | null>(null)
   const [lowOnly, setLowOnly] = useState(false)
@@ -43,7 +45,7 @@ export function StockPage() {
   const load = useCallback(() => setRefresh((n) => n + 1), [])
 
   useEffect(() => {
-    Promise.all([api<StockLevel[]>('/api/stock'), api<string[]>('/api/stock/locations')])
+    Promise.all([api<StockLevel[]>('/api/stock'), api<StockLocation[]>('/api/stock/locations')])
       .then(([l, locs]) => {
         setLevels(l)
         setLocations(locs)
@@ -172,12 +174,13 @@ function ManageItem({
   onClose,
 }: {
   item: StockLevel
-  locations: string[]
+  locations: StockLocation[]
   onChanged: () => void
   onClose: () => void
 }) {
   const [reason, setReason] = useState('Received')
-  const [location, setLocation] = useState(locations[0] ?? 'IT Store Room')
+  const [locationId, setLocationId] = useState(locations.find((l) => l.isActive)?.id ?? '')
+  const locationName = locations.find((l) => l.id === locationId)?.name ?? ''
   const [quantity, setQuantity] = useState(1)
   const [note, setNote] = useState('')
   const [ticket, setTicket] = useState('')
@@ -199,9 +202,9 @@ function ManageItem({
     try {
       await api(`/api/stock/items/${item.id}/movements`, {
         method: 'POST',
-        json: { location, reason, quantity, note: note || null, serviceDeskRequestId: ticket || null },
+        json: { locationId, reason, quantity, note: note || null, serviceDeskRequestId: ticket || null },
       })
-      setMessage(`Recorded: ${reasons.find((r) => r.value === reason)?.label}, ${quantity} at ${location}.`)
+      setMessage(`Recorded: ${reasons.find((r) => r.value === reason)?.label}, ${quantity} at ${locationName}.`)
       setError(null)
       setNote('')
       setTicket('')
@@ -246,12 +249,15 @@ function ManageItem({
         </label>
         <label>
           Location
-          <input list="stock-locations" value={location} onChange={(e) => setLocation(e.target.value)} />
-          <datalist id="stock-locations">
+          <select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
+            {!locationId && <option value="">Choose…</option>}
             {locations.map((l) => (
-              <option key={l} value={l} />
+              <option key={l.id} value={l.id} disabled={!l.isActive && reason === 'Received'}>
+                {l.name}
+                {!l.isActive && ' (closed)'}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
         <label>
           Quantity{reason === 'Adjustment' && ' (+ or -)'}
@@ -268,7 +274,7 @@ function ManageItem({
       </div>
       {error && <p className="error">{error}</p>}
       {message && <p className="success">{message}</p>}
-      <button className="primary" onClick={record} disabled={!location.trim() || quantity === 0}>
+      <button className="primary" onClick={record} disabled={!locationId || quantity === 0}>
         Record
       </button>{' '}
       <button onClick={onClose}>Close</button>

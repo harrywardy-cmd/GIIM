@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Giim.Api.Endpoints;
 
-internal enum AssetAction { MarkReady, MarkWiped, ReportLost, ReportStolen, Recover, RequestReturn, Retire, Dispose, AddNote }
+internal enum AssetAction { MarkReady, MarkWiped, ReportLost, ReportStolen, Recover, RequestReturn, Move, Retire, Dispose, AddNote }
 
 internal sealed record AssetActionRequest(
     AssetAction Action,
@@ -26,7 +26,8 @@ internal sealed record AssetActionRequest(
     DateOnly? DueDate,
     string? Reason,
     DataSanitisation? DataSanitisation,
-    string? FinalLocation,
+    Guid? FinalLocationId,
+    Guid? LocationId,
     DisposalMethod? DisposalMethod,
     string? DisposalCompany,
     string? CertificateNumber,
@@ -44,7 +45,7 @@ internal sealed record AssignRequest(
     AssetStatus? ExpectedStatus,
     string? TicketNumber,
     string? Note,
-    string? Location,
+    Guid? LocationId,
     IReadOnlyList<AccessoryRequest>? Accessories);
 
 internal sealed record ReturnRequest(
@@ -54,7 +55,7 @@ internal sealed record ReturnRequest(
     AssetCondition Condition,
     string? ReturnedBy,
     IReadOnlyList<Guid>? ReturnedAccessoryIds,
-    string? ReturnStockTo);
+    Guid? ReturnStockToLocationId);
 
 internal sealed record CreateAssetRequest(
     string SerialNumber,
@@ -62,7 +63,7 @@ internal sealed record CreateAssetRequest(
     string Model,
     Guid CategoryId,
     string? AssetTag,
-    string? Location,
+    Guid? LocationId,
     DateOnly? PurchaseDate,
     DateOnly? WarrantyExpiry,
     string? Supplier,
@@ -78,13 +79,18 @@ internal static class AssetEndpoints
     {
         var group = app.MapGroup("/api/assets");
 
-        group.MapGet("/", async (GiimDbContext db, string? search, AssetStatus? status, CancellationToken ct, int page = 1, int pageSize = 50) =>
+        group.MapGet("/", async (GiimDbContext db, string? search, AssetStatus? status, Guid? categoryId, Guid? locationId,
+            CancellationToken ct, int page = 1, int pageSize = 50) =>
         {
             pageSize = Math.Clamp(pageSize, 1, 200);
             var query = db.Assets.AsNoTracking();
 
             if (status is { } s)
                 query = query.Where(a => a.Status == s);
+            if (categoryId is { } c)
+                query = query.Where(a => a.CategoryId == c);
+            if (locationId is { } l)
+                query = query.Where(a => a.LocationId == l);
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var term = search.Trim();
@@ -102,7 +108,9 @@ internal static class AssetEndpoints
                 .Select(a => new
                 {
                     a.Id, a.AssetTag, a.SerialNumber, a.Manufacturer, a.Model,
-                    Category = a.Category!.Name, a.Status, a.Location, a.LegacyAssignedTo, a.AssignedToPersonId,
+                    Category = a.Category!.Name, a.Status, a.LocationId,
+                    Location = db.Locations.Where(x => x.Id == a.LocationId).Select(x => x.Name).FirstOrDefault(),
+                    a.LegacyAssignedTo, a.AssignedToPersonId,
                     AssignedTo = db.People.Where(p => p.Id == a.AssignedToPersonId).Select(p => p.DisplayName).FirstOrDefault(),
                     a.PurchaseDate, a.WarrantyExpiry, a.LastSeenInIntune,
                 })
@@ -119,10 +127,10 @@ internal static class AssetEndpoints
             try
             {
                 var details = new NewAsset(request.SerialNumber ?? "", request.Manufacturer ?? "", request.Model ?? "", request.CategoryId,
-                    request.AssetTag, request.Location, request.PurchaseDate, request.WarrantyExpiry, request.Supplier, request.Cost,
+                    request.AssetTag, request.PurchaseDate, request.WarrantyExpiry, request.Supplier, request.Cost,
                     request.PurchaseOrder, request.Notes);
                 var asset = await lifecycle.CreateAsync(details, new ActionContext(user.Name, request.TicketNumber),
-                    request.StartAs ?? AssetStatus.Received, ct);
+                    request.StartAs ?? AssetStatus.Received, request.LocationId, ct);
                 return Results.Created($"/api/assets/{asset.Id}", new { asset.Id, asset.SerialNumber, asset.Status });
             }
             catch (DuplicateAssetException e)
@@ -165,7 +173,11 @@ internal static class AssetEndpoints
             {
                 asset.Id, asset.AssetTag, asset.SerialNumber, asset.Manufacturer, asset.Model,
                 Category = asset.Category?.Name, asset.Category?.IsIntuneManaged, asset.Status,
-                asset.Location, asset.PurchaseDate, asset.WarrantyExpiry, asset.Supplier, asset.Cost, asset.Notes,
+                asset.LocationId,
+                Location = asset.LocationId is { } locationId
+                    ? await db.Locations.Where(l => l.Id == locationId).Select(l => l.Name).FirstOrDefaultAsync(ct)
+                    : null,
+                asset.PurchaseDate, asset.WarrantyExpiry, asset.Supplier, asset.Cost, asset.Notes,
                 asset.LegacyAssignedTo, AssignedTo = holder, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
                 NextStatuses = AssetLifecycle.NextStatuses(asset.Status),
                 Owners = owners,
@@ -202,6 +214,14 @@ internal static class AssetEndpoints
             ICurrentUser user, CancellationToken ct) => Handle(async () =>
         {
             var context = new ActionContext(user.Name, request.TicketNumber, request.Note, request.OccurredAt);
+            if (request.Action == AssetAction.Move)
+            {
+                var moved = await lifecycle.MoveAsync(id, request.ExpectedStatus,
+                    request.LocationId ?? throw new DomainException("Choose where the asset has moved to."), context, ct);
+                return Results.Ok(new { moved.Id, moved.Type, moved.FromStatus, moved.ToStatus, moved.Summary });
+            }
+
+            var finalLocation = request.Action == AssetAction.Retire ? await lifecycle.FindLocationAsync(request.FinalLocationId, ct) : null;
             Func<Asset, AssetEvent> action = request.Action switch
             {
                 AssetAction.MarkReady => a => a.MarkReady(context),
@@ -211,7 +231,7 @@ internal static class AssetEndpoints
                 AssetAction.Recover => a => a.Recover(context, request.WhereFound ?? ""),
                 AssetAction.RequestReturn => a => a.RequestReturn(context, request.DueDate),
                 AssetAction.Retire => a => a.Retire(context, request.Reason ?? "",
-                    request.DataSanitisation ?? throw new DomainException("Record how the data was dealt with."), request.FinalLocation),
+                    request.DataSanitisation ?? throw new DomainException("Record how the data was dealt with."), finalLocation),
                 AssetAction.Dispose => a => a.RecordDisposal(context,
                     request.DisposalMethod ?? throw new DomainException("Choose a disposal method."),
                     request.DisposalCompany, request.CertificateNumber,
@@ -245,7 +265,7 @@ internal static class AssetEndpoints
         {
             var context = new ActionContext(user.Name, request.TicketNumber, request.Note);
             var assignment = await assignments.AssignAsync(id, request.PersonId, request.ExpectedStatus, context,
-                request.Location, request.Accessories ?? [], ct);
+                request.LocationId, request.Accessories ?? [], ct);
             return Results.Ok(new { assignment.Id, Accessories = assignment.Accessories.Select(a => a.Label) });
         }));
 
@@ -254,7 +274,7 @@ internal static class AssetEndpoints
         {
             var context = new ActionContext(user.Name, request.TicketNumber, request.Note);
             var missing = await assignments.ReturnAsync(id, request.ExpectedStatus, context, request.Condition,
-                request.ReturnedBy, (request.ReturnedAccessoryIds ?? []).ToHashSet(), request.ReturnStockTo, ct);
+                request.ReturnedBy, (request.ReturnedAccessoryIds ?? []).ToHashSet(), request.ReturnStockToLocationId, ct);
             return Results.Ok(new { Missing = missing.Select(m => m.Label) });
         }));
     }

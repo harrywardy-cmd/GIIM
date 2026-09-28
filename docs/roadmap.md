@@ -38,7 +38,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 
 1. ✅ **Extended lifecycle statuses** (N1): Received, Ready to deploy, Stolen, Retired
 2. ✅ **Asset timeline** (N2): append-only events with technician, ticket, previous and new values
-3. **Locations** as a managed list (N8)
+3. ✅ **Locations** as a managed list (N8): Locations page, pickers everywhere, Move action, asset filters (status/category/location), import creates missing locations; stock ledger keeps original names
 4. ◐ **Asset details page** (N9) and ✅ **UI refresh** to the mockup style (N22): sidebar, top bar with global search, cards, pill badges
 5. ✅ **Assign / return workflow** (N3) with **accessory bundles** (N4): tracked accessories, stock items, condition, missing items; return requests
 6. ✅ **Repair records** (N5), ✅ **lost / stolen** (N6), ✅ **retirement and disposal** with data sanitisation and certificate (N7)

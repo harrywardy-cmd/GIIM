@@ -8,7 +8,27 @@ public class StockMovementTests
     private static readonly StockItem Bag = new() { Name = "Laptop bag", ReorderLevel = 10 };
 
     private static StockMovement Record(StockMovementReason reason, int quantity, int current = 20, string? note = null) =>
-        StockMovement.Record(Bag, "IT Store Room", reason, quantity, current, "tester", note);
+        StockMovement.Record(Bag, Store, reason, quantity, current, "tester", note);
+
+    private static readonly Locations.Location Store = new() { Name = "IT Store Room", HoldsStock = true };
+
+    [Fact]
+    public void Movement_links_to_the_location_and_keeps_its_name_as_written()
+    {
+        var movement = Record(StockMovementReason.Received, 5);
+
+        Assert.Equal(Store.Id, movement.LocationId);
+        Assert.Equal("IT Store Room", movement.Location);
+    }
+
+    [Fact]
+    public void Closed_location_can_be_emptied_but_not_restocked()
+    {
+        var closed = new Locations.Location { Name = "Old Sydney Office", IsActive = false };
+
+        Assert.Throws<DomainException>(() => StockMovement.Record(Bag, closed, StockMovementReason.Received, 5, 0, "tester"));
+        Assert.Equal(-3, StockMovement.Record(Bag, closed, StockMovementReason.Issued, 3, 3, "tester").Quantity);
+    }
 
     [Theory]
     [InlineData(StockMovementReason.Received, 5, 5)]

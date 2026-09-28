@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Plus, Printer } from 'lucide-react'
 import { api } from '../api'
 import { assetIdFromLink } from '../links'
+import { LocationSelect } from '../LocationSelect'
+import { statusLabel } from '../status'
 import { PageHeader } from '../PageHeader'
 import { StatusBadge } from '../StatusBadge'
 import { AddAssetForm } from './AddAssetForm'
@@ -30,6 +32,16 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
   const [notFound, setNotFound] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
   const [printing, setPrinting] = useState<string[] | null>(null)
+  const [status, setStatus] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [locationId, setLocationId] = useState('')
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => {
+    api<{ id: string; name: string }[]>('/api/categories')
+      .then(setCategories)
+      .catch(() => setCategories([]))
+  }, [])
 
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
 
@@ -53,8 +65,12 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
   useEffect(() => {
     if (openId) return
     const controller = new AbortController()
+    const params = new URLSearchParams({ search })
+    if (status) params.set('status', status)
+    if (categoryId) params.set('categoryId', categoryId)
+    if (locationId) params.set('locationId', locationId)
     const timer = setTimeout(() => {
-      api<Asset[]>(`/api/assets?search=${encodeURIComponent(search)}`, { signal: controller.signal })
+      api<Asset[]>(`/api/assets?${params}`, { signal: controller.signal })
         .then((data) => {
           setAssets(data)
           setError(null)
@@ -68,7 +84,7 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [search, openId])
+  }, [search, status, categoryId, locationId, openId])
 
   if (printing) return <LabelSheet assetIds={printing} onBack={() => setPrinting(null)} />
   if (openId) return <AssetDetailsPage assetId={openId} onBack={() => setOpenId(null)} />
@@ -103,18 +119,49 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
           </>
         }
       />
-      <input
-        type="search"
-        placeholder="Search or scan serial, asset tag, model or person (Enter opens an exact match)"
-        value={search}
-        onChange={(e) => {
-          setSearch(e.target.value)
-          setNotFound(null)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') lookup()
-        }}
-      />
+      <div className="form-row filters">
+        <input
+          type="search"
+          placeholder="Search or scan serial, asset tag, model or person (Enter opens an exact match)"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value)
+            setNotFound(null)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') lookup()
+          }}
+        />
+        <select aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option value="">All statuses</option>
+          {Object.entries(statusLabel).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <select aria-label="Category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
+          <option value="">All categories</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <LocationSelect value={locationId} onChange={setLocationId} allowNone noneLabel="All locations" />
+        {(status || categoryId || locationId) && (
+          <button
+            className="link"
+            onClick={() => {
+              setStatus('')
+              setCategoryId('')
+              setLocationId('')
+            }}
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
       {notFound && (
         <p className="muted small">
           No device with serial or tag “{notFound}”.{' '}

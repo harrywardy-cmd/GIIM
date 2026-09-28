@@ -3,6 +3,7 @@ using Giim.Domain.Assignments;
 using Giim.Domain.Auditing;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
+using Giim.Domain.Locations;
 using Giim.Domain.People;
 using Giim.Domain.Repairs;
 using Giim.Domain.Provisioning;
@@ -18,6 +19,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Person> People => Set<Person>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
+    public DbSet<Location> Locations => Set<Location>();
     public DbSet<AssetEvent> AssetEvents => Set<AssetEvent>();
     public DbSet<Repair> Repairs => Set<Repair>();
 
@@ -85,6 +87,13 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.HasOne(p => p.Department).WithMany().HasForeignKey(p => p.DepartmentId).OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<Location>(e =>
+        {
+            e.HasIndex(l => l.Name).IsUnique();
+            e.Property(l => l.Name).HasMaxLength(Location.MaxNameLength);
+            e.Property(l => l.Address).HasMaxLength(300);
+        });
+
         modelBuilder.Entity<Asset>(e =>
         {
             // Serial number is the key used to match SDP, Excel and Intune records.
@@ -104,6 +113,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Ignore(a => a.DisplayName);
             e.HasIndex(a => a.AssignedToPersonId);
             e.HasOne<Person>().WithMany().HasForeignKey(a => a.AssignedToPersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(a => a.LocationId);
+            e.HasOne<Location>().WithMany().HasForeignKey(a => a.LocationId).OnDelete(DeleteBehavior.Restrict);
             // Optimistic concurrency: if two technicians act on the same asset at once, the second save fails
             // instead of silently overwriting the first.
             e.Property<byte[]>("RowVersion").IsRowVersion();
@@ -184,9 +195,10 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
 
         modelBuilder.Entity<StockMovement>(e =>
         {
-            e.HasIndex(m => new { m.StockItemId, m.Location });
+            e.HasIndex(m => new { m.StockItemId, m.LocationId });
             e.HasIndex(m => m.CreatedAt);
-            e.Property(m => m.Location).HasMaxLength(150);
+            e.Property(m => m.Location).HasMaxLength(Location.MaxNameLength);
+            e.HasOne<Location>().WithMany().HasForeignKey(m => m.LocationId).OnDelete(DeleteBehavior.Restrict);
             e.Property(m => m.Note).HasMaxLength(500);
             e.Property(m => m.ServiceDeskRequestId).HasMaxLength(50);
             e.Property(m => m.Actor).HasMaxLength(200);

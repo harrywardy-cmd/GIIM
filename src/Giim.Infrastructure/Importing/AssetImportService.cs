@@ -2,6 +2,8 @@ using System.Text.Json;
 using Giim.Domain.Assets;
 using Giim.Domain.Auditing;
 using Giim.Domain.Importing;
+using Giim.Domain.Locations;
+using Giim.Infrastructure.Locations;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,13 +14,14 @@ public sealed record AssetImportResult(
     IReadOnlyList<string> Headers,
     ColumnMapping Mapping,
     ImportSummary Summary,
-    IReadOnlyList<AnalyzedRow> Rows);
+    IReadOnlyList<AnalyzedRow> Rows,
+    IReadOnlyList<string> NewLocations);
 
 /// <summary>
 /// Preview and commit for legacy register imports. Both run the same analysis, and commit
 /// only ever inserts new serials; existing assets are never overwritten by a spreadsheet.
 /// </summary>
-public sealed class AssetImportService(GiimDbContext db)
+public sealed class AssetImportService(GiimDbContext db, LocationService locations)
 {
     public async Task<AssetImportResult> PreviewAsync(Stream xlsx, ColumnMapping? mapping, CancellationToken cancellationToken)
     {
@@ -37,17 +40,26 @@ public sealed class AssetImportService(GiimDbContext db)
             .ToDictionaryAsync(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
 
         var rows = AssetImportAnalyzer.Analyze(sheet.Rows, mapping, existingSerials, existingTags, categories);
-        return new AssetImportResult(sheet.SheetName, sheet.Headers, mapping, AssetImportAnalyzer.Summarize(rows), rows);
+        var (_, newLocations) = await locations.ResolveAsync(LocationNames(rows), create: false, cancellationToken);
+        return new AssetImportResult(sheet.SheetName, sheet.Headers, mapping, AssetImportAnalyzer.Summarize(rows), rows, newLocations);
     }
+
+    /// <summary>Location names on rows that will be imported; names too long to be a real place are ignored.</summary>
+    private static IEnumerable<string> LocationNames(IEnumerable<AnalyzedRow> rows) =>
+        rows.Where(r => r.Outcome == ImportRowOutcome.New && r.Location is { Length: <= Location.MaxNameLength })
+            .Select(r => r.Location!);
 
     public async Task<AssetImportResult> CommitAsync(Stream xlsx, ColumnMapping mapping, string fileName, string actor, CancellationToken cancellationToken)
     {
         var preview = await PreviewAsync(xlsx, mapping, cancellationToken);
         var context = new ActionContext(actor);
+        var (locationsByName, _) = await locations.ResolveAsync(LocationNames(preview.Rows), create: true, cancellationToken);
         var newAssets = new List<Asset>();
         foreach (var row in preview.Rows.Where(r => r.Outcome == ImportRowOutcome.New))
         {
             var asset = row.ToAsset();
+            if (row.Location is { Length: <= Location.MaxNameLength } name && locationsByName.TryGetValue(Location.CleanName(name), out var location))
+                asset.LocationId = location.Id;
             newAssets.Add(asset);
             db.AssetEvents.Add(asset.Imported(context, $"{fileName} (row {row.RowNumber})"));
         }
@@ -68,6 +80,7 @@ public sealed class AssetImportService(GiimDbContext db)
                 imported = newAssets.Count,
                 preview.Summary.AlreadyInRegister,
                 preview.Summary.Rejected,
+                locationsCreated = preview.NewLocations,
             }),
         });
 

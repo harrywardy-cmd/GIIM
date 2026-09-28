@@ -4,6 +4,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  MapPin,
   Laptop,
   Package,
   RefreshCw,
@@ -21,6 +22,7 @@ import { AssetsPage } from './pages/AssetsPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
+import { LocationsPage } from './pages/LocationsPage'
 import { PeoplePage } from './pages/PeoplePage'
 import { ReconciliationPage } from './pages/ReconciliationPage'
 import { StockPage } from './pages/StockPage'
@@ -35,6 +37,7 @@ export type PageKey =
   | 'cases'
   | 'imports'
   | 'categories'
+  | 'locations'
 
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string }
 
@@ -61,6 +64,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
     items: [
       { key: 'imports', label: 'Import register', icon: <Upload size={18} /> },
       { key: 'categories', label: 'Asset categories', icon: <Tags size={18} /> },
+      { key: 'locations', label: 'Locations', icon: <MapPin size={18} /> },
     ],
   },
 ]
@@ -118,6 +122,7 @@ export default function App() {
     cases: <PageHeader title={label} subtitle="Onboarding and offboarding checklists arrive in Phase 2 of the roadmap." />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
+    locations: <LocationsPage />,
   }
 
   return (

@@ -35,5 +35,6 @@ app.MapIntuneEndpoints();
 app.MapPeopleEndpoints();
 app.MapDashboardEndpoints();
 app.MapLabelEndpoints();
+app.MapLocationEndpoints();
 
 app.Run();

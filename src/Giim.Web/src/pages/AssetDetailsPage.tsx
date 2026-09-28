@@ -3,6 +3,7 @@ import { Download, Printer } from 'lucide-react'
 import { api } from '../api'
 import { LabelSheet } from './LabelSheet'
 import { StatusBadge } from '../StatusBadge'
+import { LocationSelect } from '../LocationSelect'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
 import { CompleteRepairForm, DisposeForm, RetireForm, SendToRepairForm } from './RepairEndOfLifeForms'
@@ -88,7 +89,7 @@ type AssetDetails = {
   timeline: TimelineEvent[]
 }
 
-type Action = 'Assign' | 'Return' | 'RequestReturn' | 'SendToRepair' | 'CompleteRepair' | 'Retire' | 'Dispose' | 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'AddNote'
+type Action = 'Assign' | 'Return' | 'RequestReturn' | 'SendToRepair' | 'CompleteRepair' | 'Retire' | 'Dispose' | 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'Move' | 'AddNote'
 
 /** Which actions are offered depends on where the asset is in its lifecycle. */
 function availableActions(a: AssetDetails): { action: Action; label: string }[] {
@@ -108,6 +109,7 @@ function availableActions(a: AssetDetails): { action: Action; label: string }[] 
   if (next.has('Stolen')) actions.push({ action: 'ReportStolen', label: 'Report stolen' })
   if (next.has('Retired') && !a.assignedTo && !openRepair) actions.push({ action: 'Retire', label: 'Retire' })
   if (a.status === 'Retired') actions.push({ action: 'Dispose', label: 'Record disposal' })
+  if (a.status !== 'Disposed') actions.push({ action: 'Move', label: 'Move' })
   actions.push({ action: 'AddNote', label: 'Add note' })
   return actions
 }
@@ -150,7 +152,7 @@ const hiddenDetails = new Set(['PersonId', 'PreviousHolderId', 'PersonName', 'Re
 const detailText = (v: unknown): string =>
   Array.isArray(v) ? v.join(', ') : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v ?? '')
 
-const simpleActions: Action[] = ['MarkReady', 'MarkWiped', 'ReportLost', 'ReportStolen', 'Recover', 'RequestReturn', 'AddNote']
+const simpleActions: Action[] = ['MarkReady', 'MarkWiped', 'ReportLost', 'ReportStolen', 'Recover', 'RequestReturn', 'Move', 'AddNote']
 
 const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString('en-AU') : '-')
 
@@ -482,6 +484,7 @@ function ActionForm({
   const [policeReference, setPoliceReference] = useState('')
   const [whereFound, setWhereFound] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [locationId, setLocationId] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -501,6 +504,7 @@ function ActionForm({
           policeReference: policeReference || null,
           whereFound,
           dueDate: dueDate || null,
+          locationId: locationId || null,
         },
       })
       onDone()
@@ -541,6 +545,12 @@ function ActionForm({
           <label>
             Police reference
             <input value={policeReference} onChange={(e) => setPoliceReference(e.target.value)} />
+          </label>
+        )}
+        {action === 'Move' && (
+          <label>
+            Moved to (required)
+            <LocationSelect value={locationId} onChange={setLocationId} />
           </label>
         )}
         {action === 'RequestReturn' && (

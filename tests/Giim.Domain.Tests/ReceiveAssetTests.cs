@@ -9,7 +9,7 @@ public class ReceiveAssetTests
     private static readonly Guid Laptop = Guid.NewGuid();
 
     private static NewAsset Details(string serial = "7jk3l92", string manufacturer = "Dell Inc.") =>
-        new(serial, manufacturer, "Latitude 7450", Laptop, AssetTag: " it-00123 ", Location: "IT Store Room",
+        new(serial, manufacturer, "Latitude 7450", Laptop, AssetTag: " it-00123 ",
             PurchaseDate: new DateOnly(2026, 7, 14), WarrantyExpiry: new DateOnly(2029, 7, 14), Supplier: "Dell", Cost: 1849m,
             PurchaseOrder: "PO33445");
 

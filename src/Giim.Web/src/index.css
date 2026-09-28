@@ -333,3 +333,5 @@ a.button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14p
   .topbar { padding: 10px 16px; }
   main { padding: 16px; overflow-x: auto; }
 }
+
+.filters input[type='search'] { flex: 1; min-width: 260px; }

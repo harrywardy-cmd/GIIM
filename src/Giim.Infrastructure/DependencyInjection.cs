@@ -1,6 +1,7 @@
 using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Importing;
+using Giim.Infrastructure.Locations;
 using Giim.Infrastructure.People;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Stock;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<AssetLifecycleService>();
         services.AddScoped<AssignmentService>();
         services.AddScoped<RepairService>();
+        services.AddScoped<LocationService>();
         services.AddScoped<PeopleSyncService>();
         services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();

@@ -7,7 +7,6 @@ public sealed record NewAsset(
     string Model,
     Guid CategoryId,
     string? AssetTag = null,
-    string? Location = null,
     DateOnly? PurchaseDate = null,
     DateOnly? WarrantyExpiry = null,
     string? Supplier = null,

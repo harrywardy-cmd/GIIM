@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { api } from '../api'
+import { LocationSelect } from '../LocationSelect'
 
 type Category = { id: string; name: string; isActive: boolean }
 
@@ -17,7 +18,7 @@ export function AddAssetForm({ onCreated, onOpen, onCancel }: { onCreated: (id: 
     categoryId: '',
     manufacturer: '',
     model: '',
-    location: 'IT Store Room',
+    locationId: '',
     purchaseDate: '',
     warrantyExpiry: '',
     supplier: '',
@@ -79,6 +80,7 @@ export function AddAssetForm({ onCreated, onOpen, onCancel }: { onCreated: (id: 
           purchaseOrder: form.purchaseOrder || null,
           ticketNumber: form.ticketNumber || null,
           notes: form.notes || null,
+          locationId: form.locationId || null,
         }),
       })
       const body = await response.json().catch(() => null)
@@ -174,7 +176,16 @@ export function AddAssetForm({ onCreated, onOpen, onCancel }: { onCreated: (id: 
       <div className="form-row">
         <label>
           Location
-          <input value={form.location} onChange={(e) => set('location', e.target.value)} onKeyDown={nextOnEnter} />
+          <LocationSelect
+            value={form.locationId}
+            onChange={(id) => set('locationId', id)}
+            allowNone
+            onLoaded={(l) => {
+              // New deliveries usually land in the IT store room.
+              const store = l.find((x) => x.kind === 'ItStoreRoom' && x.isActive)
+              if (store) setForm((f) => (f.locationId ? f : { ...f, locationId: store.id }))
+            }}
+          />
         </label>
         <label>
           Ticket

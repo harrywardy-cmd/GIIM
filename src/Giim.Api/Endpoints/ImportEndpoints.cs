@@ -76,6 +76,7 @@ internal static class ImportEndpoints
         result.Headers,
         Mapping = result.Mapping.Columns,
         result.Summary,
+        result.NewLocations,
         // The UI needs the rows that need attention; clean rows are summarised by the counts.
         Rows = result.Rows
             .Where(r => r.Outcome != ImportRowOutcome.New || r.Issues.Count > 0)

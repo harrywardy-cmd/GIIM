@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { api } from '../api'
+import { LocationSelect } from '../LocationSelect'
 
 type Done = () => void
 
@@ -190,7 +191,7 @@ export function RetireForm({ assetId, status, onDone, onCancel }: { assetId: str
   const options = sanitisationOptions.filter((o) => o.inHand !== missing)
   const [reason, setReason] = useState(missing ? 'Written off' : '')
   const [dataSanitisation, setDataSanitisation] = useState(options[0].value)
-  const [finalLocation, setFinalLocation] = useState('')
+  const [finalLocationId, setFinalLocationId] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const { error, saving, submit } = useSubmit(onDone)
 
@@ -208,7 +209,7 @@ export function RetireForm({ assetId, status, onDone, onCancel }: { assetId: str
           expectedStatus: status,
           reason,
           dataSanitisation,
-          finalLocation: finalLocation || null,
+          finalLocationId: finalLocationId || null,
           ticketNumber: ticketNumber || null,
         })
       }
@@ -231,7 +232,7 @@ export function RetireForm({ assetId, status, onDone, onCancel }: { assetId: str
         {!missing && (
           <label>
             Where it is now
-            <input value={finalLocation} onChange={(e) => setFinalLocation(e.target.value)} placeholder="e.g. E-waste cage" />
+            <LocationSelect value={finalLocationId} onChange={setFinalLocationId} allowNone noneLabel="Leave where it is" />
           </label>
         )}
         <label>

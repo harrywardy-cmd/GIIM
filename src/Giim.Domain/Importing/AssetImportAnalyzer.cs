@@ -57,7 +57,6 @@ public sealed record AnalyzedRow(
             Manufacturer = Manufacturer!,
             Model = Model!,
             CategoryId = CategoryId!.Value,
-            Location = Location,
             PurchaseDate = PurchaseDate,
             WarrantyExpiry = WarrantyExpiry,
             Supplier = Supplier,

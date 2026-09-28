@@ -22,6 +22,7 @@ type Mapping = Partial<Record<string, string>>
 
 type Preview = {
   sheetName: string
+  newLocations: string[]
   headers: string[]
   mapping: Mapping
   summary: {
@@ -161,6 +162,14 @@ export function ImportPage() {
           </button>
 
           <h3>2. Review</h3>
+          {preview.newLocations.length > 0 && (
+            <p className="small">
+              <strong>
+                {preview.newLocations.length} new location{preview.newLocations.length === 1 ? '' : 's'} will be created:
+              </strong>{' '}
+              {preview.newLocations.join(', ')}. Check the spelling; you can rename or tidy them on the Locations page afterwards.
+            </p>
+          )}
           <div className="stats">
             <Stat label="Rows in sheet" value={preview.summary.totalRows} />
             <Stat label="Will be imported" value={preview.summary.toImport} />

@@ -17,14 +17,18 @@ public sealed class DuplicateAssetException(Guid existingAssetId, string message
 /// <summary>Applies lifecycle actions and stores each one's timeline event in the same transaction.</summary>
 public sealed class AssetLifecycleService(GiimDbContext db)
 {
-    public async Task<Asset> CreateAsync(NewAsset details, ActionContext context, AssetStatus startAs, CancellationToken cancellationToken)
+    public async Task<Asset> CreateAsync(NewAsset details, ActionContext context, AssetStatus startAs, Guid? locationId,
+        CancellationToken cancellationToken)
     {
         var category = await db.AssetCategories.FirstOrDefaultAsync(c => c.Id == details.CategoryId, cancellationToken)
             ?? throw new DomainException("Choose a category.");
         if (!category.IsActive)
             throw new DomainException($"The {category.Name} category is no longer in use.");
+        var location = locationId is { } id
+            ? await db.Locations.FirstOrDefaultAsync(l => l.Id == id, cancellationToken) ?? throw new DomainException("That location doesn't exist.")
+            : null;
 
-        var (asset, assetEvent) = Asset.Receive(details, context, startAs);
+        var (asset, assetEvent) = Asset.Receive(details, context, startAs, location);
 
         if (await db.Assets.Where(a => a.SerialNumber == asset.SerialNumber).Select(a => (Guid?)a.Id).FirstOrDefaultAsync(cancellationToken) is { } existing)
             throw new DuplicateAssetException(existing, $"Serial {asset.SerialNumber} is already recorded.");
@@ -96,6 +100,24 @@ public sealed class AssetLifecycleService(GiimDbContext db)
 
         return assetEvent;
     }
+
+    public async Task<AssetEvent> MoveAsync(Guid assetId, AssetStatus? expectedStatus, Guid locationId, ActionContext context,
+        CancellationToken cancellationToken)
+    {
+        var location = await db.Locations.FirstOrDefaultAsync(l => l.Id == locationId, cancellationToken)
+            ?? throw new DomainException("That location doesn't exist.");
+        var previous = await db.Assets.Where(a => a.Id == assetId)
+            .Select(a => db.Locations.Where(l => l.Id == a.LocationId).Select(l => l.Name).FirstOrDefault())
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return await ApplyAsync(assetId, expectedStatus, a => a.MoveTo(context, location, previous), cancellationToken);
+    }
+
+    /// <summary>Loads a location for an action that needs one (e.g. retire to the e-waste cage); null stays null.</summary>
+    public async Task<Domain.Locations.Location?> FindLocationAsync(Guid? locationId, CancellationToken cancellationToken) =>
+        locationId is { } id
+            ? await db.Locations.FirstOrDefaultAsync(l => l.Id == id, cancellationToken) ?? throw new DomainException("That location doesn't exist.")
+            : null;
 
     public async Task<IReadOnlyList<AssetEvent>> GetTimelineAsync(Guid assetId, CancellationToken cancellationToken) =>
         await db.AssetEvents.AsNoTracking()

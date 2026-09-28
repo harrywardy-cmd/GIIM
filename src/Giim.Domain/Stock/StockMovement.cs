@@ -15,6 +15,11 @@ public enum StockMovementReason
 public sealed class StockMovement : Entity
 {
     public Guid StockItemId { get; init; }
+
+    /// <summary>The managed location; levels are counted per location.</summary>
+    public Guid LocationId { get; init; }
+
+    /// <summary>The location's name when the movement was recorded, kept as written for the audit trail.</summary>
     public required string Location { get; init; }
 
     /// <summary>Signed change: positive adds stock, negative removes it.</summary>
@@ -30,13 +35,15 @@ public sealed class StockMovement : Entity
     /// Adjustment, which is signed; the reason decides the direction so a typo can't reverse a delivery.
     /// </summary>
     public static StockMovement Record(
-        StockItem item, string location, StockMovementReason reason, int quantity, int currentLevelAtLocation,
+        StockItem item, Locations.Location location, StockMovementReason reason, int quantity, int currentLevelAtLocation,
         string actor, string? note = null, string? serviceDeskRequestId = null)
     {
         ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(location);
 
-        if (string.IsNullOrWhiteSpace(location))
-            throw new DomainException("A location is required.");
+        // A closed location can still be emptied (issued, written off, adjusted) but can't take new deliveries.
+        if (reason == StockMovementReason.Received)
+            location.EnsureActive();
         if (quantity == 0)
             throw new DomainException("Quantity cannot be zero.");
         if (reason != StockMovementReason.Adjustment && quantity < 0)
@@ -52,12 +59,13 @@ public sealed class StockMovement : Entity
 
         if (currentLevelAtLocation + signed < 0)
             throw new DomainException(
-                $"Only {currentLevelAtLocation} {item.Name} at {location}; cannot remove {Math.Abs(signed)}.");
+                $"Only {currentLevelAtLocation} {item.Name} at {location.Name}; cannot remove {Math.Abs(signed)}.");
 
         return new StockMovement
         {
             StockItemId = item.Id,
-            Location = location.Trim(),
+            LocationId = location.Id,
+            Location = location.Name,
             Quantity = signed,
             Reason = reason,
             Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),

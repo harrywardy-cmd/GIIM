@@ -22,11 +22,12 @@ public class AssignmentTests
     {
         var laptop = Laptop();
 
-        var e = laptop.Assign(Tech, Harry, "Harry Ward", "Melbourne Office", ["Dell Dock WD22TB4", "Charger"]);
+        var melbourne = new Locations.Location { Name = "Melbourne Office" };
+        var e = laptop.Assign(Tech, Harry, "Harry Ward", melbourne, ["Dell Dock WD22TB4", "Charger"]);
 
         Assert.Equal(AssetStatus.Assigned, laptop.Status);
         Assert.Equal(Harry, laptop.AssignedToPersonId);
-        Assert.Equal("Melbourne Office", laptop.Location);
+        Assert.Equal(melbourne.Id, laptop.LocationId);
         Assert.Equal("Assigned to Harry Ward", e.Summary);
         var details = JsonDocument.Parse(e.DetailsJson!).RootElement;
         Assert.Equal(2, details.GetProperty("Accessories").GetArrayLength());
