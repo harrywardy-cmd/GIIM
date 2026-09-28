@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+import { api } from '../api'
+import { StatusBadge } from '../StatusBadge'
+import { AssetDetailsPage } from './AssetDetailsPage'
 
 type Asset = {
   id: string
@@ -15,13 +18,14 @@ export function AssetsPage() {
   const [search, setSearch] = useState('')
   const [assets, setAssets] = useState<Asset[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
   useEffect(() => {
+    if (openId) return
     const controller = new AbortController()
     const timer = setTimeout(() => {
-      fetch(`/api/assets?search=${encodeURIComponent(search)}`, { signal: controller.signal })
-        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`API returned ${r.status}`))))
-        .then((data: Asset[]) => {
+      api<Asset[]>(`/api/assets?search=${encodeURIComponent(search)}`, { signal: controller.signal })
+        .then((data) => {
           setAssets(data)
           setError(null)
         })
@@ -34,7 +38,9 @@ export function AssetsPage() {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [search])
+  }, [search, openId])
+
+  if (openId) return <AssetDetailsPage assetId={openId} onBack={() => setOpenId(null)} />
 
   return (
     <>
@@ -59,18 +65,28 @@ export function AssetsPage() {
         </thead>
         <tbody>
           {assets.map((a) => (
-            <tr key={a.id}>
-              <td>{a.assetTag ?? '-'}</td>
+            <tr key={a.id} className="clickable" onClick={() => setOpenId(a.id)}>
+              <td>
+                <button className="link" onClick={() => setOpenId(a.id)}>
+                  {a.assetTag ?? a.serialNumber}
+                </button>
+              </td>
               <td>{a.serialNumber}</td>
-              <td>{a.manufacturer} {a.model}</td>
+              <td>
+                {a.manufacturer} {a.model}
+              </td>
               <td>{a.category}</td>
-              <td>{a.status}</td>
+              <td>
+                <StatusBadge status={a.status} />
+              </td>
               <td>{a.location ?? '-'}</td>
             </tr>
           ))}
           {assets.length === 0 && !error && (
             <tr>
-              <td colSpan={6} className="muted">No assets yet. They will appear once the import is built.</td>
+              <td colSpan={6} className="muted">
+                No assets found.
+              </td>
             </tr>
           )}
         </tbody>

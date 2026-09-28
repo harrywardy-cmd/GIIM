@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Giim.Api.Security;
 using Giim.Domain.Importing;
 using Giim.Infrastructure.Importing;
 using Microsoft.AspNetCore.Http.Json;
@@ -34,7 +35,7 @@ internal static class ImportEndpoints
         });
 
         group.MapPost("/commit", async (IFormFile file, [Microsoft.AspNetCore.Mvc.FromForm] string mapping,
-            AssetImportService imports, IOptions<JsonOptions> json, HttpContext http, CancellationToken ct) =>
+            AssetImportService imports, IOptions<JsonOptions> json, ICurrentUser user, CancellationToken ct) =>
         {
             if (Validate(file) is { } problem) return problem;
 
@@ -42,8 +43,7 @@ internal static class ImportEndpoints
             {
                 var columnMapping = ParseMapping(mapping, json.Value.SerializerOptions)
                     ?? throw new InvalidDataException("A column mapping is required to import.");
-                // Until Okta SSO is added the actor is a placeholder; the audit entry records it either way.
-                var actor = http.User.Identity?.Name ?? "local-dev";
+                var actor = user.Name;
 
                 await using var stream = file.OpenReadStream();
                 var result = await imports.CommitAsync(stream, columnMapping, file.FileName, actor, ct);

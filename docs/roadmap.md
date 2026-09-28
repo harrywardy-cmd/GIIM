@@ -36,12 +36,12 @@ Goal: one trustworthy list of who has what.
 
 Goal: every asset has a complete, append-only history, and every action records the technician and ticket.
 
-1. **Extended lifecycle statuses** (N1): Received, Ready to deploy, Stolen, Retired
-2. **Asset timeline** (N2): append-only events with technician, ticket, previous and new values
+1. ✅ **Extended lifecycle statuses** (N1): Received, Ready to deploy, Stolen, Retired
+2. ✅ **Asset timeline** (N2): append-only events with technician, ticket, previous and new values
 3. **Locations** as a managed list (N8)
-4. **Asset details page** (N9) and **UI refresh** to the mockup style (N22)
+4. ◐ **Asset details page** (N9, first version with timeline and actions) and **UI refresh** to the mockup style (N22)
 5. **Assign / return workflow** (N3) with **accessory bundles** (N4): condition, missing items
-6. **Repair records** (N5), **lost / stolen** (N6), **retirement and disposal** with wipe confirmation and certificate (N7)
+6. **Repair records** (N5), ✅ **lost / stolen** (N6), **retirement and disposal** with wipe confirmation and certificate (N7)
 7. **Global search** including ticket number (N10) and a **tickets view** (N20)
 8. **QR codes** (N11): PNG download per asset and a printable A4 label sheet (no label printer); mobile scan-to-open
    asset page. **Photos and attachments** (N12)

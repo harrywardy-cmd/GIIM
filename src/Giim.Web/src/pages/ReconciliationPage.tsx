@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { statusText } from '../status'
 
 type Finding = 'IntuneOnly' | 'NotInIntune' | 'Stale' | 'OwnerMismatch' | 'StatusConflict'
 
@@ -179,7 +180,7 @@ export function ReconciliationPage() {
                   <td className="small">
                     {r.category ? (
                       <>
-                        {r.category} · {r.status}
+                        {r.category} · {statusText(r.status)}
                         <div className="muted">{r.registerOwner ?? 'no owner recorded'}</div>
                       </>
                     ) : (

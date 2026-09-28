@@ -44,9 +44,6 @@ public sealed record ReconciliationOptions(int StaleAfterDays = 90, int Recently
 /// </summary>
 public static class Reconciler
 {
-    private static readonly AssetStatus[] NotExpectedInUse =
-        [AssetStatus.InStock, AssetStatus.Returned, AssetStatus.Wiped, AssetStatus.Lost, AssetStatus.Disposed];
-
     public static IReadOnlyList<ReconciliationRow> Reconcile(
         IEnumerable<RegisterEntry> register, IEnumerable<IntuneEntry> intune, DateTimeOffset now, ReconciliationOptions? options = null)
     {
@@ -81,7 +78,7 @@ public static class Reconciler
                 if (sinceSync > TimeSpan.FromDays(options.StaleAfterDays))
                     findings.Add(Finding.Stale);
 
-                if (NotExpectedInUse.Contains(asset.Status) && device.UserPrincipalName is not null
+                if (AssetLifecycle.IsOutOfUse(asset.Status) && device.UserPrincipalName is not null
                     && sinceSync <= TimeSpan.FromDays(options.RecentlyActiveDays))
                     findings.Add(Finding.StatusConflict);
 

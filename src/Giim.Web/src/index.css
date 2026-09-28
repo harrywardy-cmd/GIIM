@@ -92,6 +92,44 @@ button.stat-button.selected { border-color: var(--accent); box-shadow: 0 0 0 1px
 .pager { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .pager button { margin-top: 0; }
 
+tr.clickable { cursor: pointer; }
+tr.clickable:hover td { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+button.link { border: 0; background: none; padding: 0; margin: 0; color: var(--accent); cursor: pointer; font: inherit; }
+
+.status {
+  display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  background: color-mix(in srgb, var(--muted) 15%, transparent); color: var(--text);
+}
+.status-Assigned { background: #dcecff; color: #174a8c; }
+.status-ReadyToDeploy, .status-Wiped { background: #dcf5e3; color: #1b6b35; }
+.status-Received, .status-Returned, .status-ReturnRequested { background: #fff4d6; color: #7a5200; }
+.status-InRepair { background: #efe2ff; color: #5a2a99; }
+.status-Lost, .status-Stolen { background: #fde0e0; color: #9b1c1c; }
+.status-Retired, .status-Disposed { background: #e8e8ec; color: #55555f; }
+
+.details-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-top: 16px; }
+.details-header h2 { margin-bottom: 4px; }
+.details-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.action-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.action-buttons button { margin-top: 0; }
+.action-form { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 8px; }
+
+.timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--border); }
+.timeline li { position: relative; padding: 0 0 18px 12px; }
+.timeline li::before {
+  content: ''; position: absolute; left: -23px; top: 4px; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--accent); border: 2px solid var(--surface);
+}
+.timeline-when { font-size: 12px; color: var(--muted); }
+.timeline-note { margin-top: 4px; padding: 4px 8px; border-radius: 4px; background: color-mix(in srgb, var(--muted) 10%, transparent); }
+
+@media (max-width: 900px) {
+  .details-grid { grid-template-columns: 1fr; }
+}
+
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .nav { border-right: 0; border-bottom: 1px solid var(--border); }

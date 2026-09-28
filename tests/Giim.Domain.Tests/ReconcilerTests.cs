@@ -45,7 +45,7 @@ public class ReconcilerTests
     public void Monitors_and_spares_are_not_expected_in_intune()
     {
         var rows = Reconciler.Reconcile(
-            [Asset("MON1", intuneManaged: false, category: "Monitor"), Asset("SPARE1", AssetStatus.InStock, owner: null)],
+            [Asset("MON1", intuneManaged: false, category: "Monitor"), Asset("SPARE1", AssetStatus.ReadyToDeploy, owner: null)],
             [], Now);
 
         Assert.All(rows, r => Assert.True(r.IsClean));
@@ -63,7 +63,7 @@ public class ReconcilerTests
 
     [Theory]
     [InlineData(AssetStatus.Returned)]
-    [InlineData(AssetStatus.InStock)]
+    [InlineData(AssetStatus.ReadyToDeploy)]
     [InlineData(AssetStatus.Lost)]
     [InlineData(AssetStatus.Disposed)]
     public void Recently_used_device_the_register_thinks_is_back_is_a_conflict(AssetStatus status)

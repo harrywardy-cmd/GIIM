@@ -64,7 +64,7 @@ public sealed record AnalyzedRow(
             Notes = Notes,
             LegacyAssignedTo = AssignedTo,
         };
-        asset.SetStatusFromMigration(Status ?? (AssignedTo is null ? AssetStatus.InStock : AssetStatus.Assigned));
+        asset.SetStatusFromMigration(Status ?? (AssignedTo is null ? AssetStatus.ReadyToDeploy : AssetStatus.Assigned));
         return asset;
     }
 }

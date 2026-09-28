@@ -17,6 +17,30 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Person> People => Set<Person>();
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
+    public DbSet<AssetEvent> AssetEvents => Set<AssetEvent>();
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        GuardAppendOnly();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        GuardAppendOnly();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    /// <summary>History tables are append-only: a change or delete is a bug, so fail loudly.</summary>
+    private void GuardAppendOnly()
+    {
+        var tampered = ChangeTracker.Entries()
+            .Where(e => e.Entity is AssetEvent or AuditEntry or StockMovement)
+            .FirstOrDefault(e => e.State is EntityState.Modified or EntityState.Deleted);
+
+        if (tampered is not null)
+            throw new InvalidOperationException($"{tampered.Entity.GetType().Name} records are append-only and cannot be {tampered.State.ToString().ToLowerInvariant()}.");
+    }
     public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<ManagedDevice> ManagedDevices => Set<ManagedDevice>();
@@ -70,6 +94,23 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(a => a.AssetTag).HasMaxLength(50);
             e.Property(a => a.LegacyAssignedTo).HasMaxLength(200);
             e.HasOne(a => a.Category).WithMany().HasForeignKey(a => a.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.Ignore(a => a.DisplayName);
+            // Optimistic concurrency: if two technicians act on the same asset at once, the second save fails
+            // instead of silently overwriting the first.
+            e.Property<byte[]>("RowVersion").IsRowVersion();
+        });
+
+        modelBuilder.Entity<AssetEvent>(e =>
+        {
+            e.ToTable("AssetEvents");
+            e.HasIndex(x => new { x.AssetId, x.OccurredAt });
+            e.HasIndex(x => x.TicketNumber);
+            e.HasIndex(x => x.Actor);
+            e.Property(x => x.Actor).HasMaxLength(200);
+            e.Property(x => x.TicketNumber).HasMaxLength(50);
+            e.Property(x => x.Summary).HasMaxLength(500);
+            e.Property(x => x.Note).HasMaxLength(2000);
+            e.HasOne<Asset>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AssetCategory>(e =>

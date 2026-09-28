@@ -1,3 +1,4 @@
+using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Importing;
 using Giim.Infrastructure.Persistence;
@@ -16,6 +17,7 @@ public static class DependencyInjection
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AssetImportService>();
+        services.AddScoped<AssetLifecycleService>();
         services.AddScoped<StockService>();
         services.AddScoped<IntuneSyncService>();
         services.AddScoped<ReconciliationService>();

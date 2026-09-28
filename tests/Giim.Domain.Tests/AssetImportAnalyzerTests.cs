@@ -123,6 +123,6 @@ public class AssetImportAnalyzerTests
         Assert.Equal(AssetStatus.Returned, rows[0].ToAsset().Status);
         Assert.Equal(AssetStatus.Assigned, rows[1].ToAsset().Status);
         Assert.Equal("Grace Brown", rows[1].ToAsset().LegacyAssignedTo);
-        Assert.Equal(AssetStatus.InStock, rows[2].ToAsset().Status);
+        Assert.Equal(AssetStatus.ReadyToDeploy, rows[2].ToAsset().Status);
     }
 }

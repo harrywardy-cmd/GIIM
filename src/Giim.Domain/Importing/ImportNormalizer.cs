@@ -72,11 +72,15 @@ public static class ImportNormalizer
         {
             null or "" => null,
             "in use" or "assigned" or "deployed" or "issued" => AssetStatus.Assigned,
-            "spare" or "in stock" or "in store" or "available" or "stock" => AssetStatus.InStock,
+            "spare" or "in stock" or "in store" or "available" or "stock" or "ready" or "ready to deploy" => AssetStatus.ReadyToDeploy,
+            "received" or "new" or "unboxed" => AssetStatus.Received,
             "returned" => AssetStatus.Returned,
+            "wiped" or "reimaged" => AssetStatus.Wiped,
             "repair" or "in repair" or "rma" or "warranty" => AssetStatus.InRepair,
-            "lost" or "stolen" or "missing" => AssetStatus.Lost,
-            "disposed" or "retired" or "written off" or "e-waste" => AssetStatus.Disposed,
+            "lost" or "missing" => AssetStatus.Lost,
+            "stolen" => AssetStatus.Stolen,
+            "retired" or "end of life" or "eol" => AssetStatus.Retired,
+            "disposed" or "written off" or "e-waste" => AssetStatus.Disposed,
             _ => null,
         };
 

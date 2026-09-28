@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Giim.Domain.Assets;
 using Giim.Domain.Auditing;
 using Giim.Domain.Importing;
 using Giim.Infrastructure.Persistence;
@@ -42,9 +43,16 @@ public sealed class AssetImportService(GiimDbContext db)
     public async Task<AssetImportResult> CommitAsync(Stream xlsx, ColumnMapping mapping, string fileName, string actor, CancellationToken cancellationToken)
     {
         var preview = await PreviewAsync(xlsx, mapping, cancellationToken);
-        var newAssets = preview.Rows.Where(r => r.Outcome == ImportRowOutcome.New).Select(r => r.ToAsset()).ToList();
+        var context = new ActionContext(actor);
+        var newAssets = new List<Asset>();
+        foreach (var row in preview.Rows.Where(r => r.Outcome == ImportRowOutcome.New))
+        {
+            var asset = row.ToAsset();
+            newAssets.Add(asset);
+            db.AssetEvents.Add(asset.Imported(context, $"{fileName} (row {row.RowNumber})"));
+        }
 
-        // One SaveChanges = one transaction: the assets and the audit entry are saved together or not at all.
+        // One SaveChanges = one transaction: assets, their first timeline entry and the audit entry are saved together.
         db.Assets.AddRange(newAssets);
         db.AuditEntries.Add(new AuditEntry
         {

@@ -1,3 +1,4 @@
+using Giim.Api.Security;
 using Giim.Domain.Common;
 using Giim.Domain.Stock;
 using Giim.Infrastructure.Persistence;
@@ -57,10 +58,9 @@ internal static class StockEndpoints
             Results.Ok(await stock.GetHistoryAsync(id, ct)));
 
         group.MapPost("/items/{id:guid}/movements", async (Guid id, StockMovementRequest request, StockService stock,
-            HttpContext http, CancellationToken ct) =>
+            ICurrentUser user, CancellationToken ct) =>
         {
-            // Until Okta SSO is added the actor is a placeholder; the ledger and audit log record it either way.
-            var actor = http.User.Identity?.Name ?? "local-dev";
+            var actor = user.Name;
             try
             {
                 var movement = await stock.RecordAsync(id, request.Location ?? "", request.Reason, request.Quantity,

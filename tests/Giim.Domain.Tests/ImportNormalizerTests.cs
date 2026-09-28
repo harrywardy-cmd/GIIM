@@ -46,7 +46,7 @@ public class ImportNormalizerTests
 
     [Theory]
     [InlineData("In Use", AssetStatus.Assigned)]
-    [InlineData("Spare", AssetStatus.InStock)]
+    [InlineData("Spare", AssetStatus.ReadyToDeploy)]
     [InlineData("RMA", AssetStatus.InRepair)]
     [InlineData("written off", AssetStatus.Disposed)]
     public void Legacy_statuses_map_onto_the_lifecycle(string raw, AssetStatus expected)
