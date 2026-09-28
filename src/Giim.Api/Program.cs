@@ -37,11 +37,19 @@ assets.MapGet("/", async (GiimDbContext db, string? search, int page = 1, int pa
         .OrderBy(a => a.SerialNumber)
         .Skip((Math.Max(page, 1) - 1) * pageSize)
         .Take(pageSize)
+        .Select(a => new
+        {
+            a.Id, a.AssetTag, a.SerialNumber, a.Manufacturer, a.Model,
+            Category = a.Category!.Name, a.Status, a.Location, a.LegacyAssignedTo,
+            a.PurchaseDate, a.WarrantyExpiry, a.LastSeenInIntune,
+        })
         .ToListAsync();
 
     return Results.Ok(items);
 });
 
 app.MapImportEndpoints();
+app.MapCategoryEndpoints();
+app.MapStockEndpoints();
 
 app.Run();

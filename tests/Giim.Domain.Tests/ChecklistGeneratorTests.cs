@@ -20,7 +20,7 @@ public class ChecklistGeneratorTests
     public void Onboarding_includes_every_profile_item_linked_to_its_source()
     {
         var profile = new RoleProfile { Name = "Finance - Default" };
-        var laptop = new ProfileItem { Type = ProfileItemType.Hardware, Description = "Standard laptop", HardwareCategory = AssetCategory.Laptop };
+        var laptop = new ProfileItem { Type = ProfileItemType.Hardware, Description = "Standard laptop" };
         var xero = new ProfileItem { Type = ProfileItemType.Application, Description = "Xero", GroupName = "APP-Xero-Users" };
         profile.Items.AddRange([laptop, xero]);
 
@@ -44,13 +44,39 @@ public class ChecklistGeneratorTests
     [Fact]
     public void Offboarding_is_built_from_actual_assignments()
     {
-        var monitor = new Asset { SerialNumber = "CN-0ABC", Manufacturer = "Dell", Model = "P2723", Category = AssetCategory.Monitor };
+        var monitor = new Asset { SerialNumber = "CN-0ABC", Manufacturer = "Dell", Model = "P2723", Category = new AssetCategory { Name = "Monitor" } };
         var visio = new Application { Name = "Visio" };
 
         var serviceCase = ChecklistGenerator.ForOffboarding(NewPerson(), [monitor], [visio], "SDP-20001");
 
         Assert.Contains(serviceCase.Tasks, t => t.SourceId == monitor.Id && t.Title.Contains("CN-0ABC"));
         Assert.Contains(serviceCase.Tasks, t => t.SourceId == visio.Id && t.Kind == TaskKind.Manual);
+    }
+
+    [Fact]
+    public void Offboarding_skips_categories_not_returned()
+    {
+        var headset = new Asset
+        {
+            SerialNumber = "HS-001", Manufacturer = "Jabra", Model = "Evolve2",
+            Category = new AssetCategory { Name = "Peripheral", ReturnOnOffboarding = false },
+        };
+
+        var serviceCase = ChecklistGenerator.ForOffboarding(NewPerson(), [headset], [], null);
+
+        Assert.DoesNotContain(serviceCase.Tasks, t => t.SourceId == headset.Id);
+    }
+
+    [Fact]
+    public void Onboarding_includes_stock_items()
+    {
+        var profile = new RoleProfile { Name = "Finance - Default" };
+        var bag = new ProfileItem { Type = ProfileItemType.StockItem, Description = "Laptop bag" };
+        profile.Items.Add(bag);
+
+        var serviceCase = ChecklistGenerator.ForOnboarding(NewPerson(), profile, null);
+
+        Assert.Contains(serviceCase.Tasks, t => t.SourceId == bag.Id && t.Title == "Issue from stock: Laptop bag");
     }
 
     [Fact]

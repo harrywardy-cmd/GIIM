@@ -5,6 +5,7 @@ using Giim.Domain.Cases;
 using Giim.Domain.People;
 using Giim.Domain.Provisioning;
 using Giim.Domain.Software;
+using Giim.Domain.Stock;
 using Microsoft.EntityFrameworkCore;
 
 namespace Giim.Infrastructure.Persistence;
@@ -14,6 +15,9 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Person> People => Set<Person>();
     public DbSet<Asset> Assets => Set<Asset>();
+    public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
+    public DbSet<StockItem> StockItems => Set<StockItem>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<RoleProfile> RoleProfiles => Set<RoleProfile>();
@@ -62,6 +66,36 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(a => a.SerialNumber).HasMaxLength(100);
             e.Property(a => a.AssetTag).HasMaxLength(50);
             e.Property(a => a.LegacyAssignedTo).HasMaxLength(200);
+            e.HasOne(a => a.Category).WithMany().HasForeignKey(a => a.CategoryId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AssetCategory>(e =>
+        {
+            e.ToTable("AssetCategories");
+            e.HasIndex(c => c.Name).IsUnique();
+            e.Property(c => c.Name).HasMaxLength(100);
+            e.HasData(AssetCategory.Defaults.Select(c => new
+            {
+                c.Id, c.CreatedAt, c.Name, c.IsIntuneManaged, c.ReturnOnOffboarding, c.IsActive,
+            }));
+        });
+
+        modelBuilder.Entity<StockItem>(e =>
+        {
+            e.HasIndex(s => s.Name).IsUnique();
+            e.Property(s => s.Name).HasMaxLength(150);
+            e.Property(s => s.Description).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<StockMovement>(e =>
+        {
+            e.HasIndex(m => new { m.StockItemId, m.Location });
+            e.HasIndex(m => m.CreatedAt);
+            e.Property(m => m.Location).HasMaxLength(150);
+            e.Property(m => m.Note).HasMaxLength(500);
+            e.Property(m => m.ServiceDeskRequestId).HasMaxLength(50);
+            e.Property(m => m.Actor).HasMaxLength(200);
+            e.HasOne<StockItem>().WithMany().HasForeignKey(m => m.StockItemId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Application>(e =>

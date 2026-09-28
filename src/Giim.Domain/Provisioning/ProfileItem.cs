@@ -1,9 +1,8 @@
-using Giim.Domain.Assets;
 using Giim.Domain.Common;
 
 namespace Giim.Domain.Provisioning;
 
-public enum ProfileItemType { Application, Hardware, OktaGroup, LicenceGroup, ManualTask }
+public enum ProfileItemType { Application, Hardware, StockItem, OktaGroup, LicenceGroup, ManualTask }
 
 public sealed class ProfileItem : Entity
 {
@@ -12,7 +11,12 @@ public sealed class ProfileItem : Entity
     public required string Description { get; set; }
 
     public Guid? ApplicationId { get; set; }
-    public AssetCategory? HardwareCategory { get; set; }
+
+    /// <summary>Asset category for Hardware items (e.g. Laptop).</summary>
+    public Guid? CategoryId { get; set; }
+
+    /// <summary>Stock item for StockItem items (e.g. Laptop bag).</summary>
+    public Guid? StockItemId { get; set; }
 
     /// <summary>Group name for OktaGroup / LicenceGroup items.</summary>
     public string? GroupName { get; set; }

@@ -1,19 +1,24 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { AssetsPage } from './pages/AssetsPage'
+import { CategoriesPage } from './pages/CategoriesPage'
 import { ImportPage } from './pages/ImportPage'
+import { StockPage } from './pages/StockPage'
 
-type PageKey = 'assets' | 'people' | 'cases' | 'profiles' | 'imports'
+type PageKey = 'assets' | 'stock' | 'people' | 'cases' | 'profiles' | 'imports' | 'categories'
 
-const pages: { key: PageKey; label: string; phase: number }[] = [
-  { key: 'assets', label: 'Assets', phase: 1 },
+const pages: { key: PageKey; label: string; phase: number; page?: ReactNode }[] = [
+  { key: 'assets', label: 'Assets', phase: 1, page: <AssetsPage /> },
+  { key: 'stock', label: 'Stock', phase: 1, page: <StockPage /> },
   { key: 'people', label: 'People', phase: 1 },
   { key: 'profiles', label: 'Department profiles', phase: 1 },
-  { key: 'imports', label: 'Import & reconcile', phase: 1 },
+  { key: 'imports', label: 'Import & reconcile', phase: 1, page: <ImportPage /> },
+  { key: 'categories', label: 'Asset categories', phase: 1, page: <CategoriesPage /> },
   { key: 'cases', label: 'Onboarding / Offboarding', phase: 2 },
 ]
 
 export default function App() {
   const [current, setCurrent] = useState<PageKey>('assets')
+  const page = pages.find((p) => p.key === current)!
 
   return (
     <div className="shell">
@@ -31,14 +36,10 @@ export default function App() {
         ))}
       </nav>
       <main>
-        {current === 'assets' ? (
-          <AssetsPage />
-        ) : current === 'imports' ? (
-          <ImportPage />
-        ) : (
+        {page.page ?? (
           <>
-            <h2>{pages.find((p) => p.key === current)?.label}</h2>
-            <p className="muted">Not built yet. This page is part of the scaffold.</p>
+            <h2>{page.label}</h2>
+            <p className="muted">Not built yet.</p>
           </>
         )}
       </main>

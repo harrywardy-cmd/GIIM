@@ -33,7 +33,8 @@ public sealed record AnalyzedRow(
     string? AssetTag,
     string? Manufacturer,
     string? Model,
-    AssetCategory? Category,
+    string? CategoryName,
+    Guid? CategoryId,
     AssetStatus? Status,
     string? AssignedTo,
     string? Location,
@@ -54,7 +55,7 @@ public sealed record AnalyzedRow(
             AssetTag = AssetTag,
             Manufacturer = Manufacturer!,
             Model = Model!,
-            Category = Category!.Value,
+            CategoryId = CategoryId!.Value,
             Location = Location,
             PurchaseDate = PurchaseDate,
             WarrantyExpiry = WarrantyExpiry,
@@ -78,14 +79,17 @@ public static class AssetImportAnalyzer
 {
     private static readonly ImportIssue[] Warnings = [ImportIssue.SerialCleaned, ImportIssue.ManufacturerRenamed];
 
+    /// <param name="categories">Active asset categories by name (case-insensitive).</param>
     public static IReadOnlyList<AnalyzedRow> Analyze(
         IEnumerable<IReadOnlyDictionary<string, string?>> rows,
         ColumnMapping mapping,
         ISet<string> existingSerials,
-        ISet<string> existingAssetTags)
+        ISet<string> existingAssetTags,
+        IReadOnlyDictionary<string, Guid> categories)
     {
         ArgumentNullException.ThrowIfNull(rows);
         ArgumentNullException.ThrowIfNull(mapping);
+        ArgumentNullException.ThrowIfNull(categories);
 
         var results = new List<AnalyzedRow>();
         var serialsSeen = new HashSet<string>(StringComparer.Ordinal);
@@ -113,8 +117,9 @@ public static class AssetImportAnalyzer
             var model = ImportNormalizer.Text(Get(AssetField.Model));
             if (model is null) issues.Add(ImportIssue.MissingModel);
 
-            var category = ImportNormalizer.Category(Get(AssetField.Category));
-            if (category is null) issues.Add(ImportIssue.UnknownCategory);
+            var categoryName = ImportNormalizer.CategoryName(Get(AssetField.Category));
+            Guid? categoryId = categoryName is not null && categories.TryGetValue(categoryName, out var id) ? id : null;
+            if (categoryId is null) issues.Add(ImportIssue.UnknownCategory);
 
             var rawStatus = ImportNormalizer.Text(Get(AssetField.Status));
             var status = ImportNormalizer.Status(rawStatus);
@@ -144,7 +149,7 @@ public static class AssetImportAnalyzer
                 outcome = ImportRowOutcome.Rejected;
 
             results.Add(new AnalyzedRow(
-                rowNumber, outcome, issues, serial, tag, make, model, category, status,
+                rowNumber, outcome, issues, serial, tag, make, model, categoryName, categoryId, status,
                 ImportNormalizer.Text(Get(AssetField.AssignedTo)),
                 ImportNormalizer.Text(Get(AssetField.Location)),
                 purchased, warranty,

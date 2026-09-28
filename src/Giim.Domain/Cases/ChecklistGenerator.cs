@@ -27,7 +27,8 @@ public static class ChecklistGenerator
                 ProfileItemType.Application  => ($"Grant app: {item.Description}", item.GroupName is null ? TaskKind.Manual : TaskKind.Automated),
                 ProfileItemType.OktaGroup    => ($"Add to Okta group: {item.GroupName}", TaskKind.Automated),
                 ProfileItemType.LicenceGroup => ($"Add to licence group: {item.GroupName}", TaskKind.Automated),
-                ProfileItemType.Hardware     => ($"Allocate and scan {item.HardwareCategory}: {item.Description}", TaskKind.Manual),
+                ProfileItemType.Hardware     => ($"Allocate and scan: {item.Description}", TaskKind.Manual),
+                ProfileItemType.StockItem    => ($"Issue from stock: {item.Description}", TaskKind.Manual),
                 _                            => (item.Description, TaskKind.Manual),
             };
             Add(serviceCase, title, kind, sourceId: item.Id);
@@ -59,8 +60,9 @@ public static class ChecklistGenerator
             Add(serviceCase, $"Remove app access: {app.Name}", kind, sourceId: app.Id);
         }
 
-        foreach (var asset in assignedAssets)
-            Add(serviceCase, $"Recover {asset.Category}: {asset.Manufacturer} {asset.Model} (S/N {asset.SerialNumber})",
+        // Assets whose category isn't returned (Category loaded) are left off; unknown categories are recovered to be safe.
+        foreach (var asset in assignedAssets.Where(a => a.Category?.ReturnOnOffboarding ?? true))
+            Add(serviceCase, $"Recover {asset.Category?.Name ?? "asset"}: {asset.Manufacturer} {asset.Model} (S/N {asset.SerialNumber})",
                 TaskKind.Manual, sourceId: asset.Id);
 
         Add(serviceCase, "Remove M365 licence", TaskKind.Automated);

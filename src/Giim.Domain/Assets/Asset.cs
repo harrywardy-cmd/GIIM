@@ -2,15 +2,15 @@ using Giim.Domain.Common;
 
 namespace Giim.Domain.Assets;
 
-public enum AssetCategory { Laptop, Desktop, Monitor, Dock, Phone, Tablet, Peripheral, Other }
-
+/// <summary>A serialised item tracked individually through its lifecycle.</summary>
 public sealed class Asset : Entity
 {
     public string? AssetTag { get; set; }
     public required string SerialNumber { get; set; }
     public required string Manufacturer { get; set; }
     public required string Model { get; set; }
-    public AssetCategory Category { get; set; }
+    public Guid CategoryId { get; set; }
+    public AssetCategory? Category { get; set; }
     public string? Location { get; set; }
 
     public DateOnly? PurchaseDate { get; set; }

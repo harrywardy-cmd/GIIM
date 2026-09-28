@@ -10,7 +10,6 @@ public class AssetLifecycleTests
         SerialNumber = "5CG1234XYZ",
         Manufacturer = "HP",
         Model = "EliteBook 840 G10",
-        Category = AssetCategory.Laptop,
     };
 
     [Fact]

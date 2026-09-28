@@ -14,9 +14,24 @@ public class AssetImportAnalyzerTests
         ["Type"] = type, ["Assigned To"] = owner, ["Status"] = status,
     };
 
+    private static readonly Dictionary<string, Guid> Categories =
+        AssetCategory.Defaults.ToDictionary(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase);
+
     private static IReadOnlyList<AnalyzedRow> Analyze(IEnumerable<Dictionary<string, string?>> rows, string[]? existingSerials = null) =>
         AssetImportAnalyzer.Analyze(rows, ColumnMapping.Suggest(Headers),
-            new HashSet<string>(existingSerials ?? []), new HashSet<string>());
+            new HashSet<string>(existingSerials ?? []), new HashSet<string>(), Categories);
+
+    [Theory]
+    [InlineData("Notebook", "Laptop")]
+    [InlineData("monitor arm", "Monitor mount")]
+    [InlineData("MONITOR MOUNT", "Monitor mount")]
+    public void Category_synonyms_resolve_to_a_category(string type, string expected)
+    {
+        var row = Assert.Single(Analyze([Row("AT1", "5CG001", type: type)]));
+
+        Assert.Equal(ImportRowOutcome.New, row.Outcome);
+        Assert.Equal(AssetCategory.Defaults.Single(c => c.Name == expected).Id, row.CategoryId);
+    }
 
     [Fact]
     public void Suggest_maps_common_header_names()

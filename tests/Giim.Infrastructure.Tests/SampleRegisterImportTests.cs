@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Giim.Domain.Assets;
 using Giim.Domain.Importing;
 using Giim.Infrastructure.Importing;
 
@@ -17,7 +18,8 @@ public partial class SampleRegisterImportTests
     {
         using var file = File.OpenRead(Path.Combine(SamplesDir, "legacy-asset-register.xlsx"));
         var sheet = ExcelSheetReader.Read(file);
-        return AssetImportAnalyzer.Analyze(sheet.Rows, ColumnMapping.Suggest(sheet.Headers), new HashSet<string>(), new HashSet<string>());
+        var categories = AssetCategory.Defaults.ToDictionary(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase);
+        return AssetImportAnalyzer.Analyze(sheet.Rows, ColumnMapping.Suggest(sheet.Headers), new HashSet<string>(), new HashSet<string>(), categories);
     });
 
     private static readonly Lazy<Dictionary<string, int>> Expected = new(() =>

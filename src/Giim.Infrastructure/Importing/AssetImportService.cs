@@ -32,7 +32,10 @@ public sealed class AssetImportService(GiimDbContext db)
         var existingTags = (await db.Assets.Where(a => a.AssetTag != null).Select(a => a.AssetTag!).ToListAsync(cancellationToken))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var rows = AssetImportAnalyzer.Analyze(sheet.Rows, mapping, existingSerials, existingTags);
+        var categories = await db.AssetCategories.Where(c => c.IsActive)
+            .ToDictionaryAsync(c => c.Name, c => c.Id, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var rows = AssetImportAnalyzer.Analyze(sheet.Rows, mapping, existingSerials, existingTags, categories);
         return new AssetImportResult(sheet.SheetName, sheet.Headers, mapping, AssetImportAnalyzer.Summarize(rows), rows);
     }
 

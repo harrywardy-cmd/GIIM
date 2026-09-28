@@ -47,18 +47,23 @@ public static class ImportNormalizer
         return ManufacturerAliases.TryGetValue(trimmed, out var canonical) ? canonical : trimmed;
     }
 
-    public static AssetCategory? Category(string? raw) =>
+    /// <summary>
+    /// Turns common synonyms into the default category names ("Notebook" becomes "Laptop").
+    /// Anything else is returned trimmed so it can match a category IT has added.
+    /// </summary>
+    public static string? CategoryName(string? raw) =>
         raw?.Trim().ToLowerInvariant() switch
         {
-            "laptop" or "notebook" => AssetCategory.Laptop,
-            "desktop" or "pc" or "workstation" or "mini pc" => AssetCategory.Desktop,
-            "monitor" or "screen" or "display" => AssetCategory.Monitor,
-            "dock" or "docking station" => AssetCategory.Dock,
-            "phone" or "mobile" or "mobile phone" or "smartphone" => AssetCategory.Phone,
-            "tablet" or "ipad" => AssetCategory.Tablet,
-            "peripheral" or "keyboard" or "mouse" or "headset" => AssetCategory.Peripheral,
-            "other" => AssetCategory.Other,
-            _ => null,
+            null or "" => null,
+            "laptop" or "notebook" => "Laptop",
+            "desktop" or "pc" or "workstation" or "mini pc" => "Desktop",
+            "monitor" or "screen" or "display" => "Monitor",
+            "dock" or "docking station" => "Dock",
+            "phone" or "mobile" or "mobile phone" or "smartphone" => "Phone",
+            "tablet" or "ipad" => "Tablet",
+            "peripheral" or "keyboard" or "mouse" or "headset" => "Peripheral",
+            "monitor arm" or "monitor mount" or "mount" or "vesa mount" => "Monitor mount",
+            _ => raw.Trim(),
         };
 
     /// <summary>Maps free-text statuses from old registers onto the lifecycle.</summary>
