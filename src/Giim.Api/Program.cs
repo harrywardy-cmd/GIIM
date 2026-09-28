@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Giim.Api.Endpoints;
+using Giim.Connectors;
 using Giim.Infrastructure;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ builder.Services.ConfigureHttpJsonOptions(o => o.SerializerOptions.Converters.Ad
 builder.Services.AddGiimInfrastructure(
     builder.Configuration.GetConnectionString("Giim")
     ?? throw new InvalidOperationException("Connection string 'Giim' is not configured."));
+builder.Services.AddGiimConnectors(builder.Configuration);
 builder.Services.AddHealthChecks().AddDbContextCheck<GiimDbContext>();
 
 var app = builder.Build();
@@ -51,5 +53,6 @@ assets.MapGet("/", async (GiimDbContext db, string? search, int page = 1, int pa
 app.MapImportEndpoints();
 app.MapCategoryEndpoints();
 app.MapStockEndpoints();
+app.MapIntuneEndpoints();
 
 app.Run();

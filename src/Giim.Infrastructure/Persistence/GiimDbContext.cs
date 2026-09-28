@@ -2,6 +2,7 @@ using Giim.Domain.Assets;
 using Giim.Domain.Assignments;
 using Giim.Domain.Auditing;
 using Giim.Domain.Cases;
+using Giim.Domain.Devices;
 using Giim.Domain.People;
 using Giim.Domain.Provisioning;
 using Giim.Domain.Software;
@@ -18,6 +19,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
     public DbSet<StockItem> StockItems => Set<StockItem>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<ManagedDevice> ManagedDevices => Set<ManagedDevice>();
+    public DbSet<SyncRun> SyncRuns => Set<SyncRun>();
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<RoleProfile> RoleProfiles => Set<RoleProfile>();
@@ -78,6 +81,28 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             {
                 c.Id, c.CreatedAt, c.Name, c.IsIntuneManaged, c.ReturnOnOffboarding, c.IsActive,
             }));
+        });
+
+        modelBuilder.Entity<ManagedDevice>(e =>
+        {
+            e.HasIndex(d => d.IntuneId).IsUnique();
+            e.HasIndex(d => d.SerialNumber);
+            e.HasIndex(d => d.UserPrincipalName);
+            e.Property(d => d.IntuneId).HasMaxLength(64);
+            e.Property(d => d.DeviceName).HasMaxLength(256);
+            e.Property(d => d.SerialNumber).HasMaxLength(100);
+            e.Property(d => d.Manufacturer).HasMaxLength(100);
+            e.Property(d => d.Model).HasMaxLength(200);
+            e.Property(d => d.OperatingSystem).HasMaxLength(50);
+            e.Property(d => d.UserPrincipalName).HasMaxLength(256);
+            e.Property(d => d.ComplianceState).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<SyncRun>(e =>
+        {
+            e.HasIndex(r => new { r.Source, r.StartedAt });
+            e.Property(r => r.Source).HasMaxLength(50);
+            e.Property(r => r.Error).HasMaxLength(2000);
         });
 
         modelBuilder.Entity<StockItem>(e =>
