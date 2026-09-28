@@ -61,6 +61,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.HasIndex(a => a.Status);
             e.Property(a => a.SerialNumber).HasMaxLength(100);
             e.Property(a => a.AssetTag).HasMaxLength(50);
+            e.Property(a => a.LegacyAssignedTo).HasMaxLength(200);
         });
 
         modelBuilder.Entity<Application>(e =>

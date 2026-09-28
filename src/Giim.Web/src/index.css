@@ -49,6 +49,24 @@ table { width: 100%; border-collapse: collapse; margin-top: 16px; background: va
 th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
 th { font-weight: 600; color: var(--muted); font-size: 13px; }
 
+h3 { margin-top: 28px; }
+.error { color: #c62828; }
+.success { color: #2e7d32; }
+.required { color: #c62828; }
+
+select, button {
+  font: inherit; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface); color: var(--text);
+}
+button { cursor: pointer; margin-top: 12px; }
+button:disabled { opacity: 0.5; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+table.compact { width: auto; min-width: 360px; }
+.stats { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; min-width: 150px; }
+.stat-value { font-size: 24px; font-weight: 600; }
+
 @media (max-width: 720px) {
   .shell { grid-template-columns: 1fr; }
   .nav { border-right: 0; border-bottom: 1px solid var(--border); }

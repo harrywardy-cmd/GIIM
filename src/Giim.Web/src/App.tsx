@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AssetsPage } from './pages/AssetsPage'
+import { ImportPage } from './pages/ImportPage'
 
 type PageKey = 'assets' | 'people' | 'cases' | 'profiles' | 'imports'
 
@@ -32,6 +33,8 @@ export default function App() {
       <main>
         {current === 'assets' ? (
           <AssetsPage />
+        ) : current === 'imports' ? (
+          <ImportPage />
         ) : (
           <>
             <h2>{pages.find((p) => p.key === current)?.label}</h2>

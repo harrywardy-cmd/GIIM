@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Giim.Api.Endpoints;
 using Giim.Infrastructure;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,5 +41,7 @@ assets.MapGet("/", async (GiimDbContext db, string? search, int page = 1, int pa
 
     return Results.Ok(items);
 });
+
+app.MapImportEndpoints();
 
 app.Run();

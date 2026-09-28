@@ -22,7 +22,25 @@ public sealed class Asset : Entity
     public DateTimeOffset? LastSeenInIntune { get; set; }
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// Owner name as written in the legacy register. Kept so it can be matched to a Person
+    /// once people are imported from AD; not used as the real assignment.
+    /// </summary>
+    public string? LegacyAssignedTo { get; set; }
+
     public AssetStatus Status { get; private set; } = AssetStatus.InStock;
+
+    /// <summary>
+    /// Sets the starting status when migrating from a legacy register. Only valid before the
+    /// asset has been through the lifecycle; every later change must go through <see cref="ChangeStatus"/>.
+    /// </summary>
+    public void SetStatusFromMigration(AssetStatus status)
+    {
+        if (UpdatedAt is not null)
+            throw new DomainException($"Asset {SerialNumber} is already tracked; use ChangeStatus.");
+
+        Status = status;
+    }
 
     public void ChangeStatus(AssetStatus next)
     {

@@ -1,3 +1,4 @@
+using Giim.Infrastructure.Importing;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,7 @@ public static class DependencyInjection
     {
         services.AddDbContext<GiimDbContext>(options =>
             options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()));
+        services.AddScoped<AssetImportService>();
 
         return services;
     }
