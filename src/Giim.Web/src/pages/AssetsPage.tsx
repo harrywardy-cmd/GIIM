@@ -12,6 +12,8 @@ type Asset = {
   category: string
   status: string
   location: string | null
+  assignedTo: string | null
+  legacyAssignedTo: string | null
 }
 
 export function AssetsPage() {
@@ -60,6 +62,7 @@ export function AssetsPage() {
             <th>Make / model</th>
             <th>Type</th>
             <th>Status</th>
+            <th>Assigned to</th>
             <th>Location</th>
           </tr>
         </thead>
@@ -79,12 +82,15 @@ export function AssetsPage() {
               <td>
                 <StatusBadge status={a.status} />
               </td>
+              <td>
+                {a.assignedTo ?? (a.legacyAssignedTo ? <span className="muted">{a.legacyAssignedTo} (unlinked)</span> : '-')}
+              </td>
               <td>{a.location ?? '-'}</td>
             </tr>
           ))}
           {assets.length === 0 && !error && (
             <tr>
-              <td colSpan={6} className="muted">
+              <td colSpan={7} className="muted">
                 No assets found.
               </td>
             </tr>

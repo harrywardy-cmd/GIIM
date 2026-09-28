@@ -37,6 +37,7 @@ public sealed record AnalyzedRow(
     Guid? CategoryId,
     AssetStatus? Status,
     string? AssignedTo,
+    string? Department,
     string? Location,
     DateOnly? PurchaseDate,
     DateOnly? WarrantyExpiry,
@@ -63,6 +64,7 @@ public sealed record AnalyzedRow(
             Cost = Cost,
             Notes = Notes,
             LegacyAssignedTo = AssignedTo,
+            LegacyDepartment = AssignedTo is null ? null : Department,
         };
         asset.SetStatusFromMigration(Status ?? (AssignedTo is null ? AssetStatus.ReadyToDeploy : AssetStatus.Assigned));
         return asset;
@@ -151,6 +153,7 @@ public static class AssetImportAnalyzer
             results.Add(new AnalyzedRow(
                 rowNumber, outcome, issues, serial, tag, make, model, categoryName, categoryId, status,
                 ImportNormalizer.Text(Get(AssetField.AssignedTo)),
+                ImportNormalizer.Text(Get(AssetField.Department)),
                 ImportNormalizer.Text(Get(AssetField.Location)),
                 purchased, warranty,
                 ImportNormalizer.Text(Get(AssetField.Supplier)),

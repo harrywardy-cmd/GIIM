@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { AssetsPage } from './pages/AssetsPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { ImportPage } from './pages/ImportPage'
+import { PeoplePage } from './pages/PeoplePage'
 import { ReconciliationPage } from './pages/ReconciliationPage'
 import { StockPage } from './pages/StockPage'
 
@@ -10,7 +11,7 @@ type PageKey = 'assets' | 'stock' | 'reconciliation' | 'people' | 'cases' | 'pro
 const pages: { key: PageKey; label: string; phase: number; page?: ReactNode }[] = [
   { key: 'assets', label: 'Assets', phase: 1, page: <AssetsPage /> },
   { key: 'stock', label: 'Stock', phase: 1, page: <StockPage /> },
-  { key: 'people', label: 'People', phase: 1 },
+  { key: 'people', label: 'People', phase: 1, page: <PeoplePage /> },
   { key: 'profiles', label: 'Department profiles', phase: 1 },
   { key: 'reconciliation', label: 'Intune reconciliation', phase: 1, page: <ReconciliationPage /> },
   { key: 'imports', label: 'Import register', phase: 1, page: <ImportPage /> },

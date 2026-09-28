@@ -1,6 +1,7 @@
 using Azure.Core;
 using Azure.Identity;
 using Giim.Connectors.Intune;
+using Giim.Connectors.People;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -29,6 +30,10 @@ public static class DependencyInjection
         {
             services.AddSingleton<IIntuneClient, FileIntuneClient>();
         }
+
+        // Only the file source exists today; the AD source (via the on-prem agent) is added here later.
+        services.Configure<PeopleOptions>(configuration.GetSection(PeopleOptions.SectionName));
+        services.AddSingleton<IPeopleSource, FilePeopleSource>();
 
         return services;
     }

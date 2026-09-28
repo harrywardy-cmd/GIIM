@@ -93,8 +93,11 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(a => a.SerialNumber).HasMaxLength(100);
             e.Property(a => a.AssetTag).HasMaxLength(50);
             e.Property(a => a.LegacyAssignedTo).HasMaxLength(200);
+            e.Property(a => a.LegacyDepartment).HasMaxLength(100);
             e.HasOne(a => a.Category).WithMany().HasForeignKey(a => a.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.Ignore(a => a.DisplayName);
+            e.HasIndex(a => a.AssignedToPersonId);
+            e.HasOne<Person>().WithMany().HasForeignKey(a => a.AssignedToPersonId).OnDelete(DeleteBehavior.Restrict);
             // Optimistic concurrency: if two technicians act on the same asset at once, the second save fails
             // instead of silently overwriting the first.
             e.Property<byte[]>("RowVersion").IsRowVersion();
@@ -174,6 +177,10 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
         {
             e.HasIndex(a => new { a.PersonId, a.EndedAt });
             e.HasIndex(a => a.AssetId);
+            e.Property(a => a.AssignedBy).HasMaxLength(200);
+            e.Property(a => a.Notes).HasMaxLength(1000);
+            e.HasOne<Person>().WithMany().HasForeignKey(a => a.PersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Asset>().WithMany().HasForeignKey(a => a.AssetId).OnDelete(DeleteBehavior.Restrict);
             e.HasIndex(a => a.ServiceDeskRequestId);
             e.Ignore(a => a.IsActive);
             e.ToTable(t => t.HasCheckConstraint(

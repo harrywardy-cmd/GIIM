@@ -1,6 +1,7 @@
 using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Importing;
+using Giim.Infrastructure.People;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Stock;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,8 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.AddScoped<AssetImportService>();
         services.AddScoped<AssetLifecycleService>();
+        services.AddScoped<PeopleSyncService>();
+        services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();
         services.AddScoped<IntuneSyncService>();
         services.AddScoped<ReconciliationService>();

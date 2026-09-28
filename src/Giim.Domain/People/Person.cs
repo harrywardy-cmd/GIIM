@@ -29,4 +29,7 @@ public sealed class Person : Entity
     public Guid? AdObjectGuid { get; set; }
     public string? OktaUserId { get; set; }
     public Guid? EntraObjectId { get; set; }
+
+    /// <summary>When the directory sync last saw this person; null if they were added by hand.</summary>
+    public DateTimeOffset? LastSyncedAt { get; set; }
 }

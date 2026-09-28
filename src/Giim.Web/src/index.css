@@ -135,3 +135,13 @@ button.link { border: 0; background: none; padding: 0; margin: 0; color: var(--a
   .nav { border-right: 0; border-bottom: 1px solid var(--border); }
   main { padding: 20px 16px; overflow-x: auto; }
 }
+
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 16px 0; }
+.tabs button { margin: 0; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 12px; }
+.tabs button.selected { border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
+.candidate { padding: 3px 0; }
+.candidate button { margin-top: 0; padding: 2px 8px; font-size: 13px; }
+.person-Active { background: #dcf5e3; color: #1b6b35; }
+.person-Pending { background: #dcecff; color: #174a8c; }
+.person-Leaving { background: #fff4d6; color: #7a5200; }
+.person-Left { background: #e8e8ec; color: #55555f; }

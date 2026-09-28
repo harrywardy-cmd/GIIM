@@ -32,5 +32,6 @@ app.MapImportEndpoints();
 app.MapCategoryEndpoints();
 app.MapStockEndpoints();
 app.MapIntuneEndpoints();
+app.MapPeopleEndpoints();
 
 app.Run();

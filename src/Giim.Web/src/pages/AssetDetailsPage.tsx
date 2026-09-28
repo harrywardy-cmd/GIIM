@@ -31,6 +31,7 @@ type AssetDetails = {
   supplier: string | null
   notes: string | null
   legacyAssignedTo: string | null
+  assignedTo: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string } | null
   lastSeenInIntune: string | null
   nextStatuses: string[]
   timeline: TimelineEvent[]
@@ -99,8 +100,22 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
           <dl className="facts">
             <dt>Location</dt>
             <dd>{asset.location ?? '-'}</dd>
-            <dt>Assigned to (legacy)</dt>
-            <dd>{asset.legacyAssignedTo ?? '-'}</dd>
+            <dt>Assigned to</dt>
+            <dd>
+              {asset.assignedTo ? (
+                <>
+                  {asset.assignedTo.displayName}
+                  <div className="muted small">
+                    {asset.assignedTo.userPrincipalName} · {asset.assignedTo.department}
+                    {asset.assignedTo.status !== 'Active' && ` · ${asset.assignedTo.status}`}
+                  </div>
+                </>
+              ) : asset.legacyAssignedTo ? (
+                <span className="muted">{asset.legacyAssignedTo} (from spreadsheet, not yet linked)</span>
+              ) : (
+                '-'
+              )}
+            </dd>
             <dt>Purchased</dt>
             <dd>{formatDate(asset.purchaseDate)}</dd>
             <dt>Warranty expires</dt>

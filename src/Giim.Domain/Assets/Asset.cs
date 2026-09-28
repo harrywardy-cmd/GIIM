@@ -28,6 +28,31 @@ public sealed class Asset : Entity
     /// </summary>
     public string? LegacyAssignedTo { get; set; }
 
+    /// <summary>The owner's department as written in the legacy register; used to tell apart people who share a name.</summary>
+    public string? LegacyDepartment { get; set; }
+
+    /// <summary>Who holds the asset now. Kept in step with the active <c>Assignment</c> by the lifecycle actions.</summary>
+    public Guid? AssignedToPersonId { get; private set; }
+
+    /// <summary>
+    /// Records who already holds an asset that came from the legacy register, once the "Assigned To" name has been
+    /// matched to a real person. No status change: the device was already with them.
+    /// </summary>
+    public AssetEvent LinkLegacyOwner(ActionContext context, Guid personId, string personName, string matchedBy)
+    {
+        if (Status is not (AssetStatus.Assigned or AssetStatus.ReturnRequested))
+            throw new DomainException($"{DisplayName} is {Status}; only assigned assets can be linked to an owner.");
+        if (AssignedToPersonId is not null)
+            throw new DomainException($"{DisplayName} is already linked to an owner.");
+
+        AssignedToPersonId = personId;
+        var assetEvent = NewEvent(AssetEventType.OwnerLinked, context, null, null,
+            $"Linked to {personName} (from legacy register, matched by {matchedBy})",
+            new { PersonId = personId, PersonName = personName, LegacyName = LegacyAssignedTo, MatchedBy = matchedBy });
+        UpdatedAt = assetEvent.OccurredAt;
+        return assetEvent;
+    }
+
     public AssetStatus Status { get; private set; } = AssetStatus.ReadyToDeploy;
 
     public string DisplayName => AssetTag is null ? $"{Manufacturer} {Model} ({SerialNumber})" : $"{AssetTag} {Manufacturer} {Model}";

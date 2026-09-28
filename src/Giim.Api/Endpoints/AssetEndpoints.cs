@@ -43,7 +43,8 @@ internal static class AssetEndpoints
                 .Select(a => new
                 {
                     a.Id, a.AssetTag, a.SerialNumber, a.Manufacturer, a.Model,
-                    Category = a.Category!.Name, a.Status, a.Location, a.LegacyAssignedTo,
+                    Category = a.Category!.Name, a.Status, a.Location, a.LegacyAssignedTo, a.AssignedToPersonId,
+                    AssignedTo = db.People.Where(p => p.Id == a.AssignedToPersonId).Select(p => p.DisplayName).FirstOrDefault(),
                     a.PurchaseDate, a.WarrantyExpiry, a.LastSeenInIntune,
                 })
                 .ToListAsync(ct);
@@ -57,12 +58,16 @@ internal static class AssetEndpoints
             if (asset is null) return Results.NotFound();
 
             var timeline = await lifecycle.GetTimelineAsync(id, ct);
+            var holder = asset.AssignedToPersonId is { } holderId
+                ? await db.People.AsNoTracking().Where(p => p.Id == holderId)
+                    .Select(p => new { p.Id, p.DisplayName, p.UserPrincipalName, Department = p.Department!.Name, p.Status }).FirstOrDefaultAsync(ct)
+                : null;
             return Results.Ok(new
             {
                 asset.Id, asset.AssetTag, asset.SerialNumber, asset.Manufacturer, asset.Model,
                 Category = asset.Category?.Name, asset.Category?.IsIntuneManaged, asset.Status,
                 asset.Location, asset.PurchaseDate, asset.WarrantyExpiry, asset.Supplier, asset.Cost, asset.Notes,
-                asset.LegacyAssignedTo, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
+                asset.LegacyAssignedTo, AssignedTo = holder, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
                 NextStatuses = AssetLifecycle.NextStatuses(asset.Status),
                 Timeline = timeline.Select(e => new
                 {

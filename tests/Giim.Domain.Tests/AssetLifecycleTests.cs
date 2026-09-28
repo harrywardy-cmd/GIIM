@@ -141,6 +141,30 @@ public class AssetLifecycleTests
     }
 
     [Fact]
+    public void Legacy_owner_link_records_who_has_it_without_changing_status()
+    {
+        var asset = NewLaptop(AssetStatus.Assigned);
+        var person = Guid.NewGuid();
+
+        var e = asset.LinkLegacyOwner(Tech, person, "Harry Ward", "name");
+
+        Assert.Equal(person, asset.AssignedToPersonId);
+        Assert.Equal(AssetStatus.Assigned, asset.Status);
+        Assert.Equal(AssetEventType.OwnerLinked, e.Type);
+        Assert.Null(e.ToStatus);
+    }
+
+    [Fact]
+    public void Legacy_owner_can_only_be_linked_once_and_only_to_assigned_assets()
+    {
+        var assigned = NewLaptop(AssetStatus.Assigned);
+        assigned.LinkLegacyOwner(Tech, Guid.NewGuid(), "Harry Ward", "name");
+
+        Assert.Throws<DomainException>(() => assigned.LinkLegacyOwner(Tech, Guid.NewGuid(), "Someone Else", "name"));
+        Assert.Throws<DomainException>(() => NewLaptop(AssetStatus.ReadyToDeploy).LinkLegacyOwner(Tech, Guid.NewGuid(), "Harry Ward", "name"));
+    }
+
+    [Fact]
     public void Migration_status_is_only_allowed_before_tracking_starts()
     {
         var asset = NewLaptop(AssetStatus.Wiped);

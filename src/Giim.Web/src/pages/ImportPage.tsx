@@ -7,6 +7,7 @@ const fields = [
   { key: 'Model', label: 'Model', required: true },
   { key: 'Category', label: 'Type / category', required: true },
   { key: 'AssignedTo', label: 'Assigned to' },
+  { key: 'Department', label: 'Department (of the person)' },
   { key: 'Location', label: 'Location' },
   { key: 'PurchaseDate', label: 'Purchase date' },
   { key: 'WarrantyExpiry', label: 'Warranty expiry' },

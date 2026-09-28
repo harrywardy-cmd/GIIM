@@ -18,6 +18,10 @@ public sealed class Assignment : Entity
     public Guid? CaseId { get; set; }
     public string? ServiceDeskRequestId { get; set; }
 
+    /// <summary>Technician who issued the asset.</summary>
+    public string? AssignedBy { get; set; }
+    public string? Notes { get; set; }
+
     public bool IsActive => EndedAt is null;
 
     public static Assignment ForAsset(Guid personId, Guid assetId, string? requestId = null) =>

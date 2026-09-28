@@ -22,7 +22,7 @@ Goal: one trustworthy list of who has what.
    Verified against `samples/expected-reconciliation.json`
 6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
 7. **SDP asset import** (API v3, read-only)
-8. People import from AD (read-only) and department profile editor
+8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). Still to do: the Active Directory source and the department profile editor
 9. **Okta SSO with four roles**: Administrator, Technician, Manager/Approver, Viewer. Moved earlier because every
    lifecycle action in Phase 1B must record *who* did it.
 10. Azure environment (Bicep) in Australia East, including Blob Storage for photos and attachments
@@ -49,7 +49,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 ## Phase 1C: Visibility (new, from the brief)
 
 1. **Dashboard** (N17): summary cards, status chart, warranty expiring, recent activity
-2. **Employee profile page** (N19): assigned assets, requests, history
+2. ◐ **Employee profile page** (N19): details, manager, assigned assets and assignment history done; requests arrive with Phase 2
 3. **Reports** (N18) with CSV / Excel export: inventory, repairs, warranty, technician activity
    (request reports are added in Phase 2)
 
