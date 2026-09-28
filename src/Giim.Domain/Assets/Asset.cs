@@ -69,6 +69,65 @@ public sealed class Asset : Entity
         Status = status;
     }
 
+    // ---- Adding a new device by hand ---------------------------------------------------------------------
+
+    /// <summary>
+    /// Creates the record for a device that has just arrived. Serial and manufacturer are cleaned up the same way
+    /// as imports, so a scanned "5cg 123-abc" matches Intune's "5CG123ABC".
+    /// </summary>
+    /// <param name="startAs">Received (needs setting up) or ReadyToDeploy (already set up, e.g. existing spare stock).</param>
+    public static (Asset Asset, AssetEvent Event) Receive(NewAsset details, ActionContext context, AssetStatus startAs = AssetStatus.Received)
+    {
+        ArgumentNullException.ThrowIfNull(details);
+        if (startAs is not (AssetStatus.Received or AssetStatus.ReadyToDeploy))
+            throw new DomainException("A new asset starts as Received or Ready to deploy.");
+
+        var serial = Importing.ImportNormalizer.Serial(details.SerialNumber)
+            ?? throw new DomainException("Serial number is required.");
+        if (Devices.ManagedDevice.IsPlaceholderSerial(serial))
+            throw new DomainException($"'{serial}' is a placeholder, not a real serial number. Check the label on the device.");
+        if (serial.Length > 100)
+            throw new DomainException("Serial number is too long.");
+
+        var manufacturer = Importing.ImportNormalizer.Manufacturer(details.Manufacturer)
+            ?? throw new DomainException("Manufacturer is required.");
+        if (string.IsNullOrWhiteSpace(details.Model))
+            throw new DomainException("Model is required.");
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (details.PurchaseDate > today)
+            throw new DomainException("Purchase date can't be in the future.");
+        if (details.PurchaseDate is { } bought && details.WarrantyExpiry < bought)
+            throw new DomainException("Warranty can't expire before the purchase date.");
+        if (details.Cost < 0)
+            throw new DomainException("Cost can't be negative.");
+
+        var asset = new Asset
+        {
+            SerialNumber = serial,
+            AssetTag = string.IsNullOrWhiteSpace(details.AssetTag) ? null : details.AssetTag.Trim().ToUpperInvariant(),
+            Manufacturer = manufacturer,
+            Model = details.Model.Trim(),
+            CategoryId = details.CategoryId,
+            Location = string.IsNullOrWhiteSpace(details.Location) ? null : details.Location.Trim(),
+            PurchaseDate = details.PurchaseDate,
+            WarrantyExpiry = details.WarrantyExpiry,
+            Supplier = string.IsNullOrWhiteSpace(details.Supplier) ? null : details.Supplier.Trim(),
+            Cost = details.Cost,
+            Notes = string.IsNullOrWhiteSpace(details.Notes) ? null : details.Notes.Trim(),
+            Status = startAs,
+        };
+
+        var summary = startAs == AssetStatus.Received ? "Received" : "Added as ready to deploy";
+        var assetEvent = asset.NewEvent(AssetEventType.Created, context, null, startAs, summary, new
+        {
+            asset.Location,
+            asset.Supplier,
+            PurchaseOrder = string.IsNullOrWhiteSpace(details.PurchaseOrder) ? null : details.PurchaseOrder.Trim(),
+        });
+        return (asset, assetEvent);
+    }
+
     // ---- Timeline entries for how the asset entered GIIM -------------------------------------------------
 
     public AssetEvent Imported(ActionContext context, string source) =>

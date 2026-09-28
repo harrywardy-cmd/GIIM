@@ -2,6 +2,7 @@ using System.Text.Json;
 using Giim.Api.Security;
 using Giim.Domain.Assets;
 using Giim.Domain.Common;
+using Giim.Domain.Importing;
 using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,22 @@ internal sealed record ReturnRequest(
     IReadOnlyList<Guid>? ReturnedAccessoryIds,
     string? ReturnStockTo);
 
+internal sealed record CreateAssetRequest(
+    string SerialNumber,
+    string Manufacturer,
+    string Model,
+    Guid CategoryId,
+    string? AssetTag,
+    string? Location,
+    DateOnly? PurchaseDate,
+    DateOnly? WarrantyExpiry,
+    string? Supplier,
+    decimal? Cost,
+    string? PurchaseOrder,
+    string? Notes,
+    AssetStatus? StartAs,
+    string? TicketNumber);
+
 internal static class AssetEndpoints
 {
     public static void MapAssetEndpoints(this IEndpointRouteBuilder app)
@@ -54,8 +71,14 @@ internal static class AssetEndpoints
             if (status is { } s)
                 query = query.Where(a => a.Status == s);
             if (!string.IsNullOrWhiteSpace(search))
-                query = query.Where(a => a.SerialNumber.Contains(search) || (a.AssetTag != null && a.AssetTag.Contains(search))
-                    || a.Model.Contains(search));
+            {
+                var term = search.Trim();
+                // Serials are stored without spaces or dashes, so search the same way: "5cg 123-a" finds 5CG123A.
+                var serialTerm = ImportNormalizer.Serial(term) ?? term;
+                query = query.Where(a => a.SerialNumber.Contains(serialTerm) || (a.AssetTag != null && a.AssetTag.Contains(term))
+                    || a.Model.Contains(term)
+                    || db.People.Any(p => p.Id == a.AssignedToPersonId && p.DisplayName.Contains(term)));
+            }
 
             var items = await query
                 .OrderBy(a => a.SerialNumber)
@@ -73,6 +96,31 @@ internal static class AssetEndpoints
             return Results.Ok(items);
         });
 
+        group.MapGet("/lookup", async (string code, AssetLifecycleService lifecycle, CancellationToken ct) =>
+            await lifecycle.LookupAsync(code, ct) is { } id ? Results.Ok(new { id }) : Results.NotFound());
+
+        group.MapPost("/", async (CreateAssetRequest request, AssetLifecycleService lifecycle, ICurrentUser user, CancellationToken ct) =>
+        {
+            try
+            {
+                var details = new NewAsset(request.SerialNumber ?? "", request.Manufacturer ?? "", request.Model ?? "", request.CategoryId,
+                    request.AssetTag, request.Location, request.PurchaseDate, request.WarrantyExpiry, request.Supplier, request.Cost,
+                    request.PurchaseOrder, request.Notes);
+                var asset = await lifecycle.CreateAsync(details, new ActionContext(user.Name, request.TicketNumber),
+                    request.StartAs ?? AssetStatus.Received, ct);
+                return Results.Created($"/api/assets/{asset.Id}", new { asset.Id, asset.SerialNumber, asset.Status });
+            }
+            catch (DuplicateAssetException e)
+            {
+                return Results.Problem(e.Message, statusCode: StatusCodes.Status409Conflict,
+                    extensions: new Dictionary<string, object?> { ["existingAssetId"] = e.ExistingAssetId });
+            }
+            catch (DomainException e)
+            {
+                return Results.Problem(e.Message, statusCode: StatusCodes.Status400BadRequest);
+            }
+        });
+
         group.MapGet("/{id:guid}", async (Guid id, GiimDbContext db, AssetLifecycleService lifecycle, CancellationToken ct) =>
         {
             var asset = await db.Assets.AsNoTracking().Include(a => a.Category).FirstOrDefaultAsync(a => a.Id == id, ct);
@@ -85,6 +133,18 @@ internal static class AssetEndpoints
                 : null;
             var assignment = await db.Assignments.AsNoTracking().Include(a => a.Accessories)
                 .FirstOrDefaultAsync(a => a.AssetId == id && a.EndedAt == null, ct);
+            var owners = await (
+                    from s in db.Assignments.AsNoTracking()
+                    join p in db.People.AsNoTracking() on s.PersonId equals p.Id
+                    where s.AssetId == id
+                    orderby s.AssignedAt descending
+                    select new
+                    {
+                        s.Id, PersonId = p.Id, p.DisplayName, s.AssignedAt, s.EndedAt, s.AssignedBy, s.ReceivedBy,
+                        TicketNumber = s.ServiceDeskRequestId, s.ReturnTicketNumber, s.ReturnCondition, s.Notes,
+                        Missing = s.Accessories.Where(x => x.Status == Domain.Assignments.AccessoryStatus.Missing).Select(x => x.Description).ToList(),
+                    })
+                .ToListAsync(ct);
 
             return Results.Ok(new
             {
@@ -93,6 +153,7 @@ internal static class AssetEndpoints
                 asset.Location, asset.PurchaseDate, asset.WarrantyExpiry, asset.Supplier, asset.Cost, asset.Notes,
                 asset.LegacyAssignedTo, AssignedTo = holder, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
                 NextStatuses = AssetLifecycle.NextStatuses(asset.Status),
+                Owners = owners,
                 CurrentAssignment = assignment is null ? null : new
                 {
                     assignment.Id, assignment.AssignedAt, assignment.AssignedBy, TicketNumber = assignment.ServiceDeskRequestId,

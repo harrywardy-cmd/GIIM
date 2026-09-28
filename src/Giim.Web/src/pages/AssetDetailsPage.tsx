@@ -35,6 +35,19 @@ type AssetDetails = {
   assignedTo: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string } | null
   lastSeenInIntune: string | null
   nextStatuses: string[]
+  owners: {
+    id: string
+    personId: string
+    displayName: string
+    assignedAt: string
+    endedAt: string | null
+    assignedBy: string | null
+    receivedBy: string | null
+    ticketNumber: string | null
+    returnTicketNumber: string | null
+    returnCondition: string | null
+    missing: string[]
+  }[]
   currentAssignment: {
     id: string
     assignedAt: string
@@ -227,6 +240,42 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
         </section>
 
         <section className="panel">
+          <h3>Owners ({asset.owners.length})</h3>
+          {asset.owners.length === 0 ? (
+            <p className="muted small">Never assigned.</p>
+          ) : (
+            <table className="owners">
+              <thead>
+                <tr>
+                  <th>Person</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Tickets</th>
+                </tr>
+              </thead>
+              <tbody>
+                {asset.owners.map((o) => (
+                  <tr key={o.id}>
+                    <td>
+                      {o.displayName}
+                      <div className="muted small">issued by {o.assignedBy ?? '-'}</div>
+                    </td>
+                    <td>{formatDate(o.assignedAt)}</td>
+                    <td>
+                      {o.endedAt ? formatDate(o.endedAt) : <strong>Current</strong>}
+                      {o.returnCondition && <div className="muted small">{o.returnCondition.toLowerCase()}, received by {o.receivedBy}</div>}
+                      {o.missing.length > 0 && <div className="error small">Missing: {o.missing.join(', ')}</div>}
+                    </td>
+                    <td className="small">
+                      {o.ticketNumber ?? '-'}
+                      {o.returnTicketNumber && <div>{o.returnTicketNumber}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
           <h3>Timeline</h3>
           <ol className="timeline">
             {asset.timeline.map((e) => (

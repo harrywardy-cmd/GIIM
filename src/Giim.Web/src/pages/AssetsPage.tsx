@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { StatusBadge } from '../StatusBadge'
+import { AddAssetForm } from './AddAssetForm'
 import { AssetDetailsPage } from './AssetDetailsPage'
 
 type Asset = {
@@ -21,6 +22,20 @@ export function AssetsPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [error, setError] = useState<string | null>(null)
   const [openId, setOpenId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [notFound, setNotFound] = useState<string | null>(null)
+
+  /** Enter (or a barcode scanner) on an exact serial or asset tag opens that device directly. */
+  const lookup = async () => {
+    if (!search.trim()) return
+    try {
+      const found = await api<{ id: string }>(`/api/assets/lookup?code=${encodeURIComponent(search)}`)
+      setNotFound(null)
+      setOpenId(found.id)
+    } catch {
+      setNotFound(search.trim())
+    }
+  }
 
   useEffect(() => {
     if (openId) return
@@ -43,16 +58,49 @@ export function AssetsPage() {
   }, [search, openId])
 
   if (openId) return <AssetDetailsPage assetId={openId} onBack={() => setOpenId(null)} />
+  if (adding)
+    return (
+      <AddAssetForm
+        onCreated={(id) => {
+          setAdding(false)
+          setOpenId(id)
+        }}
+        onOpen={(id) => {
+          setAdding(false)
+          setOpenId(id)
+        }}
+        onCancel={() => setAdding(false)}
+      />
+    )
 
   return (
     <>
-      <h2>Assets</h2>
+      <div className="page-header">
+        <h2>Assets</h2>
+        <button className="primary" onClick={() => setAdding(true)}>
+          + Add asset
+        </button>
+      </div>
       <input
         type="search"
-        placeholder="Search serial number or asset tag"
+        placeholder="Search or scan serial, asset tag, model or person (Enter opens an exact match)"
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => {
+          setSearch(e.target.value)
+          setNotFound(null)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') lookup()
+        }}
       />
+      {notFound && (
+        <p className="muted small">
+          No device with serial or tag “{notFound}”.{' '}
+          <button className="link" onClick={() => setAdding(true)}>
+            Add it as a new asset
+          </button>
+        </p>
+      )}
       {error && <p className="muted">Could not load assets: {error}. Is Giim.Api running?</p>}
       <table>
         <thead>

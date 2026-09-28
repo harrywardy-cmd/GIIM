@@ -155,3 +155,7 @@ button.link { border: 0; background: none; padding: 0; margin: 0; color: var(--a
 .accessory-list button { margin-top: 0; }
 input.qty { width: 64px; }
 .action-form h4 { margin: 16px 0 4px; }
+
+.page-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.page-header button { margin-top: 0; }
+table.owners { margin-bottom: 8px; }
