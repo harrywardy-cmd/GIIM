@@ -3,6 +3,7 @@ import { api } from '../api'
 import { StatusBadge } from '../StatusBadge'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
+import { CompleteRepairForm, DisposeForm, RetireForm, SendToRepairForm } from './RepairEndOfLifeForms'
 
 type TimelineEvent = {
   id: number
@@ -14,7 +15,7 @@ type TimelineEvent = {
   ticketNumber: string | null
   summary: string
   note: string | null
-  details: Record<string, string | string[] | null> | null
+  details: Record<string, unknown> | null
 }
 
 type AssetDetails = {
@@ -35,6 +36,32 @@ type AssetDetails = {
   assignedTo: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string } | null
   lastSeenInIntune: string | null
   nextStatuses: string[]
+  repairs: {
+    id: string
+    fault: string
+    vendor: string | null
+    warrantyClaim: boolean
+    vendorReference: string | null
+    openedAt: string
+    openedBy: string
+    ticketNumber: string | null
+    diagnosis: string | null
+    workPerformed: string | null
+    cost: number | null
+    outcome: string | null
+    completedAt: string | null
+    isOpen: boolean
+    durationDays: number | null
+  }[]
+  endOfLife: {
+    retiredAt: string
+    retirementReason: string
+    dataSanitisation: string
+    disposedOn: string | null
+    disposalMethod: string | null
+    disposalCompany: string | null
+    disposalCertificate: string | null
+  } | null
   owners: {
     id: string
     personId: string
@@ -59,20 +86,26 @@ type AssetDetails = {
   timeline: TimelineEvent[]
 }
 
-type Action = 'Assign' | 'Return' | 'RequestReturn' | 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'AddNote'
+type Action = 'Assign' | 'Return' | 'RequestReturn' | 'SendToRepair' | 'CompleteRepair' | 'Retire' | 'Dispose' | 'MarkReady' | 'MarkWiped' | 'ReportLost' | 'ReportStolen' | 'Recover' | 'AddNote'
 
 /** Which actions are offered depends on where the asset is in its lifecycle. */
 function availableActions(a: AssetDetails): { action: Action; label: string }[] {
   const next = new Set(a.nextStatuses)
   const actions: { action: Action; label: string }[] = []
   if (a.status === 'ReadyToDeploy') actions.push({ action: 'Assign', label: 'Assign' })
-  if (a.status === 'Assigned' || a.status === 'ReturnRequested') actions.push({ action: 'Return', label: 'Return' })
+  const openRepair = a.repairs.some((r) => r.isOpen)
+  if (a.status === 'Assigned' || a.status === 'ReturnRequested' || (a.status === 'InRepair' && a.assignedTo))
+    actions.push({ action: 'Return', label: 'Return' })
+  if (openRepair) actions.push({ action: 'CompleteRepair', label: 'Complete repair' })
+  else if (next.has('InRepair')) actions.push({ action: 'SendToRepair', label: 'Send to repair' })
   if (next.has('ReturnRequested')) actions.push({ action: 'RequestReturn', label: 'Request return' })
   if (next.has('ReadyToDeploy')) actions.push({ action: 'MarkReady', label: 'Mark ready to deploy' })
   if (next.has('Wiped')) actions.push({ action: 'MarkWiped', label: 'Record wipe' })
   if (a.status === 'Lost' || a.status === 'Stolen') actions.push({ action: 'Recover', label: 'Recovered' })
   if (next.has('Lost')) actions.push({ action: 'ReportLost', label: 'Report lost' })
   if (next.has('Stolen')) actions.push({ action: 'ReportStolen', label: 'Report stolen' })
+  if (next.has('Retired') && !a.assignedTo && !openRepair) actions.push({ action: 'Retire', label: 'Retire' })
+  if (a.status === 'Retired') actions.push({ action: 'Dispose', label: 'Record disposal' })
   actions.push({ action: 'AddNote', label: 'Add note' })
   return actions
 }
@@ -93,12 +126,29 @@ const detailLabels: Record<string, string> = {
   Missing: 'Missing',
   LegacyName: 'Spreadsheet name',
   MatchedBy: 'Matched by',
+  Fault: 'Fault',
+  Vendor: 'Vendor',
+  WarrantyClaim: 'Warranty claim',
+  VendorReference: 'Vendor ref',
+  Outcome: 'Outcome',
+  Diagnosis: 'Diagnosis',
+  WorkPerformed: 'Work',
+  Cost: 'Cost',
+  Reason: 'Reason',
+  DataSanitisation: 'Data',
+  FinalLocation: 'Final location',
+  Company: 'Company',
+  Certificate: 'Certificate',
+  DisposedOn: 'Disposed on',
 }
 
 /** Internal ids and names already in the summary are not repeated in the timeline. */
-const hiddenDetails = new Set(['PersonId', 'PreviousHolderId', 'PersonName'])
+const hiddenDetails = new Set(['PersonId', 'PreviousHolderId', 'PersonName', 'RepairId'])
 
-const detailText = (v: string | string[] | null) => (Array.isArray(v) ? v.join(', ') : v)
+const detailText = (v: unknown): string =>
+  Array.isArray(v) ? v.join(', ') : typeof v === 'boolean' ? (v ? 'Yes' : 'No') : String(v ?? '')
+
+const simpleActions: Action[] = ['MarkReady', 'MarkWiped', 'ReportLost', 'ReportStolen', 'Recover', 'RequestReturn', 'AddNote']
 
 const formatDate = (value: string | null) => (value ? new Date(value).toLocaleDateString('en-AU') : '-')
 
@@ -108,6 +158,10 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   const [refresh, setRefresh] = useState(0)
   const [action, setAction] = useState<Action | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const done = () => {
+    setAction(null)
+    setRefresh((n) => n + 1)
+  }
 
   useEffect(() => {
     api<AssetDetails>(`/api/assets/${assetId}`)
@@ -119,6 +173,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   }, [assetId, refresh])
 
   if (!asset) return error ? <p className="error">{error}</p> : <p className="muted">Loading…</p>
+  const openRepair = asset.repairs.find((r) => r.isOpen)
 
   return (
     <>
@@ -198,7 +253,6 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               </button>
             ))}
           </div>
-          <p className="muted small">Repair and retirement arrive in the next step.</p>
 
           {action === 'Assign' && (
             <AssignForm
@@ -225,7 +279,15 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               onCancel={() => setAction(null)}
             />
           )}
-          {action && action !== 'Assign' && action !== 'Return' && (
+          {action === 'SendToRepair' && (
+            <SendToRepairForm assetId={asset.id} expectedStatus={asset.status} onDone={done} onCancel={() => setAction(null)} />
+          )}
+          {action === 'CompleteRepair' && openRepair && (
+            <CompleteRepairForm assetId={asset.id} repairId={openRepair.id} onDone={done} onCancel={() => setAction(null)} />
+          )}
+          {action === 'Retire' && <RetireForm assetId={asset.id} status={asset.status} onDone={done} onCancel={() => setAction(null)} />}
+          {action === 'Dispose' && <DisposeForm assetId={asset.id} onDone={done} onCancel={() => setAction(null)} />}
+          {action && simpleActions.includes(action) && (
             <ActionForm
               key={action}
               asset={asset}
@@ -276,6 +338,78 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
             </table>
           )}
 
+          {asset.endOfLife && (
+            <>
+              <h3>End of life</h3>
+              <dl className="facts">
+                <dt>Retired</dt>
+                <dd>
+                  {formatDate(asset.endOfLife.retiredAt)}: {asset.endOfLife.retirementReason}
+                </dd>
+                <dt>Data</dt>
+                <dd>{asset.endOfLife.dataSanitisation}</dd>
+                {asset.endOfLife.disposedOn && (
+                  <>
+                    <dt>Disposed</dt>
+                    <dd>
+                      {formatDate(asset.endOfLife.disposedOn)} · {asset.endOfLife.disposalMethod}
+                      {asset.endOfLife.disposalCompany && <> · {asset.endOfLife.disposalCompany}</>}
+                    </dd>
+                    <dt>Certificate</dt>
+                    <dd>{asset.endOfLife.disposalCertificate ?? '-'}</dd>
+                  </>
+                )}
+              </dl>
+            </>
+          )}
+
+          {asset.repairs.length > 0 && (
+            <>
+              <h3>Repairs ({asset.repairs.length})</h3>
+              <table className="owners">
+                <thead>
+                  <tr>
+                    <th>Fault</th>
+                    <th>By</th>
+                    <th>Result</th>
+                    <th>Cost</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {asset.repairs.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        {r.fault}
+                        <div className="muted small">
+                          {formatDate(r.openedAt)} · {r.ticketNumber ?? 'no ticket'}
+                        </div>
+                      </td>
+                      <td className="small">
+                        {r.vendor ?? 'IT (internal)'}
+                        {r.warrantyClaim && <div>warranty</div>}
+                        {r.vendorReference && <div className="muted">{r.vendorReference}</div>}
+                      </td>
+                      <td className="small">
+                        {r.isOpen ? (
+                          <strong>In progress</strong>
+                        ) : (
+                          <>
+                            {r.outcome === 'BeyondRepair' ? 'Beyond repair' : r.workPerformed}
+                            <div className="muted">
+                              {r.diagnosis}
+                              {r.durationDays !== null && <> · {r.durationDays} days</>}
+                            </div>
+                          </>
+                        )}
+                      </td>
+                      <td className="small">{r.cost !== null ? '$' + r.cost.toFixed(2) : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          )}
+
           <h3>Timeline</h3>
           <ol className="timeline">
             {asset.timeline.map((e) => (
@@ -296,7 +430,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                 </div>
                 {e.details &&
                   Object.entries(e.details)
-                    .filter(([k, v]) => v && !hiddenDetails.has(k) && !(Array.isArray(v) && v.length === 0))
+                    .filter(([k, v]) => v !== null && v !== false && v !== '' && !hiddenDetails.has(k) && !(Array.isArray(v) && v.length === 0))
                     .map(([k, v]) => (
                       <div key={k} className="small">
                         {detailLabels[k] ?? k}: {detailText(v)}

@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<AssetImportService>();
         services.AddScoped<AssetLifecycleService>();
         services.AddScoped<AssignmentService>();
+        services.AddScoped<RepairService>();
         services.AddScoped<PeopleSyncService>();
         services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();

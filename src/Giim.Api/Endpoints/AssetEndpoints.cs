@@ -3,13 +3,14 @@ using Giim.Api.Security;
 using Giim.Domain.Assets;
 using Giim.Domain.Common;
 using Giim.Domain.Importing;
+using Giim.Domain.Repairs;
 using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Giim.Api.Endpoints;
 
-internal enum AssetAction { MarkReady, MarkWiped, ReportLost, ReportStolen, Recover, RequestReturn, AddNote }
+internal enum AssetAction { MarkReady, MarkWiped, ReportLost, ReportStolen, Recover, RequestReturn, Retire, Dispose, AddNote }
 
 internal sealed record AssetActionRequest(
     AssetAction Action,
@@ -22,7 +23,21 @@ internal sealed record AssetActionRequest(
     string? ReportedBy,
     string? PoliceReference,
     string? WhereFound,
-    DateOnly? DueDate);
+    DateOnly? DueDate,
+    string? Reason,
+    DataSanitisation? DataSanitisation,
+    string? FinalLocation,
+    DisposalMethod? DisposalMethod,
+    string? DisposalCompany,
+    string? CertificateNumber,
+    DateOnly? DisposedOn);
+
+internal sealed record OpenRepairRequest(
+    AssetStatus? ExpectedStatus, string Fault, string? Vendor, bool WarrantyClaim, string? VendorReference, DateOnly? SentOn,
+    string? TicketNumber, string? Note);
+
+internal sealed record CompleteRepairRequest(
+    RepairOutcome Outcome, string? Diagnosis, string? WorkPerformed, decimal? Cost, string? TicketNumber, string? Note);
 
 internal sealed record AssignRequest(
     Guid PersonId,
@@ -121,7 +136,7 @@ internal static class AssetEndpoints
             }
         });
 
-        group.MapGet("/{id:guid}", async (Guid id, GiimDbContext db, AssetLifecycleService lifecycle, CancellationToken ct) =>
+        group.MapGet("/{id:guid}", async (Guid id, GiimDbContext db, AssetLifecycleService lifecycle, RepairService repairs, CancellationToken ct) =>
         {
             var asset = await db.Assets.AsNoTracking().Include(a => a.Category).FirstOrDefaultAsync(a => a.Id == id, ct);
             if (asset is null) return Results.NotFound();
@@ -154,6 +169,17 @@ internal static class AssetEndpoints
                 asset.LegacyAssignedTo, AssignedTo = holder, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
                 NextStatuses = AssetLifecycle.NextStatuses(asset.Status),
                 Owners = owners,
+                Repairs = (await repairs.ForAssetAsync(id, ct)).Select(r => new
+                {
+                    r.Id, r.Fault, r.Vendor, r.WarrantyClaim, r.VendorReference, r.SentOn, r.OpenedBy, r.OpenedAt, r.TicketNumber,
+                    r.Diagnosis, r.WorkPerformed, r.Cost, r.Outcome, r.CompletedBy, r.CompletedAt, r.IsOpen,
+                    DurationDays = r.Duration is { } d ? Math.Round(d.TotalDays, 1) : (double?)null,
+                }),
+                EndOfLife = asset.RetiredAt is null ? null : new
+                {
+                    asset.RetiredAt, asset.RetirementReason, asset.DataSanitisation,
+                    asset.DisposedOn, asset.DisposalMethod, asset.DisposalCompany, asset.DisposalCertificate,
+                },
                 CurrentAssignment = assignment is null ? null : new
                 {
                     assignment.Id, assignment.AssignedAt, assignment.AssignedBy, TicketNumber = assignment.ServiceDeskRequestId,
@@ -184,12 +210,34 @@ internal static class AssetEndpoints
                 AssetAction.ReportStolen => a => a.ReportStolen(context, request.Circumstances ?? "", request.ReportedBy, request.PoliceReference),
                 AssetAction.Recover => a => a.Recover(context, request.WhereFound ?? ""),
                 AssetAction.RequestReturn => a => a.RequestReturn(context, request.DueDate),
+                AssetAction.Retire => a => a.Retire(context, request.Reason ?? "",
+                    request.DataSanitisation ?? throw new DomainException("Record how the data was dealt with."), request.FinalLocation),
+                AssetAction.Dispose => a => a.RecordDisposal(context,
+                    request.DisposalMethod ?? throw new DomainException("Choose a disposal method."),
+                    request.DisposalCompany, request.CertificateNumber,
+                    request.DisposedOn ?? DateOnly.FromDateTime(DateTime.UtcNow)),
                 AssetAction.AddNote => a => a.AddNote(context),
                 _ => throw new DomainException($"Unknown action {request.Action}."),
             };
 
             var e = await lifecycle.ApplyAsync(id, request.ExpectedStatus, action, ct);
             return Results.Ok(new { e.Id, e.Type, e.FromStatus, e.ToStatus, e.Summary });
+        }));
+
+        group.MapPost("/{id:guid}/repairs", (Guid id, OpenRepairRequest request, RepairService repairs,
+            ICurrentUser user, CancellationToken ct) => Handle(async () =>
+        {
+            var repair = await repairs.OpenAsync(id, request.ExpectedStatus, new ActionContext(user.Name, request.TicketNumber, request.Note),
+                request.Fault ?? "", request.Vendor, request.WarrantyClaim, request.VendorReference, request.SentOn, ct);
+            return Results.Ok(new { repair.Id });
+        }));
+
+        group.MapPost("/{id:guid}/repairs/{repairId:guid}/complete", (Guid id, Guid repairId, CompleteRepairRequest request,
+            RepairService repairs, ICurrentUser user, CancellationToken ct) => Handle(async () =>
+        {
+            var repair = await repairs.CompleteAsync(id, repairId, new ActionContext(user.Name, request.TicketNumber, request.Note),
+                request.Outcome, request.Diagnosis, request.WorkPerformed, request.Cost, ct);
+            return Results.Ok(new { repair.Id, repair.Outcome });
         }));
 
         group.MapPost("/{id:guid}/assign", (Guid id, AssignRequest request, AssignmentService assignments,

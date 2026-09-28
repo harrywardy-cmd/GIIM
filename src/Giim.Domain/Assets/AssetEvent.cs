@@ -15,6 +15,10 @@ public enum AssetEventType
     Assigned,
     ReturnRequested,
     Returned,
+    RepairStarted,
+    RepairCompleted,
+    Retired,
+    Disposed,
 }
 
 /// <summary>Who did it, which ticket, and why. Supplied with every lifecycle action.</summary>

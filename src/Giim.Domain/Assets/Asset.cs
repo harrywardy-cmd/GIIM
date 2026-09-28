@@ -223,6 +223,122 @@ public sealed class Asset : Entity
         return assetEvent;
     }
 
+    // ---- Repair -----------------------------------------------------------------------------------------------
+
+    public AssetEvent SendToRepair(ActionContext context, Repairs.Repair repair)
+    {
+        ArgumentNullException.ThrowIfNull(repair);
+        if (repair.AssetId != Id)
+            throw new DomainException("That repair belongs to a different asset.");
+
+        var where = repair.Vendor is null ? "internal repair" : repair.WarrantyClaim ? $"{repair.Vendor} (warranty)" : repair.Vendor;
+        return Transition(AssetStatus.InRepair, AssetEventType.RepairStarted, context, $"Sent to {where}: {repair.Fault}", new
+        {
+            RepairId = repair.Id,
+            repair.Fault,
+            repair.Vendor,
+            repair.WarrantyClaim,
+            repair.VendorReference,
+        });
+    }
+
+    /// <summary>
+    /// Repaired devices go back to the stage they came from (their user, Returned so they still get wiped,
+    /// Received, or Ready to deploy). Beyond-repair devices stay in repair until they are returned and retired.
+    /// </summary>
+    public AssetEvent CompleteRepair(ActionContext context, Repairs.Repair repair)
+    {
+        ArgumentNullException.ThrowIfNull(repair);
+        if (repair.AssetId != Id || repair.Outcome is null)
+            throw new DomainException("Complete the repair record first.");
+
+        var details = new { RepairId = repair.Id, repair.Outcome, repair.Diagnosis, repair.WorkPerformed, repair.Cost };
+        if (repair.Outcome == Repairs.RepairOutcome.BeyondRepair)
+            return NewEvent(AssetEventType.RepairCompleted, context, null, null, "Beyond repair", details);
+
+        var back = repair.StartedFromStatus switch
+        {
+            AssetStatus.Assigned => AssetStatus.Assigned,
+            AssetStatus.Returned => AssetStatus.Returned,
+            AssetStatus.Received => AssetStatus.Received,
+            _ => AssetStatus.ReadyToDeploy,
+        };
+        if (back == AssetStatus.Assigned && AssignedToPersonId is null)
+            back = AssetStatus.Returned;  // the holder was unlinked meanwhile; treat as returned so it gets wiped
+
+        return Transition(back, AssetEventType.RepairCompleted, context, $"Repaired: {repair.WorkPerformed}", details);
+    }
+
+    // ---- End of life ---------------------------------------------------------------------------------------
+
+    public DateTimeOffset? RetiredAt { get; private set; }
+    public string? RetirementReason { get; private set; }
+    public DataSanitisation? DataSanitisation { get; private set; }
+    public DateOnly? DisposedOn { get; private set; }
+    public DisposalMethod? DisposalMethod { get; private set; }
+    public string? DisposalCompany { get; private set; }
+    public string? DisposalCertificate { get; private set; }
+
+    public AssetEvent Retire(ActionContext context, string reason, DataSanitisation sanitisation, string? finalLocation)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+            throw new DomainException("Give a reason for retiring the asset.");
+        if (AssignedToPersonId is not null)
+            throw new DomainException($"{DisplayName} is still recorded against a person; return it first so its accessories are checked.");
+
+        var missing = Status is AssetStatus.Lost or AssetStatus.Stolen;
+        if (missing && sanitisation is not (Assets.DataSanitisation.RemoteWipe or Assets.DataSanitisation.NotPossible))
+            throw new DomainException("A lost or stolen device can only have been remote-wiped, or not wiped at all.");
+        if (!missing && sanitisation is Assets.DataSanitisation.NotPossible or Assets.DataSanitisation.RemoteWipe)
+            throw new DomainException("The device is in IT's hands: wipe it, destroy the drive, or confirm it has no storage.");
+
+        var assetEvent = Transition(AssetStatus.Retired, AssetEventType.Retired, context, $"Retired: {reason.Trim()}", new
+        {
+            Reason = reason.Trim(),
+            DataSanitisation = sanitisation,
+            FinalLocation = string.IsNullOrWhiteSpace(finalLocation) ? null : finalLocation.Trim(),
+        });
+
+        RetiredAt = assetEvent.OccurredAt;
+        RetirementReason = reason.Trim();
+        DataSanitisation = sanitisation;
+        if (!string.IsNullOrWhiteSpace(finalLocation)) Location = finalLocation.Trim();
+        return assetEvent;
+    }
+
+    public AssetEvent RecordDisposal(ActionContext context, DisposalMethod method, string? company, string? certificateNumber, DateOnly disposedOn)
+    {
+        var auditable = method is Assets.DisposalMethod.EWasteRecycling or Assets.DisposalMethod.Destroyed;
+        if (auditable && string.IsNullOrWhiteSpace(company))
+            throw new DomainException("Record the disposal company.");
+        if (auditable && string.IsNullOrWhiteSpace(certificateNumber))
+            throw new DomainException("Record the disposal or destruction certificate number; it is needed for audits.");
+        if (disposedOn > DateOnly.FromDateTime(DateTime.UtcNow))
+            throw new DomainException("Disposal date can't be in the future.");
+
+        var assetEvent = Transition(AssetStatus.Disposed, AssetEventType.Disposed, context, $"Disposed ({Describe(method)})", new
+        {
+            Method = method,
+            Company = string.IsNullOrWhiteSpace(company) ? null : company.Trim(),
+            Certificate = string.IsNullOrWhiteSpace(certificateNumber) ? null : certificateNumber.Trim(),
+            DisposedOn = disposedOn,
+        });
+
+        DisposalMethod = method;
+        DisposalCompany = string.IsNullOrWhiteSpace(company) ? null : company.Trim();
+        DisposalCertificate = string.IsNullOrWhiteSpace(certificateNumber) ? null : certificateNumber.Trim();
+        DisposedOn = disposedOn;
+        return assetEvent;
+    }
+
+    private static string Describe(DisposalMethod method) => method switch
+    {
+        Assets.DisposalMethod.EWasteRecycling => "e-waste recycling",
+        Assets.DisposalMethod.ReturnedToVendor => "returned to vendor",
+        Assets.DisposalMethod.LeaseReturn => "lease return",
+        _ => method.ToString().ToLowerInvariant(),
+    };
+
     public AssetEvent AddNote(ActionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

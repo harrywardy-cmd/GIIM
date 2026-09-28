@@ -29,8 +29,8 @@ public static class AssetLifecycle
         [AssetStatus.ReturnRequested] = [AssetStatus.Returned, AssetStatus.Lost, AssetStatus.Stolen],
         [AssetStatus.Returned]        = [AssetStatus.Wiped, AssetStatus.InRepair, AssetStatus.Lost, AssetStatus.Stolen, AssetStatus.Retired],
         [AssetStatus.Wiped]           = [AssetStatus.ReadyToDeploy, AssetStatus.InRepair, AssetStatus.Retired],
-        // Repaired devices go back to their user (repair while assigned) or into stock.
-        [AssetStatus.InRepair]        = [AssetStatus.ReadyToDeploy, AssetStatus.Assigned, AssetStatus.Retired],
+        // A repaired device goes back to the stage it came from, so repair can never skip a wipe or set-up step.
+        [AssetStatus.InRepair]        = [AssetStatus.ReadyToDeploy, AssetStatus.Assigned, AssetStatus.Returned, AssetStatus.Received, AssetStatus.Retired],
         // Found or recovered devices come back through Returned, so they are wiped before reuse.
         [AssetStatus.Lost]            = [AssetStatus.Returned, AssetStatus.Retired],
         [AssetStatus.Stolen]          = [AssetStatus.Returned, AssetStatus.Retired],

@@ -4,6 +4,7 @@ using Giim.Domain.Auditing;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
 using Giim.Domain.People;
+using Giim.Domain.Repairs;
 using Giim.Domain.Provisioning;
 using Giim.Domain.Software;
 using Giim.Domain.Stock;
@@ -18,6 +19,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<AssetCategory> AssetCategories => Set<AssetCategory>();
     public DbSet<AssetEvent> AssetEvents => Set<AssetEvent>();
+    public DbSet<Repair> Repairs => Set<Repair>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -94,6 +96,10 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(a => a.AssetTag).HasMaxLength(50);
             e.Property(a => a.LegacyAssignedTo).HasMaxLength(200);
             e.Property(a => a.LegacyDepartment).HasMaxLength(100);
+            e.Property(a => a.RetirementReason).HasMaxLength(500);
+            e.Property(a => a.DisposalCompany).HasMaxLength(200);
+            e.Property(a => a.DisposalCertificate).HasMaxLength(100);
+            e.HasIndex(a => a.DisposalCertificate);
             e.HasOne(a => a.Category).WithMany().HasForeignKey(a => a.CategoryId).OnDelete(DeleteBehavior.Restrict);
             e.Ignore(a => a.DisplayName);
             e.HasIndex(a => a.AssignedToPersonId);
@@ -101,6 +107,26 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             // Optimistic concurrency: if two technicians act on the same asset at once, the second save fails
             // instead of silently overwriting the first.
             e.Property<byte[]>("RowVersion").IsRowVersion();
+        });
+
+        modelBuilder.Entity<Repair>(e =>
+        {
+            e.HasIndex(r => new { r.AssetId, r.OpenedAt });
+            // An asset can only be in one repair at a time.
+            e.HasIndex(r => r.AssetId, "UX_Repairs_OneOpenPerAsset").IsUnique().HasFilter("[CompletedAt] IS NULL");
+            e.HasIndex(r => r.VendorReference);
+            e.HasIndex(r => r.TicketNumber);
+            e.Property(r => r.Fault).HasMaxLength(1000);
+            e.Property(r => r.Vendor).HasMaxLength(200);
+            e.Property(r => r.VendorReference).HasMaxLength(100);
+            e.Property(r => r.OpenedBy).HasMaxLength(200);
+            e.Property(r => r.CompletedBy).HasMaxLength(200);
+            e.Property(r => r.TicketNumber).HasMaxLength(50);
+            e.Property(r => r.Diagnosis).HasMaxLength(2000);
+            e.Property(r => r.WorkPerformed).HasMaxLength(2000);
+            e.Ignore(r => r.IsOpen);
+            e.Ignore(r => r.Duration);
+            e.HasOne<Asset>().WithMany().HasForeignKey(r => r.AssetId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AssetEvent>(e =>
