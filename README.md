@@ -12,6 +12,23 @@ It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, 
 > See [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
 > [docs/lifecycle-gap-analysis.md](docs/lifecycle-gap-analysis.md) for how the asset lifecycle brief maps onto GIIM.
 
+## Tech stack
+
+| Area | Technology |
+|---|---|
+| **Backend** | .NET 10 (C#), ASP.NET Core minimal APIs (`Giim.Api`), a hosted background worker (`Giim.Workers`) |
+| **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations |
+| **Web UI** | React 19, TypeScript 6, Vite 8, lucide-react icons, oxlint. Served by the API as static files in production |
+| **Sign-in and roles** | Okta (OpenID Connect, authorization code + PKCE) handled by the API; HTTP-only session cookie; roles from Okta groups |
+| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud, the Okta API and the on-premises AD/Exchange agent are planned (see the roadmap) |
+| **Documents and exports** | ClosedXML (Excel import and export), CSV export, QRCoder (asset QR codes and label sheets) |
+| **Hosting** | Azure, Australia East: App Service (Linux), Azure SQL, Key Vault, Blob Storage, private networking, all accessed with managed identities |
+| **Infrastructure as code** | Bicep templates and PowerShell scripts in `infra/` |
+| **CI/CD** | GitHub Actions: build, test and lint on every change; gated deployment to test, then production |
+| **Monitoring** | Application Insights and Log Analytics through OpenTelemetry (Azure Monitor), plus alert rules |
+| **Testing** | xUnit, ASP.NET Core `WebApplicationFactory` for API tests; all tests run without a database |
+| **Code quality** | .NET analysers at `latest-recommended` with warnings treated as errors; oxlint and the TypeScript compiler for the UI |
+
 ## Repository layout
 
 | Path | What it is |
