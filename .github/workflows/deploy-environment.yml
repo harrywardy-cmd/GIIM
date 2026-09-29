@@ -1,0 +1,76 @@
+# Deploys one built release to one environment: database migrations, then workers, then the web app.
+# Signs in to Azure with the environment's deployment identity (no stored password: GitHub's short-lived token is
+# trusted only for this repository and this GitHub environment). Add required reviewers to the 'prod' environment
+# so production deployments wait for approval.
+name: Deploy environment
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ vars.PUBLIC_URL }}
+    env:
+      RESOURCE_GROUP: ${{ vars.RESOURCE_GROUP }}
+      SQL_SERVER_NAME: ${{ vars.SQL_SERVER_NAME }}
+      SQL_SERVER_FQDN: ${{ vars.SQL_SERVER_FQDN }}
+      DATABASE_NAME: ${{ vars.DATABASE_NAME }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release
+          path: release
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # The database is private; open its firewall to this runner only while migrations run, and always close it.
+      - name: Update database
+        run: |
+          ip=$(curl -fsS https://api.ipify.org)
+          rule="github-${{ github.run_id }}-${{ github.run_attempt }}"
+          az sql server firewall-rule create -g "$RESOURCE_GROUP" -s "$SQL_SERVER_NAME" -n "$rule" \
+            --start-ip-address "$ip" --end-ip-address "$ip" --only-show-errors > /dev/null
+          trap 'az sql server firewall-rule delete -g "$RESOURCE_GROUP" -s "$SQL_SERVER_NAME" -n "$rule" --only-show-errors' EXIT
+
+          chmod +x release/migrations/efbundle
+          connection="Server=tcp:${SQL_SERVER_FQDN},1433;Database=${DATABASE_NAME};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60"
+          # A new firewall rule can take a little while to apply.
+          for attempt in 1 2 3 4 5; do
+            if release/migrations/efbundle --connection "$connection"; then exit 0; fi
+            echo "Attempt $attempt failed; retrying in 20 seconds..."
+            sleep 20
+          done
+          exit 1
+
+      - name: Deploy workers
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.WORKERS_APP_NAME }}
+          package: release/workers
+
+      - name: Deploy web app
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.API_APP_NAME }}
+          package: release/api
+
+      # Skipped when GIIM only accepts office/VPN addresses (set SKIP_SMOKE_TEST on the environment).
+      - name: Check it's up
+        if: vars.SKIP_SMOKE_TEST != 'true'
+        run: curl -fsS --retry 12 --retry-delay 10 --retry-all-errors "${{ vars.PUBLIC_URL }}/health"

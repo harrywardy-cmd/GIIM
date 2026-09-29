@@ -52,33 +52,31 @@ Then start the API, open **Intune reconciliation** and click **Sync now**. To sw
 
 ## Option B: Managed identity (production, recommended)
 
-In Azure, GIIM runs as an App Service with a **system-assigned managed identity**. Azure manages its credentials automatically, so **there is no secret to store, rotate or leak**. GIIM uses it automatically when no client secret is configured.
+In Azure, GIIM's web app and background workers each run as their own **managed identity**
+(`id-giim-<environment>-api` and `id-giim-<environment>-workers`, created by `infra/deploy.ps1`). Azure manages
+their credentials, so **there is no secret to store, rotate or leak**. GIIM uses them automatically when no client
+secret is configured, and the settings below are already applied by the deployment.
 
-Managed identities can't be granted Graph application permissions in the portal, so an administrator runs this once in PowerShell (Microsoft Graph PowerShell SDK):
+Managed identities can't be granted Graph application permissions in the portal, so an Entra administrator who can
+grant admin consent (Privileged Role Administrator or Global Administrator) runs this once per environment:
 
 ```powershell
-Connect-MgGraph -Scopes "AppRoleAssignment.ReadWrite.All", "Application.Read.All"
-
-# Microsoft Graph's service principal and the read-only Intune device role
-$graph = Get-MgServicePrincipal -Filter "appId eq '00000003-0000-0000-c000-000000000000'"
-$role  = $graph.AppRoles | Where-Object {
-    $_.Value -eq "DeviceManagementManagedDevices.Read.All" -and $_.AllowedMemberTypes -contains "Application" }
-
-# The App Service's managed identity (same name as the App Service)
-$giim  = Get-MgServicePrincipal -Filter "displayName eq '<app-service-name>'"
-
-New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $giim.Id `
-    -PrincipalId $giim.Id -ResourceId $graph.Id -AppRoleId $role.Id
+Install-Module Microsoft.Graph.Applications -Scope CurrentUser   # first time only
+az login
+./infra/scripts/Grant-GraphAccess.ps1 -Environment prod
 ```
 
-Check it in **Entra admin center** → Enterprise applications → (filter: Managed Identities) → `<app-service-name>` → **Permissions**.
+It grants `DeviceManagementManagedDevices.Read.All` (and nothing else) to both identities, and is safe to run again.
+Check it in **Entra admin center** → Enterprise applications → (filter: Managed Identities) → `id-giim-prod-workers`
+→ **Permissions**.
 
-App configuration (App Service → Environment variables):
+Settings applied by the deployment (App Service → Environment variables):
 
-| Setting | Value |
-|---|---|
-| `Intune__Source` | `Graph` |
-| `Intune__SyncInterval` | `04:00:00` (every 4 hours) |
+| Setting | Web app | Workers |
+|---|---|---|
+| `Intune__Source` | `Graph` | `Graph` |
+| `Intune__SyncInterval` | `00:00:00` (syncs only when a technician asks) | `04:00:00` (every 4 hours) |
+| `AZURE_CLIENT_ID` | the API identity's client ID | the workers identity's client ID |
 
 ---
 
