@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Boxes,
+  ChartColumn,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -32,12 +33,14 @@ import { LocationsPage } from './pages/LocationsPage'
 import { PeoplePage } from './pages/PeoplePage'
 import { PersonProfile } from './pages/PersonProfile'
 import { ReconciliationPage } from './pages/ReconciliationPage'
+import { ReportsPage } from './pages/ReportsPage'
 import { SearchResults, type SearchResponse } from './pages/SearchResults'
 import { StockPage } from './pages/StockPage'
 import { TicketsPage } from './pages/TicketsPage'
 
 export type PageKey =
   | 'dashboard'
+  | 'reports'
   | 'assets'
   | 'stock'
   | 'reconciliation'
@@ -52,7 +55,13 @@ export type PageKey =
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean }
 
 const navigation: { section: string; items: NavItem[] }[] = [
-  { section: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
+  {
+    section: 'Overview',
+    items: [
+      { key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+      { key: 'reports', label: 'Reports', icon: <ChartColumn size={18} /> },
+    ],
+  },
   {
     section: 'Equipment',
     items: [
@@ -177,6 +186,7 @@ function Shell({ user }: { user: User }) {
 
   const pages: Record<PageKey, ReactNode> = {
     dashboard: <DashboardPage onOpenAsset={nav.openAsset} onNavigate={go} />,
+    reports: <ReportsPage />,
     assets: <AssetsPage key={assetSearch} initialSearch={assetSearch} />,
     stock: <StockPage />,
     reconciliation: <ReconciliationPage />,

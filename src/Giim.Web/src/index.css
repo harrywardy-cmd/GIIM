@@ -346,3 +346,14 @@ a.button.primary { background: var(--accent); border-color: var(--accent); color
 }
 
 .filters input[type='search'] { flex: 1; min-width: 260px; }
+
+/* Reports: wide tables scroll sideways inside the page; single-hue horizontal bars with the value printed beside each. */
+.table-scroll { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+.table-scroll table { box-shadow: none; white-space: nowrap; }
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.hbars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hbars li { display: grid; grid-template-columns: minmax(90px, 200px) 1fr auto; gap: 12px; align-items: center; font-size: 13.5px; }
+.hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hbar-track { height: 14px; }
+.hbar { display: block; height: 100%; min-width: 2px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+.hbar-value { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 48px; text-align: right; }

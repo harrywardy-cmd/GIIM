@@ -46,6 +46,7 @@ api.MapDashboardEndpoints();
 api.MapLabelEndpoints();
 api.MapLocationEndpoints();
 api.MapActivityEndpoints();
+api.MapReportEndpoints();
 
 app.Run();
 
