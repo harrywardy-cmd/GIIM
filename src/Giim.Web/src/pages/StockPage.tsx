@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { PageHeader } from '../PageHeader'
+import { useUser } from '../user'
 
 type StockLevel = {
   id: string
@@ -35,6 +36,7 @@ const reasons = [
 ]
 
 export function StockPage() {
+  const { canChange } = useUser()
   const [levels, setLevels] = useState<StockLevel[]>([])
   const [locations, setLocations] = useState<StockLocation[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -101,7 +103,7 @@ export function StockPage() {
               <td>{l.reorderLevel}</td>
               <td className="small">{l.locations.map((x) => `${x.location}: ${x.quantity}`).join(' · ') || '-'}</td>
               <td>
-                <button onClick={() => setSelected(l)}>Manage</button>
+                {canChange && <button onClick={() => setSelected(l)}>Manage</button>}
               </td>
             </tr>
           ))}
@@ -118,7 +120,7 @@ export function StockPage() {
       {selected ? (
         <ManageItem key={selected.id} item={selected} locations={locations} onChanged={load} onClose={() => setSelected(null)} />
       ) : (
-        <NewItem onCreated={load} />
+        canChange && <NewItem onCreated={load} />
       )}
     </>
   )

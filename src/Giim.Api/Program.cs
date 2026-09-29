@@ -16,6 +16,7 @@ builder.Services.AddGiimConnectors(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddHealthChecks().AddDbContextCheck<GiimDbContext>();
+builder.AddGiimAuth();
 
 var app = builder.Build();
 
@@ -25,17 +26,28 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.MapHealthChecks("/health");
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseCsrfHeaderCheck();
 
-app.MapAssetEndpoints();
-app.MapImportEndpoints();
-app.MapCategoryEndpoints();
-app.MapStockEndpoints();
-app.MapIntuneEndpoints();
-app.MapPeopleEndpoints();
-app.MapDashboardEndpoints();
-app.MapLabelEndpoints();
-app.MapLocationEndpoints();
-app.MapActivityEndpoints();
+// Anonymous: health probes, sign-in and sign-in configuration.
+app.MapHealthChecks("/health");
+app.MapAuthEndpoints();
+
+// Everything else needs a GIIM role; changes need Technician (see AuthSetup.MapSecuredApi).
+var api = app.MapSecuredApi();
+api.MapAssetEndpoints();
+api.MapImportEndpoints();
+api.MapCategoryEndpoints();
+api.MapStockEndpoints();
+api.MapIntuneEndpoints();
+api.MapPeopleEndpoints();
+api.MapDashboardEndpoints();
+api.MapLabelEndpoints();
+api.MapLocationEndpoints();
+api.MapActivityEndpoints();
 
 app.Run();
+
+/// <summary>Exposed so integration tests can host the API.</summary>
+public partial class Program;

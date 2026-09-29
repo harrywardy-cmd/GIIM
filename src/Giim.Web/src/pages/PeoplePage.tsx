@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { useUser } from '../user'
 import { PageHeader } from '../PageHeader'
 import { LegacyOwnersPanel } from './LegacyOwnersPanel'
 import { PersonProfile } from './PersonProfile'
@@ -19,6 +20,7 @@ type PersonRow = {
 const PAGE_SIZE = 50
 
 export function PeoplePage() {
+  const { canAdminister } = useUser()
   const [tab, setTab] = useState<'people' | 'owners'>('people')
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
@@ -76,7 +78,7 @@ export function PeoplePage() {
         title="People"
         subtitle="Staff come from the directory (sample file now, Active Directory later)."
         actions={
-          <button onClick={sync} disabled={syncing}>
+          <button onClick={sync} disabled={syncing || !canAdminister} title={canAdminister ? undefined : "Administrators only"}>
             {syncing ? 'Syncing…' : 'Sync directory'}
           </button>
         }

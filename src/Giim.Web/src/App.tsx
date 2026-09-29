@@ -1,9 +1,10 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Boxes,
   ClipboardList,
   FileText,
   LayoutDashboard,
+  LogOut,
   MapPin,
   Laptop,
   Package,
@@ -15,7 +16,9 @@ import {
   Upload,
   Users,
 } from 'lucide-react'
-import { api } from './api'
+import { api, signedOutEvent } from './api'
+import { NoAccessPage, SignInPage } from './pages/SignInPage'
+import { initials, permissions, UserContext, type User } from './user'
 import { assetIdFromLink } from './links'
 import { NavContext, type Nav } from './nav'
 import { PageHeader } from './PageHeader'
@@ -46,7 +49,7 @@ export type PageKey =
   | 'categories'
   | 'locations'
 
-type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string }
+type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean }
 
 const navigation: { section: string; items: NavItem[] }[] = [
   { section: 'Overview', items: [{ key: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> }] },
@@ -70,7 +73,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
   {
     section: 'Setup',
     items: [
-      { key: 'imports', label: 'Import register', icon: <Upload size={18} /> },
+      { key: 'imports', label: 'Import register', icon: <Upload size={18} />, adminOnly: true },
       { key: 'categories', label: 'Asset categories', icon: <Tags size={18} /> },
       { key: 'locations', label: 'Locations', icon: <MapPin size={18} /> },
     ],
@@ -85,7 +88,38 @@ type View =
   | { kind: 'technician'; name: string }
   | { kind: 'search'; term: string }
 
+/** Checks who is signed in, then shows the sign-in page, a no-access page, or GIIM itself. */
 export default function App() {
+  const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [check, setCheck] = useState(0)
+
+  useEffect(() => {
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setUser)
+      .catch(() => setUser(null))
+  }, [check])
+
+  // Any API call that finds the session has expired sends the user back to sign in.
+  useEffect(() => {
+    const signedOut = () => setUser(null)
+    window.addEventListener(signedOutEvent, signedOut)
+    return () => window.removeEventListener(signedOutEvent, signedOut)
+  }, [])
+
+  if (user === undefined) return <p className="muted" style={{ padding: 32 }}>Loading…</p>
+  if (user === null) return <SignInPage onSignedIn={() => setCheck((n) => n + 1)} />
+  if (user.roles.length === 0) return <NoAccessPage name={user.name} />
+
+  return (
+    <UserContext.Provider value={user}>
+      <Shell user={user} />
+    </UserContext.Provider>
+  )
+}
+
+function Shell({ user }: { user: User }) {
+  const { canAdminister } = permissions(user)
   const [page, setPage] = useState<PageKey>('dashboard')
   // A QR label or shared link opens the asset straight away.
   const [views, setViews] = useState<View[]>(() => {
@@ -189,7 +223,7 @@ export default function App() {
             {navigation.map((group) => (
               <div key={group.section}>
                 <div className="nav-section">{group.section}</div>
-                {group.items.map((item) => (
+                {group.items.filter((item) => !item.adminOnly || canAdminister).map((item) => (
                   <button
                     key={item.key}
                     className="nav-item"
@@ -205,10 +239,15 @@ export default function App() {
             ))}
           </nav>
           <div className="sidebar-user">
-            <span className="avatar">LD</span>
+            <span className="avatar">{initials(user.name)}</span>
             <div>
-              <div className="name">local-dev</div>
-              <div className="role">IT Technician · sign-in not set up</div>
+              <div className="name">{user.name}</div>
+              <div className="role">{user.roles.join(', ')}</div>
+              <form method="post" action="/auth/logout">
+                <button type="submit" className="sidebar-signout">
+                  <LogOut size={14} /> Sign out
+                </button>
+              </form>
             </div>
           </div>
         </aside>
@@ -233,8 +272,8 @@ export default function App() {
               <button className="icon-button" title="Scan a barcode" aria-label="Scan a barcode" onClick={() => searchRef.current?.focus()}>
                 <ScanLine size={18} />
               </button>
-              <span className="avatar" title="local-dev">
-                LD
+              <span className="avatar" title={`${user.name} (${user.roles.join(', ')})`}>
+                {initials(user.name)}
               </span>
             </div>
           </header>

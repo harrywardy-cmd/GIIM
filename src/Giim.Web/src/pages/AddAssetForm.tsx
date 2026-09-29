@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { api } from '../api'
+import { api, csrfHeaders } from '../api'
 import { LocationSelect } from '../LocationSelect'
 
 type Category = { id: string; name: string; isActive: boolean }
@@ -69,7 +69,7 @@ export function AddAssetForm({ onCreated, onOpen, onCancel }: { onCreated: (id: 
     try {
       const response = await fetch('/api/assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...csrfHeaders },
         body: JSON.stringify({
           ...form,
           assetTag: form.assetTag || null,

@@ -23,7 +23,7 @@ Goal: one trustworthy list of who has what.
 6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
 7. **SDP asset import** (API v3, read-only)
 8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). Still to do: the Active Directory source and the department profile editor
-9. **Okta SSO with four roles**: Administrator, Technician, Manager/Approver, Viewer. Moved earlier because every
+9. ◐ **Okta SSO with four roles** ✅ built and tested with the development sign-in (see `docs/okta-setup.md`); connecting the real Okta app is waiting on the Okta admin. Moved earlier because every
    lifecycle action in Phase 1B must record *who* did it.
 10. Azure environment (Bicep) in Australia East, including Blob Storage for photos and attachments
 

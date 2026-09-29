@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { api } from '../api'
 import { PageHeader } from '../PageHeader'
 
 const fields = [
@@ -62,12 +63,7 @@ async function post(url: string, file: File, mapping?: Mapping): Promise<Preview
   body.append('file', file)
   if (mapping) body.append('mapping', JSON.stringify(mapping))
 
-  const response = await fetch(url, { method: 'POST', body })
-  if (!response.ok) {
-    const problem = await response.json().catch(() => null)
-    throw new Error(problem?.detail ?? `Request failed (${response.status})`)
-  }
-  return response.json()
+  return api<Preview>(url, { method: 'POST', body })
 }
 
 export function ImportPage() {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { api } from '../api'
+import { useUser } from '../user'
 import { PageHeader } from '../PageHeader'
 
 type Location = {
@@ -28,6 +29,7 @@ const kindLabel = (k: string) => kinds.find((x) => x.value === k)?.label ?? k
 const emptyDraft: Draft = { name: '', kind: 'Office', address: '', holdsStock: false, isActive: true }
 
 export function LocationsPage() {
+  const { canAdminister } = useUser()
   const [locations, setLocations] = useState<Location[]>([])
   const [error, setError] = useState<string | null>(null)
   const [refresh, setRefresh] = useState(0)
@@ -101,6 +103,7 @@ export function LocationsPage() {
         title="Locations"
         subtitle="Offices, store rooms and sites. Assets and stock link to these, so renaming a location updates everything."
         actions={
+          canAdminister && (
           <button
             className="primary"
             onClick={() => {
@@ -110,6 +113,7 @@ export function LocationsPage() {
           >
             <Plus size={16} /> Add location
           </button>
+          )
         }
       />
       {error && <p className="error">{error}</p>}
@@ -132,7 +136,7 @@ export function LocationsPage() {
             editing === l.id ? (
               formRow(l.id)
             ) : (
-              <tr key={l.id} className={`clickable ${l.isActive ? '' : 'inactive'}`} onClick={() => startEdit(l)} title="Click to edit">
+              <tr key={l.id} className={`clickable ${l.isActive ? '' : 'inactive'}`} onClick={() => canAdminister && startEdit(l)} title={canAdminister ? 'Click to edit' : undefined}>
                 <td>
                   <button className="link">{l.name}</button>
                 </td>

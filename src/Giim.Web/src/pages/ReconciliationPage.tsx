@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { useUser } from '../user'
 import { PageHeader } from '../PageHeader'
 import { statusText } from '../status'
 
@@ -49,6 +50,7 @@ const findings: { key: Finding; label: string; help: string }[] = [
 const PAGE_SIZE = 100
 
 export function ReconciliationPage() {
+  const { canChange } = useUser()
   const [report, setReport] = useState<Report | null>(null)
   const [finding, setFinding] = useState<Finding | ''>('')
   const [search, setSearch] = useState('')
@@ -116,7 +118,7 @@ export function ReconciliationPage() {
               ? `Last sync failed ${new Date(last.startedAt).toLocaleString('en-AU')}: ${last.error}`
               : `Last synced ${new Date(last.completedAt ?? last.startedAt).toLocaleString('en-AU')} · ${last.devicesSeen.toLocaleString()} devices`}
         </span>
-        <button onClick={sync} disabled={syncing}>
+        <button onClick={sync} disabled={syncing || !canChange}>
           {syncing ? 'Syncing…' : 'Sync now'}
         </button>
       </div>

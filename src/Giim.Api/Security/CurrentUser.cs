@@ -7,10 +7,10 @@ internal interface ICurrentUser
 }
 
 /// <summary>
-/// Until Okta SSO is added there is no signed-in user, so actions are recorded as "local-dev".
-/// When SSO arrives this returns the Okta username and every endpoint picks it up automatically.
+/// The signed-in user's login (their Okta username, e.g. john.smith@company.com.au): unique and stable, so it
+/// suits an audit trail. Every endpoint that changes data requires sign-in, so the fallback is never recorded.
 /// </summary>
 internal sealed class HttpCurrentUser(IHttpContextAccessor http) : ICurrentUser
 {
-    public string Name => http.HttpContext?.User.Identity?.Name is { Length: > 0 } name ? name : "local-dev";
+    public string Name => http.HttpContext?.User.Identity?.Name is { Length: > 0 } name ? name : "unknown";
 }
