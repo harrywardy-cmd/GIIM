@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { useUser } from '../user'
 
 type Candidate = {
   id: string
@@ -25,6 +26,7 @@ type Unresolved = {
 type Preview = { unlinked: number; canLinkAutomatically: number; ambiguous: number; notFound: number; unresolved: Unresolved[] }
 
 export function LegacyOwnersPanel({ onOpenPerson }: { onOpenPerson: (id: string) => void }) {
+  const { canChange, canAdminister } = useUser()
   const [preview, setPreview] = useState<Preview | null>(null)
   const [refresh, setRefresh] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -82,7 +84,7 @@ export function LegacyOwnersPanel({ onOpenPerson }: { onOpenPerson: (id: string)
       {message && <p className="success">{message}</p>}
       {error && <p className="error">{error}</p>}
 
-      <button className="primary" onClick={linkAll} disabled={busy || preview.canLinkAutomatically === 0}>
+      <button className="primary" onClick={linkAll} disabled={busy || preview.canLinkAutomatically === 0 || !canAdminister} title={canAdminister ? undefined : "Administrators only"}>
         {busy ? 'Linking…' : `Link ${preview.canLinkAutomatically.toLocaleString()} certain matches`}
       </button>
 
@@ -115,7 +117,7 @@ export function LegacyOwnersPanel({ onOpenPerson }: { onOpenPerson: (id: string)
                   <td>
                     {u.candidates.map((c) => (
                       <div key={c.id} className="candidate">
-                        <button onClick={() => resolve(u.assetId, c.id)}>This one</button>{' '}
+                        <button onClick={() => resolve(u.assetId, c.id)} disabled={!canChange}>This one</button>{' '}
                         <button className="link" onClick={() => onOpenPerson(c.id)}>
                           {c.displayName}
                         </button>

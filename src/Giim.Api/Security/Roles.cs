@@ -1,0 +1,25 @@
+namespace Giim.Api.Security;
+
+/// <summary>The four GIIM roles from the brief. Each comes from membership of an Okta group.</summary>
+internal static class Roles
+{
+    public const string Administrator = "Administrator";
+    public const string Technician = "Technician";
+    public const string Manager = "Manager";
+    public const string Viewer = "Viewer";
+
+    public static readonly string[] All = [Administrator, Technician, Manager, Viewer];
+}
+
+/// <summary>Authorisation policies. Higher roles include the lower ones' access.</summary>
+internal static class Policies
+{
+    /// <summary>Any GIIM role: can read.</summary>
+    public const string Read = "Giim.Read";
+
+    /// <summary>Technician or Administrator: can change assets, stock, repairs and so on.</summary>
+    public const string Change = "Giim.Change";
+
+    /// <summary>Administrator: locations, categories, imports and directory sync.</summary>
+    public const string Administer = "Giim.Administer";
+}

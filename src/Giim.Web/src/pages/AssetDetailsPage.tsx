@@ -5,6 +5,7 @@ import { LabelSheet } from './LabelSheet'
 import { StatusBadge } from '../StatusBadge'
 import { LocationSelect } from '../LocationSelect'
 import { useNav } from '../nav'
+import { useUser } from '../user'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
 import { CompleteRepairForm, DisposeForm, RetireForm, SendToRepairForm } from './RepairEndOfLifeForms'
@@ -165,6 +166,7 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   const [notice, setNotice] = useState<string | null>(null)
   const [printing, setPrinting] = useState(false)
   const nav = useNav()
+  const { canChange } = useUser()
   const ticketLink = (ticket: string | null) =>
     ticket ? (
       <button className="link" onClick={() => nav.openTicket(ticket)}>
@@ -269,16 +271,19 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               <a className="button" href={`/api/assets/${asset.id}/qr.png`} download>
                 <Download size={16} /> Download QR
               </a>
-              <button onClick={() => setPrinting(true)}>
-                <Printer size={16} /> Print label
-              </button>
+              {canChange && (
+                <button onClick={() => setPrinting(true)}>
+                  <Printer size={16} /> Print label
+                </button>
+              )}
             </div>
           </div>
 
           <h3>Actions</h3>
           {notice && <p className="success">{notice}</p>}
+          {!canChange && <p className="muted small">You have read-only access.</p>}
           <div className="action-buttons">
-            {availableActions(asset).map((a) => (
+            {(canChange ? availableActions(asset) : []).map((a) => (
               <button key={a.action} className={action === a.action ? 'primary' : ''} onClick={() => setAction(a.action)}>
                 {a.label}
               </button>

@@ -4,6 +4,7 @@ import { api } from '../api'
 import { assetIdFromLink } from '../links'
 import { LocationSelect } from '../LocationSelect'
 import { statusLabel } from '../status'
+import { useUser } from '../user'
 import { PageHeader } from '../PageHeader'
 import { StatusBadge } from '../StatusBadge'
 import { AddAssetForm } from './AddAssetForm'
@@ -32,6 +33,7 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
   const [notFound, setNotFound] = useState<string | null>(null)
   const [selected, setSelected] = useState<string[]>([])
   const [printing, setPrinting] = useState<string[] | null>(null)
+  const { canChange } = useUser()
   const [status, setStatus] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [locationId, setLocationId] = useState('')
@@ -109,14 +111,16 @@ export function AssetsPage({ initialSearch = '' }: { initialSearch?: string }) {
         title="Assets"
         subtitle="Every tracked device, who has it and where it is in its lifecycle."
         actions={
-          <>
-            <button disabled={selected.length === 0} onClick={() => setPrinting(selected)}>
-              <Printer size={16} /> Print labels{selected.length > 0 && ` (${selected.length})`}
-            </button>
-            <button className="primary" onClick={() => setAdding(true)}>
-              <Plus size={16} /> Add asset
-            </button>
-          </>
+          canChange && (
+            <>
+              <button disabled={selected.length === 0} onClick={() => setPrinting(selected)}>
+                <Printer size={16} /> Print labels{selected.length > 0 && ` (${selected.length})`}
+              </button>
+              <button className="primary" onClick={() => setAdding(true)}>
+                <Plus size={16} /> Add asset
+              </button>
+            </>
+          )
         }
       />
       <div className="form-row filters">

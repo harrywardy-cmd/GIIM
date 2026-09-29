@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
+import { useUser } from '../user'
 import { PageHeader } from '../PageHeader'
 
 type Category = {
@@ -12,6 +13,7 @@ type Category = {
 }
 
 export function CategoriesPage() {
+  const { canAdminister } = useUser()
   const [categories, setCategories] = useState<Category[]>([])
   const [error, setError] = useState<string | null>(null)
   const [name, setName] = useState('')
@@ -82,6 +84,7 @@ export function CategoriesPage() {
                   type="checkbox"
                   aria-label={`${c.name} managed in Intune`}
                   checked={c.isIntuneManaged}
+                  disabled={!canAdminister}
                   onChange={(e) => update(c, { isIntuneManaged: e.target.checked })}
                 />
               </td>
@@ -90,6 +93,7 @@ export function CategoriesPage() {
                   type="checkbox"
                   aria-label={`${c.name} returned when leaving`}
                   checked={c.returnOnOffboarding}
+                  disabled={!canAdminister}
                   onChange={(e) => update(c, { returnOnOffboarding: e.target.checked })}
                 />
               </td>
@@ -98,6 +102,7 @@ export function CategoriesPage() {
                   type="checkbox"
                   aria-label={`${c.name} active`}
                   checked={c.isActive}
+                  disabled={!canAdminister}
                   onChange={(e) => update(c, { isActive: e.target.checked })}
                 />
               </td>
@@ -120,7 +125,7 @@ export function CategoriesPage() {
             <input type="checkbox" checked={returned} onChange={(e) => setReturned(e.target.checked)} /> Return when leaving
           </label>
         </div>
-        <button className="primary" disabled={!name.trim()} onClick={add}>
+        <button className="primary" disabled={!name.trim() || !canAdminister} onClick={add}>
           Add category
         </button>
       </section>
