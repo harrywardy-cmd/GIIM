@@ -2,19 +2,23 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useNav } from '../nav'
 import { PageHeader } from '../PageHeader'
+import { RequestStatusBadge } from '../RequestBadges'
+import { requestReference } from '../requests'
 import { StatusBadge } from '../StatusBadge'
 
 export type SearchResponse = {
   term: string
   exactAssetId: string | null
   exactTicket: string | null
+  exactRequestId: string | null
   assets: { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string; status: string; assignedTo: string | null }[]
   people: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string; assets: number }[]
   tickets: { ticketNumber: string; actions: number; assets: number; lastAt: string }[]
   technicians: { actor: string; actions: number }[]
+  requests: { id: string; number: number; deviceDescription: string; status: string; recipient: string }[]
 }
 
-/** Grouped results for the top search bar: assets, people, tickets and technicians. */
+/** Grouped results for the top search bar: assets, people, requests, tickets and technicians. */
 export function SearchResults({ term, onSeeAllAssets }: { term: string; onSeeAllAssets: (term: string) => void }) {
   const nav = useNav()
   const [result, setResult] = useState<SearchResponse | null>(null)
@@ -28,11 +32,12 @@ export function SearchResults({ term, onSeeAllAssets }: { term: string; onSeeAll
 
   if (!result) return error ? <p className="error">{error}</p> : <p className="muted">Searching…</p>
 
-  const nothing = !result.assets.length && !result.people.length && !result.tickets.length && !result.technicians.length
+  const nothing =
+    !result.assets.length && !result.people.length && !result.tickets.length && !result.technicians.length && !result.requests.length
 
   return (
     <>
-      <PageHeader title={`Search: “${term}”`} subtitle="Assets, people, tickets and technicians. Exact serials, asset tags and ticket numbers open directly." />
+      <PageHeader title={`Search: “${term}”`} subtitle="Assets, people, requests, tickets and technicians. Exact serials, asset tags, REQ numbers and ticket numbers open directly." />
       {nothing && <p className="muted">Nothing found. Try part of a serial, a surname, a model or a ticket number.</p>}
 
       {result.assets.length > 0 && (
@@ -59,6 +64,30 @@ export function SearchResults({ term, onSeeAllAssets }: { term: string; onSeeAll
                     <StatusBadge status={a.status} />
                   </td>
                   <td>{a.assignedTo ?? '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+
+      {result.requests.length > 0 && (
+        <section className="card">
+          <div className="card-header">
+            <h3>Device requests</h3>
+          </div>
+          <table>
+            <tbody>
+              {result.requests.map((r) => (
+                <tr key={r.id} className="clickable" onClick={() => nav.openRequest(r.id)}>
+                  <td>
+                    <button className="link">{requestReference(r.number)}</button>
+                  </td>
+                  <td>{r.deviceDescription}</td>
+                  <td>{r.recipient}</td>
+                  <td>
+                    <RequestStatusBadge status={r.status} />
+                  </td>
                 </tr>
               ))}
             </tbody>

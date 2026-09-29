@@ -17,8 +17,16 @@ public sealed class DuplicateAssetException(Guid existingAssetId, string message
 /// <summary>Applies lifecycle actions and stores each one's timeline event in the same transaction.</summary>
 public sealed class AssetLifecycleService(GiimDbContext db)
 {
+    public Task<Asset> CreateAsync(NewAsset details, ActionContext context, AssetStatus startAs, Guid? locationId,
+        CancellationToken cancellationToken) =>
+        CreateAsync(details, context, startAs, locationId, alongside: null, cancellationToken);
+
+    /// <summary>
+    /// As above, plus <paramref name="alongside"/>: more changes (such as marking the device request received) saved
+    /// in the same save, so either both happen or neither does.
+    /// </summary>
     public async Task<Asset> CreateAsync(NewAsset details, ActionContext context, AssetStatus startAs, Guid? locationId,
-        CancellationToken cancellationToken)
+        Func<Asset, Task>? alongside, CancellationToken cancellationToken)
     {
         var category = await db.AssetCategories.FirstOrDefaultAsync(c => c.Id == details.CategoryId, cancellationToken)
             ?? throw new DomainException("Choose a category.");
@@ -37,6 +45,7 @@ public sealed class AssetLifecycleService(GiimDbContext db)
 
         db.Assets.Add(asset);
         db.AssetEvents.Add(assetEvent);
+        if (alongside is not null) await alongside(asset);
         try
         {
             await db.SaveChangesAsync(cancellationToken);

@@ -9,6 +9,8 @@ export const permissions = (user: User | null) => {
     canRead: roles.size > 0,
     canChange: roles.has('Technician') || roles.has('Administrator'),
     canAdminister: roles.has('Administrator'),
+    /** Raise and decide device requests: managers as well as IT. */
+    canRequest: roles.has('Manager') || roles.has('Technician') || roles.has('Administrator'),
   }
 }
 

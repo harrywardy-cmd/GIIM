@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { CircleCheck, Laptop, PackageCheck, PackageX, ShieldAlert, TriangleAlert, UserX, Wrench } from 'lucide-react'
+import { CircleCheck, Clock, Laptop, PackageCheck, PackageX, ShieldAlert, TriangleAlert, UserX, Wrench } from 'lucide-react'
 import { api } from '../api'
 import { useNav } from '../nav'
 import type { PageKey } from '../App'
 import { PageHeader } from '../PageHeader'
 
 type Dashboard = {
-  totals: { inService: number; assigned: number; available: number; inRepair: number; retired: number; disposed: number }
+  totals: { inService: number; assigned: number; available: number; inRepair: number; retired: number; disposed: number; pendingApproval: number }
   statusBreakdown: { key: string; label: string; count: number }[]
   warrantyExpiring: { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string; warrantyExpiry: string; daysLeft: number }[]
   attention: {
@@ -83,6 +83,7 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
         <Tile label="Assets in service" value={totals.inService} icon={<Laptop size={18} />} tone="tone-violet" />
         <Tile label="Assigned" value={totals.assigned} icon={<CircleCheck size={18} />} tone="tone-green" />
         <Tile label="Ready to deploy" value={totals.available} icon={<PackageCheck size={18} />} tone="tone-blue" />
+        <Tile label="Requests pending approval" value={totals.pendingApproval} icon={<Clock size={18} />} tone="tone-amber" />
         <Tile label="In repair" value={totals.inRepair} icon={<Wrench size={18} />} tone="tone-rose" />
         <Tile label="Retired" value={totals.retired} icon={<PackageX size={18} />} tone="tone-grey" note={`${number(totals.disposed)} disposed`} />
       </div>

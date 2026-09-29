@@ -30,5 +30,8 @@ param oktaClientSecret = readEnvironmentVariable('GIIM_OKTA_CLIENT_SECRET', '')
 // FILL IN: who gets alert emails, e.g. ['it-alerts@company.com.au'].
 param alertEmails = []
 
+// FILL IN once the mailbox exists: where request emails come from, e.g. 'giim@company.com.au' (docs/email-notifications.md).
+param notificationMailbox = ''
+
 // Optional: only allow these addresses (office, VPN) to open GIIM, e.g. ['203.0.113.0/24'].
 param allowedIpRanges = []

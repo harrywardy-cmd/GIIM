@@ -78,6 +78,12 @@ public sealed class Asset : Entity
     /// as imports, so a scanned "5cg 123-abc" matches Intune's "5CG123ABC".
     /// </summary>
     /// <param name="startAs">Received (needs setting up) or ReadyToDeploy (already set up, e.g. existing spare stock).</param>
+    /// <summary>
+    /// Today's date where it is latest (UTC+14). Dates are entered in local time, so comparing with the UTC date
+    /// would call today "the future" every morning in Australia (10-11 hours ahead of UTC).
+    /// </summary>
+    internal static DateOnly LatestToday => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(14));
+
     public static (Asset Asset, AssetEvent Event) Receive(NewAsset details, ActionContext context,
         AssetStatus startAs = AssetStatus.Received, Locations.Location? location = null)
     {
@@ -98,8 +104,7 @@ public sealed class Asset : Entity
         if (string.IsNullOrWhiteSpace(details.Model))
             throw new DomainException("Model is required.");
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (details.PurchaseDate > today)
+        if (details.PurchaseDate > LatestToday)
             throw new DomainException("Purchase date can't be in the future.");
         if (details.PurchaseDate is { } bought && details.WarrantyExpiry < bought)
             throw new DomainException("Warranty can't expire before the purchase date.");
@@ -336,7 +341,7 @@ public sealed class Asset : Entity
             throw new DomainException("Record the disposal company.");
         if (auditable && string.IsNullOrWhiteSpace(certificateNumber))
             throw new DomainException("Record the disposal or destruction certificate number; it is needed for audits.");
-        if (disposedOn > DateOnly.FromDateTime(DateTime.UtcNow))
+        if (disposedOn > LatestToday)
             throw new DomainException("Disposal date can't be in the future.");
 
         var assetEvent = Transition(AssetStatus.Disposed, AssetEventType.Disposed, context, $"Disposed ({Describe(method)})", new

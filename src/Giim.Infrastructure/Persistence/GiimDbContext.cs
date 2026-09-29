@@ -4,9 +4,11 @@ using Giim.Domain.Auditing;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
 using Giim.Domain.Locations;
+using Giim.Domain.Notifications;
 using Giim.Domain.People;
 using Giim.Domain.Repairs;
 using Giim.Domain.Provisioning;
+using Giim.Domain.Requests;
 using Giim.Domain.Software;
 using Giim.Domain.Stock;
 using Microsoft.EntityFrameworkCore;
@@ -39,7 +41,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     private void GuardAppendOnly()
     {
         var tampered = ChangeTracker.Entries()
-            .Where(e => e.Entity is AssetEvent or AuditEntry or StockMovement)
+            .Where(e => e.Entity is AssetEvent or AuditEntry or StockMovement or DeviceRequestEvent)
             .FirstOrDefault(e => e.State is EntityState.Modified or EntityState.Deleted);
 
         if (tampered is not null)
@@ -56,6 +58,12 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<ServiceCase> Cases => Set<ServiceCase>();
     public DbSet<ChecklistTask> ChecklistTasks => Set<ChecklistTask>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<DeviceRequest> DeviceRequests => Set<DeviceRequest>();
+    public DbSet<DeviceRequestEvent> DeviceRequestEvents => Set<DeviceRequestEvent>();
+    public DbSet<Notification> Notifications => Set<Notification>();
+
+    /// <summary>Numbers device requests REQ1001, REQ1002...</summary>
+    public const string RequestNumberSequence = "DeviceRequestNumbers";
 
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
@@ -258,6 +266,68 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
         {
             e.HasIndex(a => a.Timestamp);
             e.HasIndex(a => new { a.EntityType, a.EntityId });
+        });
+
+        modelBuilder.HasSequence<int>(RequestNumberSequence).StartsAt(1001);
+
+        modelBuilder.Entity<DeviceRequest>(e =>
+        {
+            e.HasIndex(r => r.Number).IsUnique();
+            e.HasIndex(r => new { r.Status, r.SubmittedAt });
+            e.HasIndex(r => r.ApproverPersonId);
+            e.HasIndex(r => r.RecipientPersonId);
+            e.HasIndex(r => r.RequestedBy);
+            e.HasIndex(r => r.TicketNumber);
+            e.HasIndex(r => r.PurchaseOrder);
+            e.HasIndex(r => r.AssetId);
+            e.Ignore(r => r.Reference);
+            e.Ignore(r => r.IsClosed);
+            foreach (var login in new[] { nameof(DeviceRequest.RequestedBy), nameof(DeviceRequest.DecidedBy) })
+                e.Property(login).HasMaxLength(200);
+            foreach (var name in new[] { nameof(DeviceRequest.RequestedByName), nameof(DeviceRequest.DecidedByName), nameof(DeviceRequest.Supplier) })
+                e.Property(name).HasMaxLength(200);
+            e.Property(r => r.RequestedByEmail).HasMaxLength(256);
+            e.Property(r => r.DeviceDescription).HasMaxLength(200);
+            e.Property(r => r.Specifications).HasMaxLength(1000);
+            e.Property(r => r.Reason).HasMaxLength(1000);
+            e.Property(r => r.Notes).HasMaxLength(2000);
+            e.Property(r => r.TicketNumber).HasMaxLength(50);
+            e.Property(r => r.BudgetCode).HasMaxLength(50);
+            e.Property(r => r.DecisionComment).HasMaxLength(1000);
+            e.Property(r => r.PurchaseOrder).HasMaxLength(50);
+            e.Property(r => r.TrackingNumber).HasMaxLength(100);
+            e.Property(r => r.PurchaseNotes).HasMaxLength(1000);
+            e.Property(r => r.CancellationReason).HasMaxLength(1000);
+            e.HasOne<Person>().WithMany().HasForeignKey(r => r.RecipientPersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Person>().WithMany().HasForeignKey(r => r.ApproverPersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Department>().WithMany().HasForeignKey(r => r.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AssetCategory>().WithMany().HasForeignKey(r => r.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Asset>().WithMany().HasForeignKey(r => r.AssetId).OnDelete(DeleteBehavior.Restrict);
+            // Two people acting on the same request at once: the second save fails instead of overwriting the first.
+            e.Property<byte[]>("RowVersion").IsRowVersion();
+        });
+
+        modelBuilder.Entity<DeviceRequestEvent>(e =>
+        {
+            e.ToTable("DeviceRequestEvents");
+            e.HasIndex(x => new { x.RequestId, x.OccurredAt });
+            e.HasIndex(x => x.Actor);
+            e.Property(x => x.Actor).HasMaxLength(200);
+            e.Property(x => x.ActorName).HasMaxLength(200);
+            e.Property(x => x.Summary).HasMaxLength(500);
+            e.Property(x => x.Comment).HasMaxLength(2000);
+            e.HasOne<DeviceRequest>().WithMany().HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Notification>(e =>
+        {
+            e.HasIndex(n => new { n.Status, n.NextAttemptAt });
+            e.HasIndex(n => n.RequestId);
+            e.Property(n => n.Kind).HasMaxLength(50);
+            e.Property(n => n.ToAddress).HasMaxLength(256);
+            e.Property(n => n.ToName).HasMaxLength(200);
+            e.Property(n => n.Subject).HasMaxLength(300);
+            e.Property(n => n.LastError).HasMaxLength(1000);
         });
     }
 }

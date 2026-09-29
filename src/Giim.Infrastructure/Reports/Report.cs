@@ -38,5 +38,6 @@ public static class ReportCatalogue
         ("technicians", "Technician activity", "What each technician recorded in the period.", true),
         ("leavers", "Leavers holding kit", "People who have left or are leaving and still have assets recorded against them.", false),
         ("stock", "Stock levels", "Stock on hand per location against reorder levels.", false),
+        ("requests", "Device requests", "Requests raised in the period: approval rate, time to decide and time to hand over.", true),
     ];
 }

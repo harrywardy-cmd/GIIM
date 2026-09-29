@@ -26,6 +26,8 @@ param oktaClientId string
 @description('If not empty, only these IP ranges (CIDR) can open GIIM, e.g. office and VPN addresses.')
 param allowedIpRanges array
 param intuneSyncInterval string
+@description('Mailbox the workers send emails from; empty turns email sending off.')
+param notificationMailbox string
 param tags object
 
 var websiteContributor = 'de139f84-1756-47ae-9be6-808fbbe84772' // Website Contributor
@@ -61,6 +63,8 @@ var workersSettings = union(commonSettings, {
   AZURE_CLIENT_ID: workersIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, workersIdentity.clientId)
   Intune__SyncInterval: intuneSyncInterval
+  Email__Mode: empty(notificationMailbox) ? 'None' : 'Graph'
+  Email__FromMailbox: notificationMailbox
 })
 
 var apiAppSettings = [for setting in items(apiSettings): { name: setting.key, value: setting.value }]

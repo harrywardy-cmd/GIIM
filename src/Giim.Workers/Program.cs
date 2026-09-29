@@ -1,6 +1,8 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Giim.Connectors;
+using Giim.Connectors.Email;
 using Giim.Infrastructure;
+using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
 using Giim.Workers;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -18,6 +20,10 @@ if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
     builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddHostedService<IntuneSyncWorker>();
+// Sends queued emails; only the workers send (the API just queues them in the same save as the change).
+if (builder.Configuration.GetValue<EmailMode?>("Email:Mode") is EmailMode.File or EmailMode.Graph)
+    builder.Services.AddScoped<NotificationDispatcher>();
+builder.Services.AddHostedService<NotificationWorker>();
 
 var app = builder.Build();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });

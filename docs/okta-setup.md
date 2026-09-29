@@ -9,8 +9,13 @@ own, and Okta's MFA and sign-on policies apply as usual. What each person can do
 |---|---|---|
 | `GIIM-Administrators` | Administrator | Everything, including locations, categories, register import and directory sync |
 | `GIIM-Technicians` | Technician | Add, assign, return, repair, retire, move and label assets; stock; resolve spreadsheet owners; Intune sync |
-| `GIIM-Managers` | Manager/Approver | Read everything (team views and approvals arrive with device requests in Phase 2) |
+| `GIIM-Managers` | Manager/Approver | Read everything; raise device requests and approve or reject those they are the approver for (usually their own team's) |
 | `GIIM-Viewers` | Viewer | Read everything |
+
+**Approvers:** GIIM recognises a manager as the approver of their team's device requests by matching their Okta
+username (or email) to their record in GIIM's staff directory. With Okta importing users from Active Directory these are
+normally the same UPN, so nothing extra is needed; if a manager can't see their team's requests under **Approvals**, check
+the two match.
 
 Someone signed in to Okta but in **none** of these groups sees a "no access" page. Group names can be changed in
 GIIM's settings (`Auth:RoleGroups`) if your naming convention differs.

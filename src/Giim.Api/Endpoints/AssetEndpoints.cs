@@ -180,6 +180,9 @@ internal static class AssetEndpoints
                 asset.PurchaseDate, asset.WarrantyExpiry, asset.Supplier, asset.Cost, asset.Notes,
                 asset.LegacyAssignedTo, AssignedTo = holder, asset.IntuneDeviceId, asset.LastSeenInIntune, asset.CreatedAt, asset.UpdatedAt,
                 NextStatuses = AssetLifecycle.NextStatuses(asset.Status),
+                // The device request this asset was bought for or handed over against, if any.
+                Requests = await db.DeviceRequests.AsNoTracking().Where(r => r.AssetId == id).OrderBy(r => r.SubmittedAt)
+                    .Select(r => new { r.Id, r.Number }).ToListAsync(ct),
                 Owners = owners,
                 Repairs = (await repairs.ForAssetAsync(id, ct)).Select(r => new
                 {

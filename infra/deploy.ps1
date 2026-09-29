@@ -113,4 +113,8 @@ Write-Host "  Sign-out redirect URI : $($o.oktaSignOutRedirectUri.value)"
 Write-Host ''
 Write-Host "GIIM's outbound IP address (for allow-lists): $($o.outboundIpAddress.value)" -ForegroundColor Cyan
 Write-Host ''
+Write-Host 'For the Exchange administrator (sending emails, see docs/email-notifications.md):' -ForegroundColor Cyan
+Write-Host "  Workers identity client ID : $($o.workersIdentityClientId.value)"
+Write-Host "  Workers identity object ID : $($o.workersIdentityPrincipalId.value)"
+Write-Host ''
 Write-Host 'Next (first deployment only): infra/scripts/Grant-SqlAccess.ps1 and infra/scripts/Grant-GraphAccess.ps1' -ForegroundColor Yellow

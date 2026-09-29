@@ -6,6 +6,7 @@ using Giim.Infrastructure.Locations;
 using Giim.Infrastructure.People;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Reports;
+using Giim.Infrastructure.Requests;
 using Giim.Infrastructure.Stock;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<LocationService>();
         services.AddScoped<ActivityService>();
         services.AddScoped<ReportService>();
+        services.AddScoped<RequestService>();
         services.AddScoped<PeopleSyncService>();
         services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();

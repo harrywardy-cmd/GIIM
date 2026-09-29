@@ -62,7 +62,22 @@ internal static class ActivityEndpoints
             var exactTicket = tickets.FirstOrDefault(t => t.TicketNumber == ActivityService.NormaliseTicket(term))?.TicketNumber;
             var technicians = (await activity.TechniciansAsync(term, 5, ct)).Select(t => new { t.Actor, t.Actions });
 
-            return Results.Ok(new { term, exactAssetId, exactTicket, assets, people, tickets, technicians });
+            // Device requests: "REQ1028" (or just 1028) opens the request directly.
+            var number = term.StartsWith("REQ", StringComparison.OrdinalIgnoreCase) && int.TryParse(term[3..], out var n) ? n
+                : int.TryParse(term, out var m) ? m : -1;
+            var requests = await db.DeviceRequests.AsNoTracking()
+                .Where(r => r.Number == number || r.DeviceDescription.Contains(term) || (r.PurchaseOrder != null && r.PurchaseOrder.Contains(term)))
+                .OrderByDescending(r => r.SubmittedAt)
+                .Take(8)
+                .Select(r => new
+                {
+                    r.Id, r.Number, r.DeviceDescription, r.Status,
+                    Recipient = db.People.Where(p => p.Id == r.RecipientPersonId).Select(p => p.DisplayName).First(),
+                })
+                .ToListAsync(ct);
+            var exactRequestId = requests.Where(r => r.Number == number).Select(r => (Guid?)r.Id).FirstOrDefault();
+
+            return Results.Ok(new { term, exactAssetId, exactTicket, exactRequestId, assets, people, tickets, technicians, requests });
         });
     }
 }

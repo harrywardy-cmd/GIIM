@@ -2,6 +2,7 @@ using System.Globalization;
 using Giim.Domain.Assets;
 using Giim.Domain.People;
 using Giim.Domain.Repairs;
+using Giim.Domain.Requests;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Stock;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +23,7 @@ public sealed class ReportService(GiimDbContext db, StockService stock, TimeProv
         "technicians" => TechniciansAsync(filter, cancellationToken),
         "leavers" => LeaversAsync(cancellationToken),
         "stock" => StockAsync(cancellationToken),
+        "requests" => RequestsAsync(filter, cancellationToken),
         _ => throw new KeyNotFoundException($"There is no '{key}' report."),
     };
 
@@ -287,6 +289,62 @@ public sealed class ReportService(GiimDbContext db, StockService stock, TimeProv
                 ("state", l.IsLow ? "Low" : "OK"), ("locations", string.Join("; ", l.Locations.Select(x => $"{x.Location}: {x.Quantity}"))))).ToList(),
             "On hand by item",
             [.. active.OrderByDescending(l => l.Total).Take(12).Select(l => new ChartBar(l.Name, l.Total))]);
+    }
+
+    // ---- Device requests -----------------------------------------------------------------------------------
+
+    private async Task<Report> RequestsAsync(ReportFilter filter, CancellationToken cancellationToken)
+    {
+        var (from, to) = Period(filter);
+        var start = new DateTimeOffset(from.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        var end = new DateTimeOffset(to.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        var requests = await db.DeviceRequests.AsNoTracking()
+            .Where(r => r.SubmittedAt >= start && r.SubmittedAt < end)
+            .OrderByDescending(r => r.SubmittedAt)
+            .Select(r => new
+            {
+                r.Number, r.SubmittedAt, r.DeviceDescription, r.Status, r.Priority, r.ReasonType, r.RequestedByName, r.DecidedByName,
+                r.DecidedAt, r.EstimatedCost, r.OrderCost, r.Supplier, r.PurchaseOrder, r.BudgetCode, r.CompletedAt,
+                Category = db.AssetCategories.Where(c => c.Id == r.CategoryId).Select(c => c.Name).First(),
+                Recipient = db.People.Where(p => p.Id == r.RecipientPersonId).Select(p => p.DisplayName).First(),
+                Department = db.Departments.Where(d => d.Id == r.DepartmentId).Select(d => d.Name).FirstOrDefault(),
+                Approver = db.People.Where(p => p.Id == r.ApproverPersonId).Select(p => p.DisplayName).FirstOrDefault(),
+            })
+            .ToListAsync(cancellationToken);
+
+        var decided = requests.Where(r => r.DecidedAt is not null).ToList();
+        var approved = decided.Count(r => r.Status != RequestStatus.Rejected);
+        var completed = requests.Where(r => r.CompletedAt is not null).ToList();
+        static double Days(DateTimeOffset a, DateTimeOffset b) => (b - a).TotalDays;
+
+        return new Report("requests", "Device requests", $"Requests raised {D(from)} to {D(to)}.",
+            [
+                new("Requests", N(requests.Count)),
+                new("Waiting for approval", N(requests.Count(r => r.Status is RequestStatus.PendingApproval or RequestStatus.InfoRequested))),
+                new("Approval rate", decided.Count == 0 ? "-" : $"{100.0 * approved / decided.Count:0}%"),
+                new("Average time to decide", decided.Count == 0 ? "-" : $"{decided.Average(r => Days(r.SubmittedAt, r.DecidedAt!.Value)):0.0} days"),
+                new("Average time to hand over", completed.Count == 0 ? "-" : $"{completed.Average(r => Days(r.SubmittedAt, r.CompletedAt!.Value)):0.0} days"),
+                new("Ordered value", Money(requests.Sum(r => r.OrderCost ?? 0))),
+            ],
+            [
+                new("reference", "Request"), new("submitted", "Raised", ColumnType.Date), new("device", "Device"), new("category", "Category"),
+                new("recipient", "For"), new("department", "Department"), new("requestedBy", "Requested by"), new("status", "Status"),
+                new("priority", "Priority"), new("reason", "Reason"), new("approver", "Approver"), new("decidedBy", "Decided by"),
+                new("daysToDecide", "Days to decide", ColumnType.Number), new("budget", "Budget code"), new("estimated", "Estimated cost", ColumnType.Money),
+                new("cost", "Order cost", ColumnType.Money), new("supplier", "Supplier"), new("po", "PO number"),
+                new("daysToHandOver", "Days to hand over", ColumnType.Number),
+            ],
+            requests.Select(r => Row(
+                ("reference", DeviceRequest.FormatReference(r.Number)), ("submitted", DateOnly.FromDateTime(r.SubmittedAt.UtcDateTime)),
+                ("device", r.DeviceDescription), ("category", r.Category), ("recipient", r.Recipient), ("department", r.Department),
+                ("requestedBy", r.RequestedByName), ("status", DeviceRequest.StatusText(r.Status)), ("priority", r.Priority.ToString()),
+                ("reason", r.ReasonType.ToString()), ("approver", r.Approver ?? "Administrator"), ("decidedBy", r.DecidedByName),
+                ("daysToDecide", r.DecidedAt is { } d ? Math.Round((decimal)Days(r.SubmittedAt, d), 1) : (decimal?)null),
+                ("budget", r.BudgetCode), ("estimated", r.EstimatedCost), ("cost", r.OrderCost), ("supplier", r.Supplier), ("po", r.PurchaseOrder),
+                ("daysToHandOver", r.CompletedAt is { } c ? Math.Round((decimal)Days(r.SubmittedAt, c), 1) : (decimal?)null))).ToList(),
+            "Requests by status",
+            [.. requests.GroupBy(r => DeviceRequest.StatusText(r.Status)).OrderByDescending(g => g.Count()).Select(g => new ChartBar(g.Key, g.Count()))]);
     }
 
     // ---- helpers --------------------------------------------------------------------------------------------

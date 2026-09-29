@@ -20,6 +20,13 @@ internal static class Policies
     /// <summary>Technician or Administrator: can change assets, stock, repairs and so on.</summary>
     public const string Change = "Giim.Change";
 
+    /// <summary>
+    /// Manager, Technician or Administrator: raise, decide, answer, cancel and comment on device requests. Only
+    /// endpoints marked with <see cref="AuthSetup.AllowManagers{TBuilder}"/> use it; the request itself then checks who
+    /// may decide (the named approver or an administrator).
+    /// </summary>
+    public const string Request = "Giim.Request";
+
     /// <summary>Administrator: locations, categories, imports and directory sync.</summary>
     public const string Administer = "Giim.Administer";
 }

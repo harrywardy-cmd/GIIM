@@ -30,6 +30,24 @@ public class ReceiveAssetTests
     }
 
     [Fact]
+    public void Todays_date_in_australia_is_accepted_even_when_utc_is_still_yesterday()
+    {
+        var sydneyToday = DateOnly.FromDateTime(DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(11)).DateTime);
+
+        var (asset, _) = Asset.Receive(Details() with { PurchaseDate = sydneyToday }, Tech);
+
+        Assert.Equal(sydneyToday, asset.PurchaseDate);
+    }
+
+    [Fact]
+    public void A_purchase_date_that_is_tomorrow_everywhere_is_refused()
+    {
+        var future = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2));
+
+        Assert.Throws<DomainException>(() => Asset.Receive(Details() with { PurchaseDate = future }, Tech));
+    }
+
+    [Fact]
     public void Existing_spare_can_start_ready_to_deploy()
     {
         var (asset, _) = Asset.Receive(Details(), Tech, AssetStatus.ReadyToDeploy);
