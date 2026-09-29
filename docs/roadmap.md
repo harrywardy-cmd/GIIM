@@ -50,8 +50,10 @@ Goal: every asset has a complete, append-only history, and every action records 
 
 1. ✅ **Dashboard** (N17): summary cards, status chart, needs-attention list, warranty expiring, recent activity (trend arrows need history snapshots; later)
 2. ◐ **Employee profile page** (N19): details, manager, assigned assets and assignment history done; requests arrive with Phase 2
-3. **Reports** (N18) with CSV / Excel export: inventory, repairs, warranty, technician activity
-   (request reports are added in Phase 2)
+3. ✅ **Reports** (N18) with CSV / Excel export: asset inventory (status/category/location filters), warranty
+   (expiring within N days, expired, not recorded), repairs (cost, turnaround, warranty claims, repeat assets),
+   technician activity, leavers still holding kit, stock levels. Screen shows 1,000 rows; exports hold every row and
+   are protected against spreadsheet formula injection (request reports are added in Phase 2)
 
 ## Phase 2: Requests and the ServiceDesk Plus workflow
 
