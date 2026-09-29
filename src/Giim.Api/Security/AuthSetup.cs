@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Giim.Api.Hosting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
 
@@ -30,7 +31,7 @@ internal static class AuthSetup
             throw new InvalidOperationException(
                 "Auth:Mode 'Development' is only allowed in the Development environment. Use 'Okta' everywhere else.");
 
-        builder.Services.AddDataProtection().SetApplicationName("GIIM");
+        builder.Services.AddDataProtection().SetApplicationName("GIIM").StoreKeys(builder.Configuration);
 
         var auth = builder.Services.AddAuthentication(o =>
             {
@@ -42,7 +43,8 @@ internal static class AuthSetup
                 o.Cookie.Name = "giim.session";
                 o.Cookie.HttpOnly = true;
                 o.Cookie.SameSite = SameSiteMode.Lax;
-                o.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                // HTTPS-only everywhere except a developer PC (the Vite dev server is plain http).
+                o.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
                 o.ExpireTimeSpan = options.SessionIdleTimeout;
                 o.SlidingExpiration = true;
                 // The UI handles sign-in; API calls get status codes, not redirects.

@@ -25,7 +25,10 @@ Goal: one trustworthy list of who has what.
 8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). Still to do: the Active Directory source and the department profile editor
 9. ◐ **Okta SSO with four roles** ✅ built and tested with the development sign-in (see `docs/okta-setup.md`); connecting the real Okta app is waiting on the Okta admin. Moved earlier because every
    lifecycle action in Phase 1B must record *who* did it.
-10. Azure environment (Bicep) in Australia East, including Blob Storage for photos and attachments
+10. ◐ **Azure environment** ✅ built: Bicep templates for test and prod in Australia East (App Service, Azure SQL,
+    Key Vault, Blob Storage, private networking, monitoring and alerts), GitHub Actions CI and gated deployments,
+    managed identities throughout, and a runbook (`infra/README.md`). Deploying it is waiting on an Azure subscription.
+    Photos and attachments (the storage is ready) follow as their own item
 
 **Exit criteria:** the team uses GIIM as the asset register, and the reconciliation report has been worked through.
 

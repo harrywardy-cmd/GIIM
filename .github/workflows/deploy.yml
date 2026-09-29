@@ -1,0 +1,73 @@
+# Builds once, then deploys the same build to test and, after approval, to production.
+# Does nothing until the repository variable DEPLOY_ENABLED is 'true' (set it once Azure is ready; see infra/README.md).
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false # never stop a deployment half way
+
+jobs:
+  build:
+    name: Build release
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/Giim.Web/package-lock.json
+
+      - name: Test
+        run: dotnet test --configuration Release
+
+      - name: Build web UI
+        working-directory: src/Giim.Web
+        run: |
+          npm ci
+          npm run build
+
+      - name: Publish API (with the web UI) and workers
+        run: |
+          dotnet publish src/Giim.Api --configuration Release --output out/api
+          mkdir -p out/api/wwwroot
+          cp -r src/Giim.Web/dist/. out/api/wwwroot/
+          dotnet publish src/Giim.Workers --configuration Release --output out/workers
+
+      - name: Build database migrations
+        run: |
+          dotnet tool restore
+          dotnet ef migrations bundle --project src/Giim.Infrastructure --startup-project src/Giim.Infrastructure \
+            --configuration Release --self-contained --target-runtime linux-x64 --output out/migrations/efbundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: out/
+          retention-days: 30
+
+  test:
+    name: Test environment
+    needs: build
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: test
+
+  prod:
+    name: Production
+    needs: test
+    uses: ./.github/workflows/deploy-environment.yml
+    with:
+      environment: prod
