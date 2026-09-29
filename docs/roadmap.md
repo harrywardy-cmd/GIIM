@@ -42,7 +42,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 4. ◐ **Asset details page** (N9) and ✅ **UI refresh** to the mockup style (N22): sidebar, top bar with global search, cards, pill badges
 5. ✅ **Assign / return workflow** (N3) with **accessory bundles** (N4): tracked accessories, stock items, condition, missing items; return requests
 6. ✅ **Repair records** (N5), ✅ **lost / stolen** (N6), ✅ **retirement and disposal** with data sanitisation and certificate (N7)
-7. ◐ **Global search** including ticket number (N10) and a **tickets view** (N20). Done so far: **Add asset** by hand with scanner-friendly serial entry and duplicate check, exact serial/tag lookup (Enter or scan opens the device), serial search ignoring spaces/dashes, owners history per asset
+7. ✅ **Global search** (N10): assets, people, tickets and technicians from the top bar; exact serial/tag/QR/ticket opens directly. ✅ **Tickets view** (N20) and technician activity. Also: **Add asset** by hand with scanner-friendly serial entry and duplicate check, exact serial/tag lookup (Enter or scan opens the device), serial search ignoring spaces/dashes, owners history per asset
 8. ✅ **QR codes** (N11): QR on each asset page, PNG download, printable A4 label sheets (21 or 65 per sheet, start-at for part-used sheets); scanning opens the asset (phone camera or 2D scanner); links to assets
    **Photos and attachments** (N12) still to do
 

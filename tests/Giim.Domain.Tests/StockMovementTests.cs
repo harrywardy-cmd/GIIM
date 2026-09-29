@@ -22,6 +22,14 @@ public class StockMovementTests
     }
 
     [Fact]
+    public void Ticket_numbers_are_stored_upper_case_like_other_tickets()
+    {
+        var movement = StockMovement.Record(Bag, Store, StockMovementReason.Issued, 1, 5, "tester", serviceDeskRequestId: " inc70001 ");
+
+        Assert.Equal("INC70001", movement.ServiceDeskRequestId);
+    }
+
+    [Fact]
     public void Closed_location_can_be_emptied_but_not_restocked()
     {
         var closed = new Locations.Location { Name = "Old Sydney Office", IsActive = false };

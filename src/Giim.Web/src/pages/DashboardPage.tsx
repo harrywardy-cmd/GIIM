@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { CircleCheck, Laptop, PackageCheck, PackageX, ShieldAlert, TriangleAlert, UserX, Wrench } from 'lucide-react'
 import { api } from '../api'
+import { useNav } from '../nav'
 import type { PageKey } from '../App'
 import { PageHeader } from '../PageHeader'
 
@@ -50,6 +51,7 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
   const [data, setData] = useState<Dashboard | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [hovered, setHovered] = useState<string | null>(null)
+  const nav = useNav()
 
   useEffect(() => {
     api<Dashboard>('/api/dashboard')
@@ -214,8 +216,20 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
                     {e.manufacturer} {e.model}
                     <div className="muted small">{e.assetTag ?? e.serialNumber}</div>
                   </td>
-                  <td>{e.actor}</td>
-                  <td>{e.ticketNumber ?? '-'}</td>
+                  <td onClick={(event) => event.stopPropagation()}>
+                    <button className="link" onClick={() => nav.openTechnician(e.actor)}>
+                      {e.actor}
+                    </button>
+                  </td>
+                  <td onClick={(event) => event.stopPropagation()}>
+                    {e.ticketNumber ? (
+                      <button className="link" onClick={() => nav.openTicket(e.ticketNumber!)}>
+                        {e.ticketNumber}
+                      </button>
+                    ) : (
+                      '-'
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

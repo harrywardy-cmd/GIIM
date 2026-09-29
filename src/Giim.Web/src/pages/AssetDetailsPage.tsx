@@ -4,6 +4,7 @@ import { api } from '../api'
 import { LabelSheet } from './LabelSheet'
 import { StatusBadge } from '../StatusBadge'
 import { LocationSelect } from '../LocationSelect'
+import { useNav } from '../nav'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
 import { CompleteRepairForm, DisposeForm, RetireForm, SendToRepairForm } from './RepairEndOfLifeForms'
@@ -163,6 +164,15 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
   const [action, setAction] = useState<Action | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [printing, setPrinting] = useState(false)
+  const nav = useNav()
+  const ticketLink = (ticket: string | null) =>
+    ticket ? (
+      <button className="link" onClick={() => nav.openTicket(ticket)}>
+        {ticket}
+      </button>
+    ) : (
+      '-'
+    )
   const done = () => {
     setAction(null)
     setRefresh((n) => n + 1)
@@ -206,7 +216,9 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
             <dd>
               {asset.assignedTo ? (
                 <>
-                  {asset.assignedTo.displayName}
+                  <button className="link" onClick={() => nav.openPerson(asset.assignedTo!.id)}>
+                    {asset.assignedTo.displayName}
+                  </button>
                   <div className="muted small">
                     {asset.assignedTo.userPrincipalName} · {asset.assignedTo.department}
                     {asset.assignedTo.status !== 'Active' && ` · ${asset.assignedTo.status}`}
@@ -338,7 +350,9 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                 {asset.owners.map((o) => (
                   <tr key={o.id}>
                     <td>
-                      {o.displayName}
+                      <button className="link" onClick={() => nav.openPerson(o.personId)}>
+                        {o.displayName}
+                      </button>
                       <div className="muted small">issued by {o.assignedBy ?? '-'}</div>
                     </td>
                     <td>{formatDate(o.assignedAt)}</td>
@@ -348,8 +362,8 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                       {o.missing.length > 0 && <div className="error small">Missing: {o.missing.join(', ')}</div>}
                     </td>
                     <td className="small">
-                      {o.ticketNumber ?? '-'}
-                      {o.returnTicketNumber && <div>{o.returnTicketNumber}</div>}
+                      {ticketLink(o.ticketNumber)}
+                      {o.returnTicketNumber && <div>{ticketLink(o.returnTicketNumber)}</div>}
                     </td>
                   </tr>
                 ))}
@@ -444,8 +458,11 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
                   )}
                 </div>
                 <div className="muted small">
-                  by {e.actor}
-                  {e.ticketNumber && <> · ticket {e.ticketNumber}</>}
+                  by{' '}
+                  <button className="link" onClick={() => nav.openTechnician(e.actor)}>
+                    {e.actor}
+                  </button>
+                  {e.ticketNumber && <> · ticket {ticketLink(e.ticketNumber)}</>}
                 </div>
                 {e.details &&
                   Object.entries(e.details)

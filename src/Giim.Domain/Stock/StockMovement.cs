@@ -69,7 +69,8 @@ public sealed class StockMovement : Entity
             Quantity = signed,
             Reason = reason,
             Note = string.IsNullOrWhiteSpace(note) ? null : note.Trim(),
-            ServiceDeskRequestId = string.IsNullOrWhiteSpace(serviceDeskRequestId) ? null : serviceDeskRequestId.Trim(),
+            // Upper-case like every other ticket reference, so "inc123" and "INC123" are the same ticket.
+            ServiceDeskRequestId = string.IsNullOrWhiteSpace(serviceDeskRequestId) ? null : serviceDeskRequestId.Trim().ToUpperInvariant(),
             Actor = actor,
         };
     }
