@@ -407,3 +407,43 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); bo
 .stepper li.failed .step-dot { background: var(--danger); border-color: var(--danger); color: #fff; }
 .step-label { font-size: 12.5px; font-weight: 600; }
 .step-when { font-size: 11.5px; color: var(--muted); min-height: 14px; }
+
+/* ---- Starter and leaver checklists ------------------------------------------------------------------------ */
+
+.case-Open { background: #eceef3; color: #545a70; }
+.case-InProgress, .case-WaitingOnSync { background: #e8f0fe; color: #1f5fbf; }
+.case-Blocked { background: #fff3e0; color: #9a5000; }
+.case-Completed { background: #e5f6ed; color: #12744f; }
+.case-Cancelled { background: #fdeceb; color: #b42318; }
+@media (prefers-color-scheme: dark) {
+  .case-Open { background: #2a2c3f; color: #b5b8cc; }
+  .case-InProgress, .case-WaitingOnSync { background: #172c4d; color: #8fb8ff; }
+  .case-Blocked { background: #3d2a0f; color: #fdc26b; }
+  .case-Completed { background: #133a2b; color: #6ee0a8; }
+  .case-Cancelled { background: #43181a; color: #ff9a92; }
+}
+
+.progress { display: inline-flex; align-items: center; gap: 8px; }
+.progress-track { width: 90px; height: 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.progress-bar { display: block; height: 100%; background: var(--accent); }
+
+.checklist { list-style: none; margin: 0; padding: 0; }
+.checklist .task { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.checklist .task:last-child { border-bottom: 0; }
+.task-mark { flex: none; display: grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 6px; border: 2px solid var(--border); font-size: 13px; font-weight: 700; color: #fff; }
+.task-Done .task-mark { background: var(--success); border-color: var(--success); }
+.task-Skipped .task-mark { background: var(--muted); border-color: var(--muted); }
+.task-Waiting .task-mark { border-color: var(--accent); color: var(--accent); }
+.task-body { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.task-title.finished { color: var(--muted); }
+.task-Skipped .task-title { text-decoration: line-through; }
+.task-actions { display: flex; flex-wrap: wrap; gap: 14px; }
+.task-notes { display: grid; gap: 2px; }
+.tag { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11.5px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.tag-warn { background: #fff3e0; color: #9a5000; border-color: transparent; }
+.tag-ok { background: #e5f6ed; color: #12744f; border-color: transparent; }
+@media (prefers-color-scheme: dark) {
+  .tag-warn { background: #3d2a0f; color: #fdc26b; }
+  .tag-ok { background: #133a2b; color: #6ee0a8; }
+}
+.selected-link { font-weight: 700; text-decoration: underline; }

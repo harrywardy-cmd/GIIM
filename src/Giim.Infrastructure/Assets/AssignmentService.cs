@@ -1,9 +1,11 @@
 using System.Data;
 using Giim.Domain.Assets;
 using Giim.Domain.Assignments;
+using Giim.Domain.Cases;
 using Giim.Domain.Common;
 using Giim.Domain.People;
 using Giim.Domain.Stock;
+using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,6 +90,10 @@ public sealed class AssignmentService(GiimDbContext db)
             }
 
             db.AssetEvents.Add(asset.Return(context, condition, returnedBy, holderName, [.. missing.Select(m => m.Label)]));
+            // A leaver checklist waiting for this asset ticks its "recover" task off.
+            await CaseService.CompleteLinkedTasksAsync(db, t => t.Source == TaskSource.Asset && t.SourceId == assetId, context.Actor,
+                $"Returned ({condition}){(missing.Count > 0 ? $"; missing: {string.Join(", ", missing.Select(m => m.Label))}" : "")}",
+                context.OccurredAt ?? DateTimeOffset.UtcNow, cancellationToken);
             return missing;
         }, cancellationToken);
     }

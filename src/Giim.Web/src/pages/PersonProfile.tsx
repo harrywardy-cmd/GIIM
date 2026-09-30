@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useNav } from '../nav'
+import { caseStatusLabel, caseTypeLabel, type CaseList } from '../cases'
 import { RequestStatusBadge } from '../RequestBadges'
 import { requestReference, type RequestList } from '../requests'
 import { StatusBadge } from '../StatusBadge'
@@ -51,12 +52,17 @@ export function PersonProfile({
   const [error, setError] = useState<string | null>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
   const [requests, setRequests] = useState<RequestList | null>(null)
+  const [cases, setCases] = useState<CaseList['items']>([])
   const nav = useNav()
 
   useEffect(() => {
     api<RequestList>(`/api/requests?personId=${personId}&pageSize=20`)
       .then(setRequests)
       .catch(() => setRequests(null))
+    // Every checklist for this person, whatever its state.
+    Promise.all(['Starters', 'Leavers', 'Completed', 'Cancelled'].map((view) => api<CaseList>(`/api/cases?view=${view}&personId=${personId}`)))
+      .then((lists) => setCases(lists.flatMap((l) => l.items)))
+      .catch(() => setCases([]))
   }, [personId])
 
   useEffect(() => {
@@ -149,6 +155,25 @@ export function PersonProfile({
           </table>
         </section>
       </div>
+
+      {cases.length > 0 && (
+        <section className="panel">
+          <h3>Starter and leaver checklists</h3>
+          <ul className="plain-list">
+            {cases.map((c) => (
+              <li key={c.id}>
+                <button className="link" onClick={() => nav.openCase(c.id)}>
+                  {caseTypeLabel[c.type] ?? c.type} checklist
+                </button>{' '}
+                <span className={`status case-${c.status}`}>{caseStatusLabel[c.status] ?? c.status}</span>{' '}
+                <span className="muted small">
+                  {date(c.dueDate)} · {c.finished}/{c.tasks} done
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="panel">
         <h3>Device requests ({requests?.total ?? 0})</h3>

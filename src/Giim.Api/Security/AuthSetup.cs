@@ -142,6 +142,7 @@ internal static class AuthSetup
     [
         "/api/categories",
         "/api/locations",
+        "/api/profiles",
         "/api/imports",
         "/api/people/sync",
         "/api/people/legacy-owners/link-automatic",
