@@ -12,6 +12,15 @@ param secretReaderPrincipalIds array
 param keyUserPrincipalIds array
 @description('Stops anyone permanently deleting the vault or its contents for 90 days. Cannot be turned off once on.')
 param purgeProtection bool
+@secure()
+@description('ServiceDesk Plus (Zoho) client secret. Empty keeps the value already in the vault.')
+param serviceDeskClientSecret string
+@secure()
+@description('ServiceDesk Plus (Zoho) refresh token. Empty keeps the value already in the vault.')
+param serviceDeskRefreshToken string
+@secure()
+@description('Shared secret ServiceDesk Plus sends with its webhook. Empty keeps the value already in the vault.')
+param serviceDeskWebhookSecret string
 param tags object
 
 var roles = {
@@ -45,6 +54,22 @@ resource cookieKey 'Microsoft.KeyVault/vaults/keys@2023-07-01' = {
     keyOps: ['wrapKey', 'unwrapKey']
   }
 }
+
+// Set through the deployment (the vault's data plane is private) and only when a value is given.
+var secrets = [
+  { name: 'servicedesk-client-secret', value: serviceDeskClientSecret, contentType: 'ServiceDesk Plus (Zoho) client secret' }
+  { name: 'servicedesk-refresh-token', value: serviceDeskRefreshToken, contentType: 'ServiceDesk Plus (Zoho) refresh token' }
+  { name: 'servicedesk-webhook-secret', value: serviceDeskWebhookSecret, contentType: 'ServiceDesk Plus webhook shared secret' }
+]
+
+resource vaultSecrets 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = [for secret in secrets: if (!empty(secret.value)) {
+  parent: vault
+  name: secret.name
+  properties: {
+    value: secret.value
+    contentType: secret.contentType
+  }
+}]
 
 resource secretReaders 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in secretReaderPrincipalIds: {
   name: guid(vault.id, principalId, roles.secretsUser)

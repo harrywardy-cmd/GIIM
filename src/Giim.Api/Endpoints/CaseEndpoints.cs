@@ -82,7 +82,7 @@ internal static class CaseEndpoints
         cases.MapPost("/offboarding", (OffboardingRequest body, CaseService service, ICurrentUser user, CancellationToken ct) => Handle(async () =>
         {
             var created = await service.StartOffboardingAsync(body.PersonId,
-                body.LastDay ?? throw new DomainException("Enter their last day."), body.TicketNumber, body.Notes, user.Name, ct);
+                body.LastDay ?? throw new DomainException("Enter their last day."), body.TicketNumber, body.Notes, user.Name, null, ct);
             return Results.Ok(new { created.Id });
         }));
 

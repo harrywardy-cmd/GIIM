@@ -59,6 +59,25 @@ param intuneSyncInterval string = '04:00:00'
 @description('Mailbox GIIM sends emails from, e.g. giim@company.com.au. Empty: emails wait in the outbox (see docs/email-notifications.md).')
 param notificationMailbox string = ''
 
+@allowed(['None', 'Api'])
+@description('Connect to ServiceDesk Plus (docs/servicedesk-setup.md). None until its administrator has set up the API client and trigger.')
+param serviceDeskMode string = 'None'
+
+@description('ServiceDesk Plus (Zoho) client ID. Not secret.')
+param serviceDeskClientId string = ''
+
+@secure()
+@description('Pass only when setting or changing it (deploy.ps1 -SetServiceDeskSecrets).')
+param serviceDeskClientSecret string = ''
+
+@secure()
+@description('Pass only when setting or changing it (deploy.ps1 -SetServiceDeskSecrets).')
+param serviceDeskRefreshToken string = ''
+
+@secure()
+@description('Pass only when setting or changing it (deploy.ps1 -SetServiceDeskSecrets).')
+param serviceDeskWebhookSecret string = ''
+
 @description('Who gets alert emails.')
 param alertEmails array = []
 
@@ -116,6 +135,9 @@ module keyVault 'modules/keyvault.bicep' = {
     secretReaderPrincipalIds: [identities.outputs.api.principalId, identities.outputs.workers.principalId]
     keyUserPrincipalIds: [identities.outputs.api.principalId]
     purgeProtection: keyVaultPurgeProtection
+    serviceDeskClientSecret: serviceDeskClientSecret
+    serviceDeskRefreshToken: serviceDeskRefreshToken
+    serviceDeskWebhookSecret: serviceDeskWebhookSecret
     tags: allTags
   }
 }
@@ -179,6 +201,9 @@ module apps 'modules/apps.bicep' = {
     allowedIpRanges: allowedIpRanges
     intuneSyncInterval: intuneSyncInterval
     notificationMailbox: notificationMailbox
+    serviceDeskMode: serviceDeskMode
+    serviceDeskClientId: serviceDeskClientId
+    keyVaultUri: keyVault.outputs.uri
     tags: allTags
   }
 }
@@ -204,6 +229,7 @@ output publicUrl string = effectivePublicUrl
 output signInRedirectUri string = '${effectivePublicUrl}/signin-oidc'
 output signOutRedirectUri string = '${effectivePublicUrl}/signout-callback-oidc'
 output myAppsHomePageUrl string = '${effectivePublicUrl}/auth/login'
+output serviceDeskWebhookUrl string = '${effectivePublicUrl}/integrations/servicedesk/webhook'
 output outboundIpAddress string = network.outputs.outboundIpAddress
 
 output apiAppName string = apps.outputs.apiName

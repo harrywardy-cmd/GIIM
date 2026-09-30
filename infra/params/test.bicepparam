@@ -28,4 +28,12 @@ param alertEmails = []
 
 // FILL IN once the mailbox exists: where request emails come from, e.g. 'giim@company.com.au' (docs/email-notifications.md).
 param notificationMailbox = ''
+
+// ServiceDesk Plus (docs/servicedesk-setup.md): switch to 'Api' once its administrator has set up the API client.
+param serviceDeskMode = 'None'
+param serviceDeskClientId = ''
+// Never written here: deploy.ps1 -SetServiceDeskSecrets asks for them and passes them through these variables.
+param serviceDeskClientSecret = readEnvironmentVariable('GIIM_SDP_CLIENT_SECRET', '')
+param serviceDeskRefreshToken = readEnvironmentVariable('GIIM_SDP_REFRESH_TOKEN', '')
+param serviceDeskWebhookSecret = readEnvironmentVariable('GIIM_SDP_WEBHOOK_SECRET', '')
 param allowedIpRanges = []

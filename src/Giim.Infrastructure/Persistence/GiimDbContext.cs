@@ -3,6 +3,7 @@ using Giim.Domain.Assignments;
 using Giim.Domain.Auditing;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
+using Giim.Domain.Integration;
 using Giim.Domain.Locations;
 using Giim.Domain.Notifications;
 using Giim.Domain.People;
@@ -61,6 +62,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<DeviceRequest> DeviceRequests => Set<DeviceRequest>();
     public DbSet<DeviceRequestEvent> DeviceRequestEvents => Set<DeviceRequestEvent>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ServiceDeskInboundEvent> ServiceDeskInbound => Set<ServiceDeskInboundEvent>();
+    public DbSet<ServiceDeskUpdate> ServiceDeskUpdates => Set<ServiceDeskUpdate>();
 
     /// <summary>Numbers device requests REQ1001, REQ1002...</summary>
     public const string RequestNumberSequence = "DeviceRequestNumbers";
@@ -275,6 +278,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Ignore(c => c.AllTasksFinished);
             e.Ignore(c => c.IsClosed);
             e.Property(c => c.ServiceDeskRequestId).HasMaxLength(50);
+            e.Property(c => c.ServiceDeskRequestKey).HasMaxLength(30);
+            e.HasIndex(c => c.ServiceDeskRequestKey);
             e.Property(c => c.CreatedBy).HasMaxLength(200);
             e.Property(c => c.CancelledBy).HasMaxLength(200);
             e.Property(c => c.CancellationReason).HasMaxLength(1000);
@@ -354,6 +359,27 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(x => x.Summary).HasMaxLength(500);
             e.Property(x => x.Comment).HasMaxLength(2000);
             e.HasOne<DeviceRequest>().WithMany().HasForeignKey(x => x.RequestId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ServiceDeskInboundEvent>(e =>
+        {
+            e.ToTable("ServiceDeskInboundEvents");
+            e.HasIndex(x => new { x.Status, x.NextAttemptAt });
+            e.HasIndex(x => x.RequestKey);
+            e.Property(x => x.RequestKey).HasMaxLength(30);
+            e.Property(x => x.DisplayId).HasMaxLength(50);
+            e.Property(x => x.Message).HasMaxLength(1000);
+            e.HasOne<ServiceCase>().WithMany().HasForeignKey(x => x.CaseId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ServiceDeskUpdate>(e =>
+        {
+            e.HasIndex(x => new { x.Status, x.NextAttemptAt });
+            e.HasIndex(x => x.DisplayId);
+            e.Property(x => x.DisplayId).HasMaxLength(50);
+            e.Property(x => x.RequestKey).HasMaxLength(30);
+            e.Property(x => x.Content).HasMaxLength(4000);
+            e.Property(x => x.LastError).HasMaxLength(1000);
         });
 
         modelBuilder.Entity<Notification>(e =>

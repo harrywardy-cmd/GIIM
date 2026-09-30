@@ -27,6 +27,11 @@ param allowedIpRanges array
 param intuneSyncInterval string
 @description('Mailbox the workers send emails from; empty turns email sending off.')
 param notificationMailbox string
+@description('ServiceDesk Plus: None or Api.')
+param serviceDeskMode string
+param serviceDeskClientId string
+@description('Key Vault address, e.g. https://kv-giim-prod-abc123.vault.azure.net/')
+param keyVaultUri string
 param tags object
 
 var websiteContributor = 'de139f84-1756-47ae-9be6-808fbbe84772' // Website Contributor
@@ -44,7 +49,11 @@ var commonSettings = {
   WEBSITE_RUN_FROM_PACKAGE: '1'
 }
 
-var apiSettings = union(commonSettings, {
+// ServiceDesk Plus: both apps know the mode; the API checks the webhook secret, the workers call the API.
+var serviceDeskSettings = { ServiceDesk__Mode: serviceDeskMode }
+
+var apiSettings = union(commonSettings, serviceDeskSettings, {
+  ServiceDesk__WebhookSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-webhook-secret)'
   AZURE_CLIENT_ID: apiIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, apiIdentity.clientId)
   ASPNETCORE_FORWARDEDHEADERS_ENABLED: 'true' // App Service ends HTTPS in front of the app; trust its headers
@@ -59,7 +68,11 @@ var apiSettings = union(commonSettings, {
   Intune__SyncInterval: '00:00:00' // the API only syncs on request; the workers run the schedule
 })
 
-var workersSettings = union(commonSettings, {
+var workersSettings = union(commonSettings, serviceDeskSettings, {
+  Giim__PublicBaseUrl: publicBaseUrl // links in ticket notes
+  ServiceDesk__ClientId: serviceDeskClientId
+  ServiceDesk__ClientSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-client-secret)'
+  ServiceDesk__RefreshToken: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-refresh-token)'
   AZURE_CLIENT_ID: workersIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, workersIdentity.clientId)
   Intune__SyncInterval: intuneSyncInterval

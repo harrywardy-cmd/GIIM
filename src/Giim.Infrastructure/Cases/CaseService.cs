@@ -24,7 +24,8 @@ public sealed record StarterDetails(
     ProvisioningTrack? Track,
     Guid? ProfileId,
     string? TicketNumber,
-    string? Notes);
+    string? Notes,
+    string? ServiceDeskRequestKey = null);
 
 public enum CaseView { Starters, Leavers, Completed, Cancelled }
 
@@ -59,13 +60,14 @@ public sealed class CaseService(GiimDbContext db, ProfileService profiles, Reque
         var serviceCase = ChecklistGenerator.ForOnboarding(person, profile, details.TicketNumber, actor);
         serviceCase.DueDate = details.StartDate;
         serviceCase.Notes = Clean(details.Notes);
+        serviceCase.ServiceDeskRequestKey = details.ServiceDeskRequestKey;
         db.Cases.Add(serviceCase);
         await db.SaveChangesAsync(cancellationToken);
         return serviceCase;
     }
 
     public async Task<ServiceCase> StartOffboardingAsync(Guid personId, DateOnly lastDay, string? ticketNumber, string? notes, string actor,
-        CancellationToken cancellationToken)
+        string? serviceDeskRequestKey, CancellationToken cancellationToken)
     {
         var person = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == personId, cancellationToken)
             ?? throw new DomainException("Choose the person who is leaving.");
@@ -80,6 +82,7 @@ public sealed class CaseService(GiimDbContext db, ProfileService profiles, Reque
 
         var serviceCase = ChecklistGenerator.ForOffboarding(person, assets, apps, ticketNumber, lastDay, actor);
         serviceCase.Notes = Clean(notes);
+        serviceCase.ServiceDeskRequestKey = serviceDeskRequestKey;
         db.Cases.Add(serviceCase);
         await db.SaveChangesAsync(cancellationToken);
         return serviceCase;

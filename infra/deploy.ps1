@@ -22,7 +22,10 @@ param(
     [string] $Location = 'australiaeast',
 
     # Preview the changes without making them.
-    [switch] $WhatIf
+    [switch] $WhatIf,
+
+    # Ask for the ServiceDesk Plus client secret and refresh token, and set the webhook secret (generated if left blank).
+    [switch] $SetServiceDeskSecrets
 )
 
 $ErrorActionPreference = 'Stop'
@@ -52,16 +55,45 @@ if ((Invoke-Az group exists --name $ResourceGroup) -ne 'true') {
     Invoke-Az group create --name $ResourceGroup --location $Location --tags application=GIIM environment=$Environment | Out-Null
 }
 
-# Run directly (not captured) so the preview of changes shows before the confirmation prompt.
-if ($WhatIf) {
-    az deployment group what-if --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile
-    if ($LASTEXITCODE -ne 0) { throw 'Preview failed (see the message above).' }
-    return
+function Read-Secret([string] $prompt) {
+    $secure = Read-Host $prompt -AsSecureString
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
 }
 
-az deployment group create --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile `
-    --confirm-with-what-if --output none
-if ($LASTEXITCODE -ne 0) { throw 'Deployment failed (see the message above).' }
+$newWebhookSecret = $null
+try {
+    if ($SetServiceDeskSecrets) {
+        # Passed to the deployment through environment variables (read by the .bicepparam file), never a command line or file.
+        $env:GIIM_SDP_CLIENT_SECRET = Read-Secret 'ServiceDesk Plus client secret (input hidden; blank = keep)'
+        $env:GIIM_SDP_REFRESH_TOKEN = Read-Secret 'ServiceDesk Plus refresh token (input hidden; blank = keep)'
+        $webhook = Read-Secret 'Webhook secret (input hidden; blank = generate a new one)'
+        if (-not $webhook) {
+            $bytes = [byte[]]::new(32)
+            [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+            $webhook = [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+            $newWebhookSecret = $webhook
+        }
+        $env:GIIM_SDP_WEBHOOK_SECRET = $webhook
+    }
+
+    # Run directly (not captured) so the preview of changes shows before the confirmation prompt.
+    if ($WhatIf) {
+        az deployment group what-if --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile
+        if ($LASTEXITCODE -ne 0) { throw 'Preview failed (see the message above).' }
+        return
+    }
+
+    az deployment group create --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile `
+        --confirm-with-what-if --output none
+    if ($LASTEXITCODE -ne 0) { throw 'Deployment failed (see the message above).' }
+}
+finally {
+    foreach ($name in 'GIIM_SDP_CLIENT_SECRET', 'GIIM_SDP_REFRESH_TOKEN', 'GIIM_SDP_WEBHOOK_SECRET') {
+        Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+    }
+}
 
 $state = az deployment group show --resource-group $ResourceGroup --name $deploymentName --query properties.provisioningState -o tsv
 if ($state -ne 'Succeeded') {
@@ -101,5 +133,13 @@ Write-Host ''
 Write-Host 'For the Exchange administrator (sending emails, see docs/email-notifications.md):' -ForegroundColor Cyan
 Write-Host "  Workers identity client ID : $($o.workersIdentityClientId.value)"
 Write-Host "  Workers identity object ID : $($o.workersIdentityPrincipalId.value)"
+Write-Host ''
+Write-Host 'For the ServiceDesk Plus administrator (docs/servicedesk-setup.md):' -ForegroundColor Cyan
+Write-Host "  Webhook URL    : $($o.serviceDeskWebhookUrl.value)"
+Write-Host '  Header         : X-GIIM-Webhook-Secret'
+if ($newWebhookSecret) {
+    Write-Host "  Webhook secret : $newWebhookSecret" -ForegroundColor Yellow
+    Write-Host '  (Shown once. Give it to the ServiceDesk Plus administrator through a password manager, not email or Teams.)' -ForegroundColor Yellow
+}
 Write-Host ''
 Write-Host 'Next (first deployment only): infra/scripts/Grant-SqlAccess.ps1 and infra/scripts/Grant-GraphAccess.ps1' -ForegroundColor Yellow

@@ -1,0 +1,30 @@
+{
+  "ServiceDesk": {
+    "SiteUrl": "https://servicedeskplus.net.au/",
+    "Portal": "itdesk",
+    "ZohoAccountsUrl": "https://accounts.zoho.com.au/",
+    "TimeZone": "Australia/Sydney",
+    "AutoRaiseDeviceRequests": true,
+    "ResolveWhenComplete": false,
+    "Starter": {
+      "Templates": [ "New Starter" ],
+      "Fields": {
+        "EmployeeId": "udf_sline_301",
+        "Name": "udf_sline_302",
+        "Department": "udf_pick_303",
+        "JobTitle": "udf_sline_304",
+        "ManagerEmail": "udf_sline_305",
+        "StartDate": "udf_date_306",
+        "Track": "udf_pick_307"
+      }
+    },
+    "Leaver": {
+      "Templates": [ "Leaver" ],
+      "Fields": {
+        "EmployeeId": "udf_sline_311",
+        "Email": "udf_sline_312",
+        "LastDay": "udf_date_313"
+      }
+    }
+  }
+}

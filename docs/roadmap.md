@@ -64,9 +64,12 @@ Goal: every asset has a complete, append-only history, and every action records 
 
 Existing items:
 
-1. SDP request templates with structured fields (department, role, start/leave date, manager, location)
-2. SDP custom trigger → webhook → GIIM creates the case and checklist automatically
-3. GIIM writes progress notes back to the ticket and resolves it when the checklist is done
+1. ◐ SDP request templates with structured fields (department, role, start/leave date, manager, location): GIIM's side
+   ✅ (field mapping in `config/servicedesk.json`); the templates are set up by the SDP administrator (`docs/servicedesk-setup.md`)
+2. ✅ SDP custom trigger → webhook → GIIM creates the starter or leaver checklist automatically (reading the ticket through
+   the API; secret-checked, rate-limited, retried; unmatched tickets flagged for attention). Built and tested with a
+   stand-in SDP; connecting the real SDP is waiting on its administrator
+3. ✅ GIIM writes progress notes back to the ticket (checklist and device request milestones) and optionally resolves it
 4. ✅ **Starter and leaver checklists** linked to an SDP request ID: starters from their department's profile (added as
    pending if not yet in the directory), leavers from what they actually hold. Tasks record who did them and when;
    hardware tasks raise a device request and tick off at handover; leaver asset tasks tick off when the asset is
@@ -80,8 +83,8 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
    manager approves (or an administrator); nobody approves their own request; a manager raising a request for their
    own team member approves it by doing so. Approvals menu with a count of requests waiting for you.
    ✅ Ships with **approval notifications** (email with a link) through a reliable outbox; see `docs/email-notifications.md`
-7. SDP new-starter tickets create a GIIM device request automatically; SDP hardware request templates retired or
-   pointed at GIIM (agree with the SDP administrator)
+7. ◐ SDP new-starter tickets create a GIIM device request automatically ✅ (one per device in the starter profile);
+   SDP hardware request templates retired or pointed at GIIM (agree with the SDP administrator)
 8. ✅ **Purchasing** (N15) and **receiving** (N16): approved request → PO → delivery → asset record created → handed
    over with accessories; or handed over from stock
 9. **Other notifications** (N21): in-app and email for receipt, returns, repairs, warranty and overdue returns
