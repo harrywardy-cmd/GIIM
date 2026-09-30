@@ -49,6 +49,7 @@ internal static class PeopleEndpoints
                     p.Id, p.EmployeeId, p.DisplayName, p.UserPrincipalName, Department = p.Department!.Name,
                     p.JobTitle, p.Location, p.Status,
                     AssetCount = db.Assets.Count(a => a.AssignedToPersonId == p.Id),
+                    Manager = db.People.Where(m => m.Id == p.ManagerId).Select(m => new { m.Id, m.DisplayName }).FirstOrDefault(),
                 })
                 .ToListAsync(ct);
 

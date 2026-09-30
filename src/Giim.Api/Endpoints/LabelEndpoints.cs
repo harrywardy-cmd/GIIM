@@ -56,11 +56,13 @@ internal static class LabelEndpoints
         });
     }
 
-    internal static string Link(HttpRequest request, IConfiguration config, Guid assetId)
+    internal static string Link(HttpRequest request, IConfiguration config, Guid assetId) => $"{BaseUrl(request, config)}/?asset={assetId}";
+
+    /// <summary>The address staff use to open GIIM (Giim:PublicBaseUrl), or the one this request came in on.</summary>
+    internal static string BaseUrl(HttpRequest request, IConfiguration config)
     {
         var configured = config["Giim:PublicBaseUrl"];
-        var baseUrl = string.IsNullOrWhiteSpace(configured) ? $"{request.Scheme}://{request.Host}" : configured.TrimEnd('/');
-        return $"{baseUrl}/?asset={assetId}";
+        return string.IsNullOrWhiteSpace(configured) ? $"{request.Scheme}://{request.Host}" : configured.TrimEnd('/');
     }
 
     private static string Svg(string text)

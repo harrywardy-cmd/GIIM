@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { useNav } from '../nav'
+import { RequestStatusBadge } from '../RequestBadges'
+import { requestReference, type RequestList } from '../requests'
 import { StatusBadge } from '../StatusBadge'
 import { AssetDetailsPage } from './AssetDetailsPage'
 
@@ -47,6 +50,14 @@ export function PersonProfile({
   const [person, setPerson] = useState<Profile | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [openAsset, setOpenAsset] = useState<string | null>(null)
+  const [requests, setRequests] = useState<RequestList | null>(null)
+  const nav = useNav()
+
+  useEffect(() => {
+    api<RequestList>(`/api/requests?personId=${personId}&pageSize=20`)
+      .then(setRequests)
+      .catch(() => setRequests(null))
+  }, [personId])
 
   useEffect(() => {
     if (openAsset) return
@@ -138,6 +149,40 @@ export function PersonProfile({
           </table>
         </section>
       </div>
+
+      <section className="panel">
+        <h3>Device requests ({requests?.total ?? 0})</h3>
+        {requests && requests.items.length > 0 ? (
+          <table>
+            <thead>
+              <tr>
+                <th>Request</th>
+                <th>Device</th>
+                <th>Status</th>
+                <th>Requested</th>
+                <th>By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.items.map((r) => (
+                <tr key={r.id} className="clickable" onClick={() => nav.openRequest(r.id)}>
+                  <td>
+                    <button className="link">{requestReference(r.number)}</button>
+                  </td>
+                  <td>{r.deviceDescription}</td>
+                  <td>
+                    <RequestStatusBadge status={r.status} />
+                  </td>
+                  <td>{date(r.submittedAt)}</td>
+                  <td>{r.requestedByName}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted small">No device requests for {person.displayName}.</p>
+        )}
+      </section>
 
       <section className="panel">
         <h3>Assignment history</h3>

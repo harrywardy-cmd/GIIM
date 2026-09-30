@@ -58,6 +58,9 @@ param oktaClientSecret string = ''
 
 param intuneSyncInterval string = '04:00:00'
 
+@description('Mailbox GIIM sends emails from, e.g. giim@company.com.au. Empty: emails wait in the outbox (see docs/email-notifications.md).')
+param notificationMailbox string = ''
+
 @description('Who gets alert emails.')
 param alertEmails array = []
 
@@ -179,6 +182,7 @@ module apps 'modules/apps.bicep' = {
     oktaClientId: oktaClientId
     allowedIpRanges: allowedIpRanges
     intuneSyncInterval: intuneSyncInterval
+    notificationMailbox: notificationMailbox
     tags: allTags
   }
 }
@@ -216,6 +220,7 @@ output apiIdentityName string = identities.outputs.api.name
 output apiIdentityPrincipalId string = identities.outputs.api.principalId
 output workersIdentityName string = identities.outputs.workers.name
 output workersIdentityPrincipalId string = identities.outputs.workers.principalId
+output workersIdentityClientId string = identities.outputs.workers.clientId
 output deployIdentityName string = identities.outputs.deploy.name
 output deployClientId string = identities.outputs.deploy.clientId
 output tenantId string = subscription().tenantId

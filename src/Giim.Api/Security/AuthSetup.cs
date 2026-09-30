@@ -98,6 +98,7 @@ internal static class AuthSetup
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(Policies.Read, p => p.RequireRole(Roles.All))
             .AddPolicy(Policies.Change, p => p.RequireRole(Roles.Technician, Roles.Administrator))
+            .AddPolicy(Policies.Request, p => p.RequireRole(Roles.Manager, Roles.Technician, Roles.Administrator))
             .AddPolicy(Policies.Administer, p => p.RequireRole(Roles.Administrator));
 
         return builder;
@@ -116,13 +117,21 @@ internal static class AuthSetup
             var methods = endpoint.Metadata.OfType<IHttpMethodMetadata>().SelectMany(m => m.HttpMethods).ToList();
             if (!methods.Any(m => !HttpMethods.IsGet(m) && !HttpMethods.IsHead(m))) return;
 
-            endpoint.Metadata.Add(new AuthorizeAttribute(Policies.Change));
+            // Device request actions managers take (raise, approve...) are the one exception, and are marked explicitly.
+            endpoint.Metadata.Add(new AuthorizeAttribute(
+                endpoint.Metadata.OfType<ManagersAllowed>().Any() ? Policies.Request : Policies.Change));
             var route = (endpoint as RouteEndpointBuilder)?.RoutePattern.RawText ?? "";
             if (AdministratorOnly.Any(prefix => route.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
                 endpoint.Metadata.Add(new AuthorizeAttribute(Policies.Administer));
         });
         return api;
     }
+
+    /// <summary>Lets managers (as well as technicians and administrators) use this endpoint. For device requests only.</summary>
+    public static TBuilder AllowManagers<TBuilder>(this TBuilder builder) where TBuilder : IEndpointConventionBuilder =>
+        builder.WithMetadata(new ManagersAllowed());
+
+    internal sealed class ManagersAllowed;
 
     /// <summary>
     /// Changes that shape the whole system rather than one asset: set-up lists, bulk imports and directory sync.

@@ -55,6 +55,8 @@ internal static class DashboardEndpoints
                     InRepair = Count(AssetStatus.InRepair),
                     Retired = Count(AssetStatus.Retired),
                     Disposed = Count(AssetStatus.Disposed),
+                    PendingApproval = await db.DeviceRequests.CountAsync(r =>
+                        r.Status == Domain.Requests.RequestStatus.PendingApproval || r.Status == Domain.Requests.RequestStatus.InfoRequested, ct),
                 },
                 // Part-to-whole of assets in service, in a fixed category order so colours never move.
                 StatusBreakdown = new[]

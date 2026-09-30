@@ -52,7 +52,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 ## Phase 1C: Visibility (new, from the brief)
 
 1. ✅ **Dashboard** (N17): summary cards, status chart, needs-attention list, warranty expiring, recent activity (trend arrows need history snapshots; later)
-2. ◐ **Employee profile page** (N19): details, manager, assigned assets and assignment history done; requests arrive with Phase 2
+2. ✅ **Employee profile page** (N19): details, manager, assigned assets, assignment history and device requests
 3. ✅ **Reports** (N18) with CSV / Excel export: asset inventory (status/category/location filters), warranty
    (expiring within N days, expired, not recorded), repairs (cost, turnaround, warranty claims, repeat assets),
    technician activity, leavers still holding kit, stock levels. Screen shows 1,000 rows; exports hold every row and
@@ -69,14 +69,17 @@ Existing items:
 
 New from the brief (replaces the earlier "hardware request, replacement and RMA flows" item):
 
-5. **Device requests** (N13) with REQ numbers and statuses; request and asset kept separate
-6. **Approvals in GIIM** (N14): approve, reject with reason, request more info; budget / cost centre.
-   Ships with **approval notifications** (email with a link) so managers see requests promptly
+5. ✅ **Device requests** (N13) with REQ numbers and statuses; request and asset kept separate but linked both ways
+6. ✅ **Approvals in GIIM** (N14): approve, reject with reason, request more info; budget / cost centre. The recipient's
+   manager approves (or an administrator); nobody approves their own request; a manager raising a request for their
+   own team member approves it by doing so. Approvals menu with a count of requests waiting for you.
+   ✅ Ships with **approval notifications** (email with a link) through a reliable outbox; see `docs/email-notifications.md`
 7. SDP new-starter tickets create a GIIM device request automatically; SDP hardware request templates retired or
    pointed at GIIM (agree with the SDP administrator)
-8. **Purchasing** (N15) and **receiving** (N16): approved request → PO → delivery → asset records created
+8. ✅ **Purchasing** (N15) and **receiving** (N16): approved request → PO → delivery → asset record created → handed
+   over with accessories; or handed over from stock
 9. **Other notifications** (N21): in-app and email for receipt, returns, repairs, warranty and overdue returns
-10. Request reports added to the Phase 1C reports
+10. ✅ Request report added to Reports (approval rate, time to decide, time to hand over), and a pending-approval tile on the dashboard
 
 ## Phase 3: Onboarding automation (low risk first)
 

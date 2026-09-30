@@ -41,6 +41,7 @@ type AssetDetails = {
   assignedTo: { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string } | null
   lastSeenInIntune: string | null
   nextStatuses: string[]
+  requests: { id: string; number: number }[]
   repairs: {
     id: string
     fault: string
@@ -262,6 +263,18 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
             <dd>{asset.supplier ?? '-'}</dd>
             <dt>Last seen in Intune</dt>
             <dd>{asset.isIntuneManaged ? formatDate(asset.lastSeenInIntune) : 'Not managed in Intune'}</dd>
+            {asset.requests.length > 0 && (
+              <>
+                <dt>Device request</dt>
+                <dd>
+                  {asset.requests.map((r) => (
+                    <button key={r.id} className="link" onClick={() => nav.openRequest(r.id)}>
+                      REQ{r.number}
+                    </button>
+                  ))}
+                </dd>
+              </>
+            )}
           </dl>
 
           <div className="qr-card">

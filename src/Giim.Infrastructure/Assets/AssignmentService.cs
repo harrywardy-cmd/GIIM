@@ -22,7 +22,16 @@ public sealed record AccessoryRequest(Guid? AssetId, Guid? StockItemId, string? 
 public sealed class AssignmentService(GiimDbContext db)
 {
     public Task<Assignment> AssignAsync(Guid assetId, Guid personId, AssetStatus? expectedStatus, ActionContext context,
-        Guid? locationId, IReadOnlyList<AccessoryRequest> accessories, CancellationToken cancellationToken)
+        Guid? locationId, IReadOnlyList<AccessoryRequest> accessories, CancellationToken cancellationToken) =>
+        AssignAsync(assetId, personId, expectedStatus, context, locationId, accessories, alongside: null, cancellationToken);
+
+    /// <summary>
+    /// As above, plus <paramref name="alongside"/>: more work (such as completing the device request this handover
+    /// fulfils) saved in the same transaction, so either both happen or neither does.
+    /// </summary>
+    public Task<Assignment> AssignAsync(Guid assetId, Guid personId, AssetStatus? expectedStatus, ActionContext context,
+        Guid? locationId, IReadOnlyList<AccessoryRequest> accessories, Func<Asset, Person, Task>? alongside,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(accessories);
 
@@ -43,6 +52,7 @@ public sealed class AssignmentService(GiimDbContext db)
             db.AssetEvents.Add(asset.Assign(context, person.Id, person.DisplayName, location,
                 [.. assignment.Accessories.Select(a => a.Label)]));
             db.Assignments.Add(assignment);
+            if (alongside is not null) await alongside(asset, person);
             return assignment;
         }, cancellationToken);
     }

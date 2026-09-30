@@ -54,6 +54,7 @@ api.MapLabelEndpoints();
 api.MapLocationEndpoints();
 api.MapActivityEndpoints();
 api.MapReportEndpoints();
+api.MapRequestEndpoints();
 
 // Unknown /api addresses get 404; every other address gets the web UI (built into wwwroot when published).
 app.MapUserInterfaceFallback(api);

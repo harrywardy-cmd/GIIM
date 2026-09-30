@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
+import { searchUrl, useSearch } from '../search'
 import { LocationSelect } from '../LocationSelect'
 
-type PersonOption = { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string }
-type AssetOption = { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string }
+export type PersonOption = { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string }
+export type AssetOption = { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string }
 type StockOption = { id: string; name: string; total: number; locations: { locationId: string; location: string; quantity: number }[] }
 
 type AccessoryDraft =
@@ -22,41 +23,37 @@ export type AccessoryLine = {
 let nextKey = 0
 const key = () => String(++nextKey)
 
-/** Debounced search; results from older keystrokes are discarded. Pass null to search for nothing. */
-function useSearch<T>(target: string | null) {
-  const [results, setResults] = useState<T[]>([])
-  useEffect(() => {
-    if (!target) return
-    const controller = new AbortController()
-    const timer = setTimeout(() => {
-      api<T[] | { people: T[] }>(target, { signal: controller.signal })
-        .then((r) => setResults(Array.isArray(r) ? r : r.people))
-        .catch(() => undefined)
-    }, 250)
-    return () => {
-      clearTimeout(timer)
-      controller.abort()
-    }
-  }, [target])
-  return target ? results : []
+/** What the assign form sends: to the asset's assign endpoint, or (for a device request) to the request. */
+export type AssignPayload = {
+  personId: string
+  expectedStatus: string
+  ticketNumber: string | null
+  note: string | null
+  locationId: string | null
+  accessories: ({ assetId: string } | { stockItemId: string; quantity: number; takeFromStockAtLocationId: string | null } | { description: string; quantity: number })[]
 }
-
-const searchUrl = (term: string, base: string) =>
-  term.trim().length >= 2 ? `${base}${encodeURIComponent(term.trim())}` : null
 
 export function AssignForm({
   assetId,
   expectedStatus,
   onDone,
   onCancel,
+  fixedPerson,
+  onSubmit,
+  title = 'Assign',
 }: {
   assetId: string
   expectedStatus: string
   onDone: () => void
   onCancel: () => void
+  /** The recipient is already decided (a device request); it can't be changed here. */
+  fixedPerson?: PersonOption
+  /** Sends the assignment somewhere else instead of the asset's assign endpoint. */
+  onSubmit?: (payload: AssignPayload) => Promise<unknown>
+  title?: string
 }) {
   const [personTerm, setPersonTerm] = useState('')
-  const [person, setPerson] = useState<PersonOption | null>(null)
+  const [person, setPerson] = useState<PersonOption | null>(fixedPerson ?? null)
   const [locationId, setLocationId] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [note, setNote] = useState('')
@@ -100,23 +97,21 @@ export function AssignForm({
     if (!person) return
     setSaving(true)
     try {
-      await api(`/api/assets/${assetId}/assign`, {
-        method: 'POST',
-        json: {
-          personId: person.id,
-          expectedStatus,
-          ticketNumber: ticketNumber || null,
-          note: note || null,
-          locationId: locationId || null,
-          accessories: accessories.map((a) =>
-            a.kind === 'asset'
-              ? { assetId: a.assetId }
-              : a.kind === 'stock'
-                ? { stockItemId: a.stockItemId, quantity: a.quantity, takeFromStockAtLocationId: a.fromLocationId || null }
-                : { description: a.description, quantity: a.quantity },
-          ),
-        },
-      })
+      const payload: AssignPayload = {
+        personId: person.id,
+        expectedStatus,
+        ticketNumber: ticketNumber || null,
+        note: note || null,
+        locationId: locationId || null,
+        accessories: accessories.map((a) =>
+          a.kind === 'asset'
+            ? { assetId: a.assetId }
+            : a.kind === 'stock'
+              ? { stockItemId: a.stockItemId, quantity: a.quantity, takeFromStockAtLocationId: a.fromLocationId || null }
+              : { description: a.description, quantity: a.quantity },
+        ),
+      }
+      await (onSubmit ? onSubmit(payload) : api(`/api/assets/${assetId}/assign`, { method: 'POST', json: payload }))
       onDone()
     } catch (e) {
       setError((e as Error).message)
@@ -127,13 +122,15 @@ export function AssignForm({
 
   return (
     <div className="action-form">
-      <h3>Assign</h3>
+      <h3>{title}</h3>
       {person ? (
         <p>
           To <strong>{person.displayName}</strong> <span className="muted small">{person.userPrincipalName} · {person.department}</span>{' '}
-          <button className="link" onClick={() => setPerson(null)}>
-            change
-          </button>
+          {!fixedPerson && (
+            <button className="link" onClick={() => setPerson(null)}>
+              change
+            </button>
+          )}
         </p>
       ) : (
         <label className="stacked">
@@ -254,7 +251,7 @@ export function AssignForm({
       </div>
       {error && <p className="error">{error}</p>}
       <button className="primary" onClick={submit} disabled={!person || saving}>
-        {saving ? 'Assigning…' : 'Assign'}
+        {saving ? 'Saving…' : title}
       </button>{' '}
       <button onClick={onCancel}>Cancel</button>
     </div>

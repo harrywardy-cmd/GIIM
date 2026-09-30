@@ -81,6 +81,32 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("Viewer", HttpStatusCode.Forbidden)]
+    [InlineData("Manager", HttpStatusCode.BadRequest)]   // allowed in; the empty request is then refused
+    [InlineData("Technician", HttpStatusCode.BadRequest)]
+    public async Task Managers_and_it_can_raise_device_requests_but_viewers_cannot(string role, HttpStatusCode expected)
+    {
+        var client = await SignedInAs(role);
+
+        var response = await client.PostAsJsonAsync("/api/requests", new { });
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("order")]
+    [InlineData("receive")]
+    [InlineData("fulfil")]
+    public async Task Managers_cannot_order_receive_or_hand_over(string action)
+    {
+        var client = await SignedInAs("Manager");
+
+        var response = await client.PostAsJsonAsync($"/api/requests/{Guid.NewGuid()}/{action}", new { });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
     [Fact]
     public async Task Technician_cannot_change_set_up_lists()
     {
@@ -144,7 +170,11 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
         {
             Assert.True(policies.Contains(Policies.Read) || route is "/api/me" or "/api/auth/config", $"{route} is not protected");
             if (methods.Any(m => m is not ("GET" or "HEAD")))
-                Assert.True(policies.Contains(Policies.Change), $"{string.Join(",", methods)} {route} does not require Technician");
+            {
+                // The one exception: device request actions managers take (raise, decide, answer, cancel, comment).
+                var managersAllowed = policies.Contains(Policies.Request) && route.StartsWith("/api/requests", StringComparison.Ordinal);
+                Assert.True(policies.Contains(Policies.Change) || managersAllowed, $"{string.Join(",", methods)} {route} does not require Technician");
+            }
         }
     }
 

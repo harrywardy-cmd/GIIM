@@ -6,9 +6,10 @@ export type Nav = {
   openPerson: (id: string) => void
   openTicket: (ticketNumber: string) => void
   openTechnician: (name: string) => void
+  openRequest: (id: string) => void
 }
 
 const noop = () => undefined
-export const NavContext = createContext<Nav>({ openAsset: noop, openPerson: noop, openTicket: noop, openTechnician: noop })
+export const NavContext = createContext<Nav>({ openAsset: noop, openPerson: noop, openTicket: noop, openTechnician: noop, openRequest: noop })
 
 export const useNav = () => useContext(NavContext)

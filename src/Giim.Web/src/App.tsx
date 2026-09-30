@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Boxes,
   ChartColumn,
+  ClipboardCheck,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -20,7 +21,7 @@ import {
 import { api, signedOutEvent } from './api'
 import { NoAccessPage, SignInPage } from './pages/SignInPage'
 import { initials, permissions, UserContext, type User } from './user'
-import { assetIdFromLink } from './links'
+import { assetIdFromLink, requestIdFromLink } from './links'
 import { NavContext, type Nav } from './nav'
 import { PageHeader } from './PageHeader'
 import { ActivityFeed } from './pages/ActivityFeed'
@@ -34,6 +35,8 @@ import { PeoplePage } from './pages/PeoplePage'
 import { PersonProfile } from './pages/PersonProfile'
 import { ReconciliationPage } from './pages/ReconciliationPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { RequestDetailsPage } from './pages/RequestDetailsPage'
+import { RequestsPage } from './pages/RequestsPage'
 import { SearchResults, type SearchResponse } from './pages/SearchResults'
 import { StockPage } from './pages/StockPage'
 import { TicketsPage } from './pages/TicketsPage'
@@ -47,12 +50,13 @@ export type PageKey =
   | 'tickets'
   | 'people'
   | 'requests'
+  | 'approvals'
   | 'cases'
   | 'imports'
   | 'categories'
   | 'locations'
 
-type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean }
+type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean; approversOnly?: boolean }
 
 const navigation: { section: string; items: NavItem[] }[] = [
   {
@@ -75,7 +79,8 @@ const navigation: { section: string; items: NavItem[] }[] = [
     section: 'People',
     items: [
       { key: 'people', label: 'People', icon: <Users size={18} /> },
-      { key: 'requests', label: 'Requests', icon: <FileText size={18} />, later: 'Phase 2' },
+      { key: 'requests', label: 'Requests', icon: <FileText size={18} /> },
+      { key: 'approvals', label: 'Approvals', icon: <ClipboardCheck size={18} />, approversOnly: true },
       { key: 'cases', label: 'On/offboarding', icon: <ClipboardList size={18} />, later: 'Phase 2' },
     ],
   },
@@ -96,6 +101,7 @@ type View =
   | { kind: 'ticket'; number: string }
   | { kind: 'technician'; name: string }
   | { kind: 'search'; term: string }
+  | { kind: 'request'; id: string }
 
 /** Checks who is signed in, then shows the sign-in page, a no-access page, or GIIM itself. */
 export default function App() {
@@ -129,11 +135,31 @@ export default function App() {
 
 function Shell({ user }: { user: User }) {
   const { canAdminister } = permissions(user)
+  // Managers and administrators decide requests; everyone else has no approvals queue.
+  const isApprover = user.roles.includes('Manager') || user.roles.includes('Administrator')
+  const [awaiting, setAwaiting] = useState(0)
+  const [requestsChanged, setRequestsChanged] = useState(0)
+  const onRequestsChanged = () => setRequestsChanged((n) => n + 1)
+
+  // The Approvals badge: refreshed after any request change and every minute.
+  useEffect(() => {
+    if (!isApprover) return
+    const load = () =>
+      api<{ count: number }>('/api/requests/awaiting-count')
+        .then((r) => setAwaiting(r.count))
+        .catch(() => undefined)
+    load()
+    const timer = setInterval(load, 60_000)
+    return () => clearInterval(timer)
+  }, [isApprover, requestsChanged])
   const [page, setPage] = useState<PageKey>('dashboard')
   // A QR label or shared link opens the asset straight away.
   const [views, setViews] = useState<View[]>(() => {
     const linked = assetIdFromLink(window.location.search)
-    return linked ? [{ kind: 'asset', id: linked }] : []
+    if (linked) return [{ kind: 'asset', id: linked }]
+    // A link in a request email opens the request.
+    const request = requestIdFromLink(window.location.search)
+    return request ? [{ kind: 'request', id: request }] : []
   })
   const [search, setSearch] = useState('')
   const [assetSearch, setAssetSearch] = useState('')
@@ -143,7 +169,11 @@ function Shell({ user }: { user: User }) {
   const show = (next: View[]) => {
     setViews(next)
     const top = next.at(-1)
-    window.history.replaceState(null, '', top?.kind === 'asset' ? `?asset=${top.id}` : window.location.pathname)
+    window.history.replaceState(
+      null,
+      '',
+      top?.kind === 'asset' ? `?asset=${top.id}` : top?.kind === 'request' ? `?request=${top.id}` : window.location.pathname,
+    )
   }
   const open = (view: View) => show([...views, view])
   const back = () => show(views.slice(0, -1))
@@ -153,6 +183,7 @@ function Shell({ user }: { user: User }) {
     openPerson: (id) => open({ kind: 'person', id }),
     openTicket: (number) => open({ kind: 'ticket', number }),
     openTechnician: (name) => open({ kind: 'technician', name }),
+    openRequest: (id) => open({ kind: 'request', id }),
   }
 
   const go = (key: PageKey) => {
@@ -176,6 +207,7 @@ function Shell({ user }: { user: User }) {
       const result = await api<SearchResponse>(`/api/search?q=${encodeURIComponent(term)}`)
       if (result.exactAssetId) return open({ kind: 'asset', id: result.exactAssetId })
       if (result.exactTicket) return open({ kind: 'ticket', number: result.exactTicket })
+      if (result.exactRequestId) return open({ kind: 'request', id: result.exactRequestId })
     } catch {
       // Fall through to the results page, which shows the error.
     }
@@ -192,7 +224,8 @@ function Shell({ user }: { user: User }) {
     reconciliation: <ReconciliationPage />,
     tickets: <TicketsPage />,
     people: <PeoplePage />,
-    requests: <PageHeader title={label} subtitle="Device requests and approvals arrive in Phase 2 of the roadmap." />,
+    requests: <RequestsPage key="all" onChanged={onRequestsChanged} />,
+    approvals: <RequestsPage key="approvals" initialView="AwaitingMe" onChanged={onRequestsChanged} />,
     cases: <PageHeader title={label} subtitle="Onboarding and offboarding checklists arrive in Phase 2 of the roadmap." />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
@@ -203,6 +236,8 @@ function Shell({ user }: { user: User }) {
     <AssetDetailsPage key={current.id} assetId={current.id} onBack={back} />
   ) : current.kind === 'person' ? (
     <PersonProfile key={current.id} personId={current.id} onBack={back} onOpenPerson={nav.openPerson} />
+  ) : current.kind === 'request' ? (
+    <RequestDetailsPage key={current.id} requestId={current.id} onBack={back} onChanged={onRequestsChanged} />
   ) : current.kind === 'ticket' ? (
     <ActivityFeed key={current.number} ticket={current.number} onBack={back} />
   ) : current.kind === 'technician' ? (
@@ -233,7 +268,7 @@ function Shell({ user }: { user: User }) {
             {navigation.map((group) => (
               <div key={group.section}>
                 <div className="nav-section">{group.section}</div>
-                {group.items.filter((item) => !item.adminOnly || canAdminister).map((item) => (
+                {group.items.filter((item) => (!item.adminOnly || canAdminister) && (!item.approversOnly || isApprover)).map((item) => (
                   <button
                     key={item.key}
                     className="nav-item"
@@ -243,6 +278,7 @@ function Shell({ user }: { user: User }) {
                     {item.icon}
                     {item.label}
                     {item.later && <span className="nav-badge">{item.later}</span>}
+                    {item.key === 'approvals' && awaiting > 0 && <span className="nav-count">{awaiting}</span>}
                   </button>
                 ))}
               </div>
@@ -270,7 +306,7 @@ function Shell({ user }: { user: User }) {
                 ref={searchRef}
                 type="search"
                 aria-label="Search everything"
-                placeholder="Search or scan: serial, asset tag, person, ticket, model or technician, then press Enter"
+                placeholder="Search or scan: serial, asset tag, person, ticket, REQ number, model or technician, then press Enter"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => {
