@@ -58,9 +58,14 @@ jobs:
           path: out/
           retention-days: 30
 
+  # A called workflow only gets the permissions its caller grants. id-token: write lets the deploy job sign in to Azure
+  # with GitHub's short-lived token (no stored password); only these two jobs get it.
   test:
     name: Test environment
     needs: build
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: test
@@ -68,6 +73,9 @@ jobs:
   prod:
     name: Production
     needs: test
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/deploy-environment.yml
     with:
       environment: prod

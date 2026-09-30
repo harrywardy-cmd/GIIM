@@ -102,6 +102,9 @@ public sealed class DeviceRequest : Entity
     public DateTimeOffset? CompletedAt { get; private set; }
     public string? CancellationReason { get; private set; }
 
+    /// <summary>The last status reported to the linked ServiceDesk Plus ticket, so each change is noted there once.</summary>
+    public RequestStatus? ServiceDeskNotifiedStatus { get; set; }
+
     public bool IsClosed => Status is RequestStatus.Rejected or RequestStatus.Cancelled or RequestStatus.Completed;
 
     public static string FormatReference(int number) => $"REQ{number}";

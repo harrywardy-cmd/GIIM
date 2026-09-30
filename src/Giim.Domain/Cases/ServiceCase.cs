@@ -19,6 +19,12 @@ public sealed class ServiceCase : Entity
 
     public string? ServiceDeskRequestId { get; set; }
 
+    /// <summary>The ticket’s internal ID in ServiceDesk Plus, when GIIM learned it from the ticket itself.</summary>
+    public string? ServiceDeskRequestKey { get; set; }
+
+    /// <summary>The last status reported to the ticket, so each change is noted there once.</summary>
+    public CaseStatus? ServiceDeskNotifiedStatus { get; set; }
+
     /// <summary>Start date (starters) or last day (leavers).</summary>
     public DateOnly? DueDate { get; set; }
 

@@ -3,6 +3,7 @@ using Azure.Identity;
 using Giim.Connectors.Email;
 using Giim.Connectors.Intune;
 using Giim.Connectors.People;
+using Giim.Connectors.ServiceDesk;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -45,6 +46,20 @@ public static class DependencyInjection
                 break;
             case EmailMode.File:
                 services.AddSingleton<IEmailSender, FileEmailSender>();
+                break;
+        }
+
+        var serviceDesk = configuration.GetSection(ServiceDeskOptions.SectionName);
+        services.Configure<ServiceDeskOptions>(serviceDesk);
+        switch (serviceDesk.GetValue<ServiceDeskMode?>(nameof(ServiceDeskOptions.Mode)) ?? ServiceDeskMode.None)
+        {
+            case ServiceDeskMode.Api:
+                services.AddHttpClient(nameof(ZohoTokenProvider), client => client.Timeout = TimeSpan.FromSeconds(30));
+                services.AddSingleton<ZohoTokenProvider>();
+                services.AddHttpClient<IServiceDeskClient, ApiServiceDeskClient>(client => client.Timeout = TimeSpan.FromSeconds(60));
+                break;
+            case ServiceDeskMode.File:
+                services.AddSingleton<IServiceDeskClient, FileServiceDeskClient>();
                 break;
         }
 

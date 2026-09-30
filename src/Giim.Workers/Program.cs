@@ -1,15 +1,26 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Giim.Connectors;
 using Giim.Connectors.Email;
+using Giim.Connectors.ServiceDesk;
 using Giim.Infrastructure;
 using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
+using Giim.Infrastructure.ServiceDesk;
 using Giim.Workers;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 // A web host only so Azure App Service can check the workers are alive (/health); the real work is the
 // background services below. It has no other endpoints and no public access in Azure.
 var builder = WebApplication.CreateBuilder(args);
+
+// ServiceDesk Plus field mapping (config/servicedesk.json, shared by the API and the workers). Lowest priority, so
+// app settings and environment variables can still override any of it.
+builder.Configuration.Sources.Insert(0, new Microsoft.Extensions.Configuration.Json.JsonConfigurationSource
+{
+    Path = "servicedesk.json",
+    Optional = true,
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(AppContext.BaseDirectory),
+});
 
 builder.Services.AddGiimInfrastructure(
     builder.Configuration.GetConnectionString("Giim")
@@ -24,6 +35,14 @@ builder.Services.AddHostedService<IntuneSyncWorker>();
 if (builder.Configuration.GetValue<EmailMode?>("Email:Mode") is EmailMode.File or EmailMode.Graph)
     builder.Services.AddScoped<NotificationDispatcher>();
 builder.Services.AddHostedService<NotificationWorker>();
+
+// ServiceDesk Plus: tickets in, notes out. Off unless ServiceDesk:Mode is File or Api.
+if (builder.Configuration.GetValue<ServiceDeskMode?>("ServiceDesk:Mode") is ServiceDeskMode.File or ServiceDeskMode.Api)
+{
+    builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
+    builder.Services.AddScoped<ServiceDeskSync>();
+    builder.Services.AddHostedService<ServiceDeskWorker>();
+}
 
 var app = builder.Build();
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });

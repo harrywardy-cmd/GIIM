@@ -16,4 +16,9 @@
     <ProjectReference Include="..\Giim.Infrastructure\Giim.Infrastructure.csproj" />
     <ProjectReference Include="..\Giim.Connectors\Giim.Connectors.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- ServiceDesk Plus field mapping, shared with the other app. -->
+    <Content Include="../../config/servicedesk.json" Link="servicedesk.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -136,6 +136,11 @@ There is no client secret: the app registration trusts GIIM's managed identity i
 
 Do this **before printing asset labels**: QR codes contain this address.
 
+### 8. ServiceDesk Plus (when its administrator is ready)
+
+Follow [docs/servicedesk-setup.md](../docs/servicedesk-setup.md): set `serviceDeskMode = 'Api'` and the client ID in the
+`.bicepparam` file, then run `./infra/deploy.ps1 -Environment prod -SetServiceDeskSecrets`.
+
 Repeat steps 2-6 with `-Environment prod` when test looks right.
 
 ---

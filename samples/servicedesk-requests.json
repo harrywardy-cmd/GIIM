@@ -1,0 +1,88 @@
+{
+  "requests": [
+    {
+      "id": "123456000000101",
+      "display_id": "5601",
+      "subject": "New starter: Priya Patel (Finance), starts 19 October",
+      "template": { "id": "123456000000011", "name": "New Starter" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "HR Team", "email_id": "hr@giim-test.local" },
+      "udf_fields": {
+        "udf_sline_301": "E109001",
+        "udf_sline_302": "Priya Patel",
+        "udf_pick_303": "FIN",
+        "udf_sline_304": "Accounts Payable Officer",
+        "udf_sline_305": "mei.walker@giim-test.local",
+        "udf_date_306": { "value": "1792328400000", "display_value": "19/10/2026 12:00 AM" },
+        "udf_pick_307": "Full"
+      }
+    },
+    {
+      "id": "123456000000102",
+      "display_id": "5602",
+      "subject": "Leaver: Hiroshi Walker, last day 23 October",
+      "template": { "id": "123456000000012", "name": "Leaver" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "HR Team", "email_id": "hr@giim-test.local" },
+      "udf_fields": {
+        "udf_sline_311": "E101499",
+        "udf_sline_312": "hiroshi.walker4@giim-test.local",
+        "udf_date_313": { "value": "1792674000000", "display_value": "23/10/2026 12:00 AM" }
+      }
+    },
+    {
+      "id": "123456000000103",
+      "display_id": "5603",
+      "subject": "New starter: Tom Unknown, department not in GIIM",
+      "template": { "id": "123456000000011", "name": "New Starter" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "HR Team", "email_id": "hr@giim-test.local" },
+      "udf_fields": {
+        "udf_sline_301": "E109003",
+        "udf_sline_302": "Tom Unknown",
+        "udf_pick_303": "Space Exploration",
+        "udf_sline_305": "mei.walker@giim-test.local",
+        "udf_date_306": { "value": "1792328400000", "display_value": "19/10/2026 12:00 AM" }
+      }
+    },
+    {
+      "id": "123456000000105",
+      "display_id": "5605",
+      "subject": "New starter: Jordan Lee (Sales), starts 26 October",
+      "template": { "id": "123456000000011", "name": "New Starter" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "HR Team", "email_id": "hr@giim-test.local" },
+      "udf_fields": {
+        "udf_sline_301": "E109005",
+        "udf_sline_302": "Jordan Lee",
+        "udf_pick_303": "SAL",
+        "udf_sline_304": "Account Manager",
+        "udf_sline_305": "mei.walker@giim-test.local",
+        "udf_date_306": { "value": "1792933200000", "display_value": "26/10/2026 12:00 AM" },
+        "udf_pick_307": "Full"
+      }
+    },
+    {
+      "id": "123456000000106",
+      "display_id": "5606",
+      "subject": "Leaver: William Nguyen, last day 30 October",
+      "template": { "id": "123456000000012", "name": "Leaver" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "HR Team", "email_id": "hr@giim-test.local" },
+      "udf_fields": {
+        "udf_sline_311": "E101497",
+        "udf_sline_312": "william.nguyen2@giim-test.local",
+        "udf_date_313": { "value": "1793278800000", "display_value": "30/10/2026 12:00 AM" }
+      }
+    },
+    {
+      "id": "123456000000104",
+      "display_id": "5604",
+      "subject": "Printer out of toner on level 3",
+      "template": { "id": "123456000000001", "name": "Default Request" },
+      "status": { "id": "2", "name": "Open" },
+      "requester": { "name": "Sam Staff", "email_id": "sam.staff@giim-test.local" },
+      "udf_fields": {}
+    }
+  ]
+}

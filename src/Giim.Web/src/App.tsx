@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  Link2,
   ListChecks,
   LogOut,
   MapPin,
@@ -41,6 +42,7 @@ import { ReportsPage } from './pages/ReportsPage'
 import { RequestDetailsPage } from './pages/RequestDetailsPage'
 import { RequestsPage } from './pages/RequestsPage'
 import { SearchResults, type SearchResponse } from './pages/SearchResults'
+import { ServiceDeskPage } from './pages/ServiceDeskPage'
 import { StockPage } from './pages/StockPage'
 import { TicketsPage } from './pages/TicketsPage'
 
@@ -59,6 +61,7 @@ export type PageKey =
   | 'categories'
   | 'locations'
   | 'profiles'
+  | 'servicedesk'
 
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean; approversOnly?: boolean }
 
@@ -95,6 +98,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { key: 'categories', label: 'Asset categories', icon: <Tags size={18} /> },
       { key: 'locations', label: 'Locations', icon: <MapPin size={18} /> },
       { key: 'profiles', label: 'Starter profiles', icon: <ListChecks size={18} /> },
+      { key: 'servicedesk', label: 'ServiceDesk Plus', icon: <Link2 size={18} />, adminOnly: true },
     ],
   },
 ]
@@ -241,6 +245,7 @@ function Shell({ user }: { user: User }) {
     approvals: <RequestsPage key="approvals" initialView="AwaitingMe" onChanged={onRequestsChanged} />,
     cases: <CasesPage />,
     profiles: <ProfilesPage />,
+    servicedesk: <ServiceDeskPage />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
     locations: <LocationsPage />,

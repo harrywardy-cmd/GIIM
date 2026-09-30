@@ -447,3 +447,18 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); bo
   .tag-ok { background: #133a2b; color: #6ee0a8; }
 }
 .selected-link { font-weight: 700; text-decoration: underline; }
+
+/* ---- ServiceDesk Plus connection ----------------------------------------------------------------------------- */
+.inbound-Processed, .update-Sent { background: #e5f6ed; color: #12744f; }
+.inbound-Pending, .update-Pending { background: #e8f0fe; color: #1f5fbf; }
+.inbound-Ignored { background: #eceef3; color: #545a70; }
+.inbound-NeedsAttention { background: #fff3e0; color: #9a5000; }
+.inbound-Failed, .update-Failed { background: #fdeceb; color: #b42318; }
+@media (prefers-color-scheme: dark) {
+  .inbound-Processed, .update-Sent { background: #133a2b; color: #6ee0a8; }
+  .inbound-Pending, .update-Pending { background: #172c4d; color: #8fb8ff; }
+  .inbound-Ignored { background: #2a2c3f; color: #b5b8cc; }
+  .inbound-NeedsAttention { background: #3d2a0f; color: #fdc26b; }
+  .inbound-Failed, .update-Failed { background: #43181a; color: #ff9a92; }
+}
+code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); }

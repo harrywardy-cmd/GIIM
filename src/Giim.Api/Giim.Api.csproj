@@ -29,4 +29,9 @@
     <InternalsVisibleTo Include="Giim.Api.Tests" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- ServiceDesk Plus field mapping, shared with the other app. -->
+    <Content Include="../../config/servicedesk.json" Link="servicedesk.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
