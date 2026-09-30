@@ -250,15 +250,53 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
         });
 
         modelBuilder.Entity<RoleProfile>(e =>
-            e.HasMany(r => r.Items).WithOne().HasForeignKey(i => i.RoleProfileId));
+        {
+            e.HasMany(r => r.Items).WithOne().HasForeignKey(i => i.RoleProfileId);
+            e.HasIndex(r => new { r.DepartmentId, r.JobTitle });
+            e.Property(r => r.Name).HasMaxLength(150);
+            e.Property(r => r.JobTitle).HasMaxLength(200);
+            e.HasOne<Department>().WithMany().HasForeignKey(r => r.DepartmentId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProfileItem>(e =>
+        {
+            e.Property(i => i.Description).HasMaxLength(300);
+            e.Property(i => i.GroupName).HasMaxLength(256);
+            e.HasOne<AssetCategory>().WithMany().HasForeignKey(i => i.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<StockItem>().WithMany().HasForeignKey(i => i.StockItemId).OnDelete(DeleteBehavior.Restrict);
+        });
 
         modelBuilder.Entity<ServiceCase>(e =>
         {
             e.ToTable("Cases");
             e.HasIndex(c => c.ServiceDeskRequestId);
-            e.HasIndex(c => c.Status);
+            e.HasIndex(c => new { c.Type, c.Status, c.DueDate });
+            e.HasIndex(c => c.PersonId);
             e.Ignore(c => c.AllTasksFinished);
+            e.Ignore(c => c.IsClosed);
+            e.Property(c => c.ServiceDeskRequestId).HasMaxLength(50);
+            e.Property(c => c.CreatedBy).HasMaxLength(200);
+            e.Property(c => c.CancelledBy).HasMaxLength(200);
+            e.Property(c => c.CancellationReason).HasMaxLength(1000);
+            e.Property(c => c.Notes).HasMaxLength(2000);
             e.HasMany(c => c.Tasks).WithOne().HasForeignKey(t => t.CaseId);
+            e.HasOne<Person>().WithMany().HasForeignKey(c => c.PersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<RoleProfile>().WithMany().HasForeignKey(c => c.RoleProfileId).OnDelete(DeleteBehavior.SetNull);
+            // Two technicians ticking the same checklist at once: the second save fails instead of overwriting.
+            e.Property<byte[]>("RowVersion").IsRowVersion();
+        });
+
+        modelBuilder.Entity<ChecklistTask>(e =>
+        {
+            e.HasIndex(t => new { t.Source, t.SourceId });
+            e.HasIndex(t => t.DeviceRequestId);
+            e.Property(t => t.Title).HasMaxLength(300);
+            e.Property(t => t.Notes).HasMaxLength(4000);
+            e.Property(t => t.ServiceDeskTaskId).HasMaxLength(50);
+            foreach (var who in new[] { nameof(ChecklistTask.ApprovedBy), nameof(ChecklistTask.CompletedBy), nameof(ChecklistTask.AssignedTo) })
+                e.Property(who).HasMaxLength(200);
+            e.HasOne<AssetCategory>().WithMany().HasForeignKey(t => t.CategoryId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<DeviceRequest>().WithMany().HasForeignKey(t => t.DeviceRequestId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<AuditEntry>(e =>

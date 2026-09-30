@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   MapPin,
   Laptop,
@@ -21,18 +22,20 @@ import {
 import { api, signedOutEvent } from './api'
 import { NoAccessPage, SignInPage } from './pages/SignInPage'
 import { initials, permissions, UserContext, type User } from './user'
-import { assetIdFromLink, requestIdFromLink } from './links'
+import { assetIdFromLink, caseIdFromLink, requestIdFromLink } from './links'
 import { NavContext, type Nav } from './nav'
-import { PageHeader } from './PageHeader'
 import { ActivityFeed } from './pages/ActivityFeed'
 import { AssetDetailsPage } from './pages/AssetDetailsPage'
 import { AssetsPage } from './pages/AssetsPage'
+import { CaseDetailsPage } from './pages/CaseDetailsPage'
+import { CasesPage } from './pages/CasesPage'
 import { CategoriesPage } from './pages/CategoriesPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
 import { LocationsPage } from './pages/LocationsPage'
 import { PeoplePage } from './pages/PeoplePage'
 import { PersonProfile } from './pages/PersonProfile'
+import { ProfilesPage } from './pages/ProfilesPage'
 import { ReconciliationPage } from './pages/ReconciliationPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { RequestDetailsPage } from './pages/RequestDetailsPage'
@@ -55,6 +58,7 @@ export type PageKey =
   | 'imports'
   | 'categories'
   | 'locations'
+  | 'profiles'
 
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean; approversOnly?: boolean }
 
@@ -81,7 +85,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { key: 'people', label: 'People', icon: <Users size={18} /> },
       { key: 'requests', label: 'Requests', icon: <FileText size={18} /> },
       { key: 'approvals', label: 'Approvals', icon: <ClipboardCheck size={18} />, approversOnly: true },
-      { key: 'cases', label: 'On/offboarding', icon: <ClipboardList size={18} />, later: 'Phase 2' },
+      { key: 'cases', label: 'Starters and leavers', icon: <ClipboardList size={18} /> },
     ],
   },
   {
@@ -90,6 +94,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { key: 'imports', label: 'Import register', icon: <Upload size={18} />, adminOnly: true },
       { key: 'categories', label: 'Asset categories', icon: <Tags size={18} /> },
       { key: 'locations', label: 'Locations', icon: <MapPin size={18} /> },
+      { key: 'profiles', label: 'Starter profiles', icon: <ListChecks size={18} /> },
     ],
   },
 ]
@@ -102,6 +107,7 @@ type View =
   | { kind: 'technician'; name: string }
   | { kind: 'search'; term: string }
   | { kind: 'request'; id: string }
+  | { kind: 'case'; id: string }
 
 /** Checks who is signed in, then shows the sign-in page, a no-access page, or GIIM itself. */
 export default function App() {
@@ -159,7 +165,9 @@ function Shell({ user }: { user: User }) {
     if (linked) return [{ kind: 'asset', id: linked }]
     // A link in a request email opens the request.
     const request = requestIdFromLink(window.location.search)
-    return request ? [{ kind: 'request', id: request }] : []
+    if (request) return [{ kind: 'request', id: request }]
+    const linkedCase = caseIdFromLink(window.location.search)
+    return linkedCase ? [{ kind: 'case', id: linkedCase }] : []
   })
   const [search, setSearch] = useState('')
   const [assetSearch, setAssetSearch] = useState('')
@@ -172,7 +180,13 @@ function Shell({ user }: { user: User }) {
     window.history.replaceState(
       null,
       '',
-      top?.kind === 'asset' ? `?asset=${top.id}` : top?.kind === 'request' ? `?request=${top.id}` : window.location.pathname,
+      top?.kind === 'asset'
+        ? `?asset=${top.id}`
+        : top?.kind === 'request'
+          ? `?request=${top.id}`
+          : top?.kind === 'case'
+            ? `?case=${top.id}`
+            : window.location.pathname,
     )
   }
   const open = (view: View) => show([...views, view])
@@ -184,6 +198,7 @@ function Shell({ user }: { user: User }) {
     openTicket: (number) => open({ kind: 'ticket', number }),
     openTechnician: (name) => open({ kind: 'technician', name }),
     openRequest: (id) => open({ kind: 'request', id }),
+    openCase: (id) => open({ kind: 'case', id }),
   }
 
   const go = (key: PageKey) => {
@@ -214,8 +229,6 @@ function Shell({ user }: { user: User }) {
     open({ kind: 'search', term })
   }
 
-  const label = navigation.flatMap((n) => n.items).find((i) => i.key === page)?.label ?? ''
-
   const pages: Record<PageKey, ReactNode> = {
     dashboard: <DashboardPage onOpenAsset={nav.openAsset} onNavigate={go} />,
     reports: <ReportsPage />,
@@ -226,7 +239,8 @@ function Shell({ user }: { user: User }) {
     people: <PeoplePage />,
     requests: <RequestsPage key="all" onChanged={onRequestsChanged} />,
     approvals: <RequestsPage key="approvals" initialView="AwaitingMe" onChanged={onRequestsChanged} />,
-    cases: <PageHeader title={label} subtitle="Onboarding and offboarding checklists arrive in Phase 2 of the roadmap." />,
+    cases: <CasesPage />,
+    profiles: <ProfilesPage />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
     locations: <LocationsPage />,
@@ -238,6 +252,8 @@ function Shell({ user }: { user: User }) {
     <PersonProfile key={current.id} personId={current.id} onBack={back} onOpenPerson={nav.openPerson} />
   ) : current.kind === 'request' ? (
     <RequestDetailsPage key={current.id} requestId={current.id} onBack={back} onChanged={onRequestsChanged} />
+  ) : current.kind === 'case' ? (
+    <CaseDetailsPage key={current.id} caseId={current.id} onBack={back} />
   ) : current.kind === 'ticket' ? (
     <ActivityFeed key={current.number} ticket={current.number} onBack={back} />
   ) : current.kind === 'technician' ? (

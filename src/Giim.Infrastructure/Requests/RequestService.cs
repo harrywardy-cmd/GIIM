@@ -4,6 +4,7 @@ using Giim.Domain.Notifications;
 using Giim.Domain.People;
 using Giim.Domain.Requests;
 using Giim.Infrastructure.Assets;
+using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +51,12 @@ public sealed class RequestService(GiimDbContext db, AssetLifecycleService lifec
 
     // ---- Changes -------------------------------------------------------------------------------------------------------
 
-    public async Task<DeviceRequest> SubmitAsync(NewDeviceRequest details, RequestActor actor, string baseUrl, CancellationToken cancellationToken)
+    public Task<DeviceRequest> SubmitAsync(NewDeviceRequest details, RequestActor actor, string baseUrl, CancellationToken cancellationToken) =>
+        SubmitAsync(details, actor, baseUrl, alongside: null, cancellationToken);
+
+    /// <summary>As above, plus <paramref name="alongside"/>: another change (such as linking a starter's checklist task) in the same save.</summary>
+    public async Task<DeviceRequest> SubmitAsync(NewDeviceRequest details, RequestActor actor, string baseUrl, Action<DeviceRequest>? alongside,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(details);
         var recipient = await db.People.AsNoTracking().FirstOrDefaultAsync(p => p.Id == details.RecipientPersonId, cancellationToken)
@@ -72,6 +78,7 @@ public sealed class RequestService(GiimDbContext db, AssetLifecycleService lifec
         db.DeviceRequests.Add(request);
         db.DeviceRequestEvents.AddRange(events);
         await QueueEmailsAsync(request, events, actor, baseUrl, null, cancellationToken);
+        alongside?.Invoke(request);
         await db.SaveChangesAsync(cancellationToken);
         return request;
     }
@@ -151,6 +158,9 @@ public sealed class RequestService(GiimDbContext db, AssetLifecycleService lifec
                 var completed = request.Complete(actor, now, asset.Id, asset.DisplayName);
                 db.DeviceRequestEvents.Add(completed);
                 await QueueEmailsAsync(request, [completed], actor, baseUrl, asset.DisplayName, cancellationToken);
+                // A starter checklist waiting on this device ticks its task off.
+                await CaseService.CompleteLinkedTasksAsync(db, t => t.DeviceRequestId == request.Id, actor.Login,
+                    $"Handed over {asset.DisplayName} ({request.Reference})", now, cancellationToken);
             }, cancellationToken);
     }
 

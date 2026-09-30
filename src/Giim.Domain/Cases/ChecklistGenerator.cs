@@ -11,9 +11,12 @@ namespace Giim.Domain.Cases;
 /// </summary>
 public static class ChecklistGenerator
 {
-    public static ServiceCase ForOnboarding(Person person, RoleProfile profile, string? serviceDeskRequestId)
+    public static ServiceCase ForOnboarding(Person person, RoleProfile profile, string? serviceDeskRequestId, string? createdBy = null)
     {
-        var serviceCase = NewCase(CaseType.Onboarding, person, serviceDeskRequestId, person.StartDate);
+        ArgumentNullException.ThrowIfNull(person);
+        ArgumentNullException.ThrowIfNull(profile);
+        var serviceCase = NewCase(CaseType.Onboarding, person, serviceDeskRequestId, person.StartDate, createdBy);
+        serviceCase.RoleProfileId = profile.Id;
 
         Add(serviceCase, "Create AD account", TaskKind.Automated);
         Add(serviceCase, "Wait for Entra Connect to sync the new account to Microsoft 365", TaskKind.Automated);
@@ -31,7 +34,8 @@ public static class ChecklistGenerator
                 ProfileItemType.StockItem     => ($"Issue from stock: {item.Description}", TaskKind.Manual),
                 _                             => (item.Description, TaskKind.Manual),
             };
-            Add(serviceCase, title, kind, sourceId: item.Id);
+            Add(serviceCase, title, kind, TaskSource.ProfileItem, item.Id,
+                categoryId: item.Type == ProfileItemType.Hardware ? item.CategoryId : null);
         }
 
         Add(serviceCase, "Enable the account on the start date", TaskKind.Automated);
@@ -43,9 +47,12 @@ public static class ChecklistGenerator
         Person person,
         IEnumerable<Asset> assignedAssets,
         IEnumerable<Application> assignedApplications,
-        string? serviceDeskRequestId)
+        string? serviceDeskRequestId,
+        DateOnly? lastDay = null,
+        string? createdBy = null)
     {
-        var serviceCase = NewCase(CaseType.Offboarding, person, serviceDeskRequestId, person.EndDate);
+        ArgumentNullException.ThrowIfNull(person);
+        var serviceCase = NewCase(CaseType.Offboarding, person, serviceDeskRequestId, lastDay ?? person.EndDate, createdBy);
 
         Add(serviceCase, "Revoke Microsoft 365 sign-in sessions", TaskKind.Automated, requiresApproval: true);
         if (person.Track == ProvisioningTrack.Full)
@@ -57,30 +64,40 @@ public static class ChecklistGenerator
         foreach (var app in assignedApplications)
         {
             var kind = app.AccessGroupName is null ? TaskKind.Manual : TaskKind.Automated;
-            Add(serviceCase, $"Remove app access: {app.Name}", kind, sourceId: app.Id);
+            Add(serviceCase, $"Remove app access: {app.Name}", kind, TaskSource.Application, app.Id);
         }
 
         // Assets whose category isn't returned (Category loaded) are left off; unknown categories are recovered to be safe.
         foreach (var asset in assignedAssets.Where(a => a.Category?.ReturnOnOffboarding ?? true))
             Add(serviceCase, $"Recover {asset.Category?.Name ?? "asset"}: {asset.Manufacturer} {asset.Model} (S/N {asset.SerialNumber})",
-                TaskKind.Manual, sourceId: asset.Id);
+                TaskKind.Manual, TaskSource.Asset, asset.Id);
 
         Add(serviceCase, "Remove M365 licence", TaskKind.Automated);
         Add(serviceCase, "Disable AD account and move to Leavers OU", TaskKind.Automated, requiresApproval: true);
         return serviceCase;
     }
 
-    private static ServiceCase NewCase(CaseType type, Person person, string? requestId, DateOnly? due) =>
-        new() { Type = type, PersonId = person.Id, ServiceDeskRequestId = requestId, DueDate = due };
+    private static ServiceCase NewCase(CaseType type, Person person, string? requestId, DateOnly? due, string? createdBy) =>
+        new()
+        {
+            Type = type,
+            PersonId = person.Id,
+            ServiceDeskRequestId = string.IsNullOrWhiteSpace(requestId) ? null : requestId.Trim().ToUpperInvariant(),
+            DueDate = due,
+            CreatedBy = createdBy,
+        };
 
-    private static void Add(ServiceCase serviceCase, string title, TaskKind kind, Guid? sourceId = null, bool requiresApproval = false) =>
+    private static void Add(ServiceCase serviceCase, string title, TaskKind kind, TaskSource source = TaskSource.None,
+        Guid? sourceId = null, Guid? categoryId = null, bool requiresApproval = false) =>
         serviceCase.Tasks.Add(new ChecklistTask
         {
             CaseId = serviceCase.Id,
             Order = serviceCase.Tasks.Count + 1,
             Title = title,
             Kind = kind,
+            Source = source,
             SourceId = sourceId,
+            CategoryId = categoryId,
             RequiresApproval = requiresApproval,
         });
 }

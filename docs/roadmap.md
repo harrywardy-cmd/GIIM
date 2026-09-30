@@ -22,7 +22,7 @@ Goal: one trustworthy list of who has what.
    Verified against `samples/expected-reconciliation.json`
 6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
 7. **SDP asset import** (API v3, read-only)
-8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). Still to do: the Active Directory source and the department profile editor
+8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). **Starter profile editor** ✅ (per department, optionally per job title or track; bulk import). Still to do: the Active Directory source
 9. ◐ **Microsoft sign-in (Entra ID, My Apps tile) with four roles** ✅ built and tested with the development sign-in
    (see `docs/entra-setup.md`); creating the app registration is waiting on the Entra admin. Replaced the earlier Okta
    plan (30 Sep 2026: GIIM uses Microsoft Entra ID only). Moved earlier because every
@@ -67,7 +67,11 @@ Existing items:
 1. SDP request templates with structured fields (department, role, start/leave date, manager, location)
 2. SDP custom trigger → webhook → GIIM creates the case and checklist automatically
 3. GIIM writes progress notes back to the ticket and resolves it when the checklist is done
-4. Manual checklists linked to an SDP request ID
+4. ✅ **Starter and leaver checklists** linked to an SDP request ID: starters from their department's profile (added as
+   pending if not yet in the directory), leavers from what they actually hold. Tasks record who did them and when;
+   hardware tasks raise a device request and tick off at handover; leaver asset tasks tick off when the asset is
+   returned; destructive steps need an administrator's approval and a different person to carry them out. Steps that
+   later phases automate are ticked by hand until then
 
 New from the brief (replaces the earlier "hardware request, replacement and RMA flows" item):
 

@@ -109,6 +109,33 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("Viewer", HttpStatusCode.Forbidden)]
+    [InlineData("Manager", HttpStatusCode.Forbidden)]
+    [InlineData("Technician", HttpStatusCode.BadRequest)]   // allowed in; the unreadable body is then refused
+    public async Task Only_it_starts_starter_and_leaver_checklists(string role, HttpStatusCode expected)
+    {
+        var client = await SignedInAs(role);
+
+        using var body = new StringContent("\"not a checklist\"", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("/api/cases/onboarding", body);
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("Technician", HttpStatusCode.Forbidden)]
+    [InlineData("Administrator", HttpStatusCode.BadRequest)]
+    public async Task Only_administrators_change_starter_profiles(string role, HttpStatusCode expected)
+    {
+        var client = await SignedInAs(role);
+
+        using var body = new StringContent("\"not a profile\"", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("/api/profiles", body);
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
     [Fact]
     public async Task Technician_cannot_change_set_up_lists()
     {

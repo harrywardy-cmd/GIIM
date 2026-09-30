@@ -7,3 +7,8 @@ const requestIdPattern = /[?&]request=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a
 
 /** The device request in a GIIM link, e.g. from an approval email: "https://giim.example/?request=<id>". */
 export const requestIdFromLink = (text: string) => requestIdPattern.exec(text)?.[1] ?? null
+
+const caseIdPattern = /[?&]case=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+
+/** The starter or leaver checklist in a GIIM link: "https://giim.example/?case=<id>". */
+export const caseIdFromLink = (text: string) => caseIdPattern.exec(text)?.[1] ?? null
