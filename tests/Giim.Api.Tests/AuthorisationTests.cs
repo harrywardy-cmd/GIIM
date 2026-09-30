@@ -83,13 +83,15 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
 
     [Theory]
     [InlineData("Viewer", HttpStatusCode.Forbidden)]
-    [InlineData("Manager", HttpStatusCode.BadRequest)]   // allowed in; the empty request is then refused
+    [InlineData("Manager", HttpStatusCode.BadRequest)]   // allowed in; the unreadable body is then refused
     [InlineData("Technician", HttpStatusCode.BadRequest)]
     public async Task Managers_and_it_can_raise_device_requests_but_viewers_cannot(string role, HttpStatusCode expected)
     {
         var client = await SignedInAs(role);
 
-        var response = await client.PostAsJsonAsync("/api/requests", new { });
+        // A body that can't be read as a request is refused before any database work, so no database is needed.
+        using var body = new StringContent("\"not a request\"", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("/api/requests", body);
 
         Assert.Equal(expected, response.StatusCode);
     }
@@ -206,28 +208,6 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
 
 public class AuthHelperTests
 {
-    private static readonly Dictionary<string, string> RoleGroups = new()
-    {
-        [Roles.Administrator] = "GIIM-Administrators",
-        [Roles.Technician] = "GIIM-Technicians",
-        [Roles.Manager] = "GIIM-Managers",
-        [Roles.Viewer] = "GIIM-Viewers",
-    };
-
-    [Fact]
-    public void Okta_groups_map_to_roles_ignoring_case_and_other_groups()
-    {
-        var roles = GroupRoleMapper.RolesFor(["Everyone", "giim-technicians", "Finance-Staff", "GIIM-Viewers"], RoleGroups);
-
-        Assert.Equal([Roles.Technician, Roles.Viewer], roles);
-    }
-
-    [Fact]
-    public void Someone_in_no_giim_group_gets_no_role()
-    {
-        Assert.Empty(GroupRoleMapper.RolesFor(["Everyone", "Finance-Staff"], RoleGroups));
-    }
-
     [Theory]
     [InlineData("/?asset=123", "/?asset=123")]
     [InlineData("/assets", "/assets")]

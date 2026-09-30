@@ -1,5 +1,5 @@
 // Private network for GIIM. The apps reach SQL, Key Vault and Blob Storage over private endpoints, and go out to
-// the internet (Graph, Okta, ServiceDesk Plus) through a NAT gateway with one fixed IP address that other services
+// the internet (Microsoft Graph, ServiceDesk Plus) through a NAT gateway with one fixed IP address that other services
 // can allow-list.
 
 param name string

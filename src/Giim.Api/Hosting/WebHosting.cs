@@ -1,6 +1,7 @@
 using Azure.Identity;
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 
 namespace Giim.Api.Hosting;
@@ -40,13 +41,13 @@ internal static class WebHosting
 
     /// <summary>
     /// Browser security headers on every response. The UI loads only its own scripts; the one outside address it
-    /// needs is Okta, because signing out is a form post that redirects there.
+    /// needs is Microsoft sign-in, because signing out is a form post that redirects there.
     /// </summary>
     public static IApplicationBuilder UseSecurityHeaders(this WebApplication app)
     {
-        var okta = Uri.TryCreate(app.Configuration["Auth:Okta:Authority"], UriKind.Absolute, out var authority)
-            ? " " + authority.GetLeftPart(UriPartial.Authority)
-            : "";
+        var signIn = app.Configuration["Auth:Mode"] == nameof(Security.AuthMode.Development)
+            ? ""
+            : " " + (app.Services.GetRequiredService<IOptions<Security.AuthOptions>>().Value.Entra.Instance.GetLeftPart(UriPartial.Authority));
         var policy = string.Join("; ",
             "default-src 'self'",
             "script-src 'self'",
@@ -57,7 +58,7 @@ internal static class WebHosting
             "object-src 'none'",
             "base-uri 'self'",
             "frame-ancestors 'none'",
-            $"form-action 'self'{okta}");
+            $"form-action 'self'{signIn}");
 
         return app.Use(async (context, next) =>
         {

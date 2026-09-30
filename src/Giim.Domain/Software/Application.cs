@@ -15,8 +15,11 @@ public sealed class Application : Entity
     public LicenceModel LicenceModel { get; set; }
     public int? TotalSeats { get; set; }
 
-    /// <summary>Okta group that grants access; null when provisioning is manual.</summary>
-    public string? OktaGroupName { get; set; }
+    /// <summary>
+    /// Security group that grants access (in Active Directory, or cloud-only in Entra); null when provisioning is
+    /// manual. Groups synced from AD can only be changed in AD.
+    /// </summary>
+    public string? AccessGroupName { get; set; }
     public string? BusinessOwner { get; set; }
     public bool IsActive { get; set; } = true;
 }

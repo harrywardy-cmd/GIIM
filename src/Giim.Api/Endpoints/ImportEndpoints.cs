@@ -14,7 +14,7 @@ internal static class ImportEndpoints
 
     public static void MapImportEndpoints(this IEndpointRouteBuilder app)
     {
-        // Antiforgery is for cookie auth; this API will use Okta bearer tokens.
+        // Antiforgery tokens aren't used: every change must carry the X-GIIM-Request header instead (AuthSetup.UseCsrfHeaderCheck).
         var group = app.MapGroup("/api/imports/assets").DisableAntiforgery();
 
         group.MapPost("/preview", async (IFormFile file, [Microsoft.AspNetCore.Mvc.FromForm] string? mapping,

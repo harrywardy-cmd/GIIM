@@ -17,12 +17,12 @@ has or plans, the existing item stays and any extra detail from the brief is fol
 | §28 Employee offboarding | ◐ Planned: Phase 4, checklist built from actual assignments | "Clearly show anything not returned" becomes the return workflow (below) |
 | §29 Employee onboarding | ◐ Planned: Phases 2 and 3 | Device request and approval as the first step (see new features) |
 | §27 Employee profile: name, email, department, manager, location | ◐ Planned: people import from AD (Phase 1) | Profile **page** (see new features) |
-| §3 Roles and access | ◐ Planned: Okta SSO with roles from Okta groups | Four named roles: Administrator, Technician, Manager/Approver, Viewer |
+| §3 Roles and access | ✅ Microsoft Entra sign-in (My Apps) with roles from Entra app roles | Four named roles: Administrator, Technician, Manager/Approver, Viewer |
 | §19 Data-wiping confirmation | ◐ Built in the lifecycle (`Wiped` must come before reuse) | Also required at retirement |
 | §17 Repairs (status only) | ◐ Built: `InRepair` status | Full repair record (see new features) |
 | §21 Warranty expirations | ◐ Planned: Phase 5 warranty lookups from vendor APIs | Expiry list and alerts from the data already stored (see new features) |
 | §24 Notifications (email) | ◐ Planned: welcome and return-reminder emails via Graph | In-app notifications and the full event list (see new features) |
-| Intune, Okta, AD, Exchange, SDP integration | ✅/◐ Built or planned | Not in the brief; unchanged |
+| Intune, Entra ID, AD, Exchange, SDP integration | ✅/◐ Built or planned | Not in the brief; unchanged |
 
 ## 2. New features added from the brief
 
@@ -68,9 +68,9 @@ has or plans, the existing item stays and any extra detail from the brief is fol
 | **Retired** | Brief | Out of service; wipe confirmation required |
 | Disposed | Both | Final |
 
-**Roles (§3)** become four Okta groups mapped to Administrator, Technician, Manager/Approver and Viewer.
+**Roles (§3)** become four Entra app roles (Administrator, Technician, Manager/Approver and Viewer), assigned to groups.
 
-**SSO moves earlier.** The brief's core promise is *who* did each action. Until staff sign in with Okta, every action is
+**SSO moves earlier.** The brief's core promise is *who* did each action. Until staff sign in with their Microsoft accounts, every action is
 recorded as `local-dev`, so SSO and roles now come before the lifecycle work.
 
 **Storage.** Photos and attachments (N12) need Azure Blob Storage, which is added to the infrastructure plan.
@@ -82,7 +82,7 @@ recorded as `local-dev`, so SSO and roles now come before the lifecycle work.
    Consequences:
    - **Approval notifications (N21) ship with approvals (N14), not later.** Managers need an email with a link to the
      request, or requests sit unseen in a system they don't use daily.
-   - Managers sign in with Okta as **Manager/Approver** and see their team's requests.
+   - Managers sign in (from My Apps) as **Manager/Approver** and see their team's requests.
    - **To avoid two ways of requesting kit**, the SDP hardware request templates should be retired or pointed at GIIM.
      This needs agreeing with the SDP administrator before go-live.
    - New-starter tickets arriving from SDP (Phase 2 webhook) create a GIIM device request automatically, pending approval.

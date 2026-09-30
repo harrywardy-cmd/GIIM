@@ -16,7 +16,7 @@ public static class ChecklistGenerator
         var serviceCase = NewCase(CaseType.Onboarding, person, serviceDeskRequestId, person.StartDate);
 
         Add(serviceCase, "Create AD account", TaskKind.Automated);
-        Add(serviceCase, "Wait for Okta import and Entra Connect sync", TaskKind.Automated);
+        Add(serviceCase, "Wait for Entra Connect to sync the new account to Microsoft 365", TaskKind.Automated);
         if (person.Track == ProvisioningTrack.Full)
             Add(serviceCase, "Enable remote mailbox (hybrid Exchange)", TaskKind.Automated);
 
@@ -24,17 +24,17 @@ public static class ChecklistGenerator
         {
             var (title, kind) = item.Type switch
             {
-                ProfileItemType.Application  => ($"Grant app: {item.Description}", item.GroupName is null ? TaskKind.Manual : TaskKind.Automated),
-                ProfileItemType.OktaGroup    => ($"Add to Okta group: {item.GroupName}", TaskKind.Automated),
-                ProfileItemType.LicenceGroup => ($"Add to licence group: {item.GroupName}", TaskKind.Automated),
-                ProfileItemType.Hardware     => ($"Allocate and scan: {item.Description}", TaskKind.Manual),
-                ProfileItemType.StockItem    => ($"Issue from stock: {item.Description}", TaskKind.Manual),
-                _                            => (item.Description, TaskKind.Manual),
+                ProfileItemType.Application   => ($"Grant app: {item.Description}", item.GroupName is null ? TaskKind.Manual : TaskKind.Automated),
+                ProfileItemType.SecurityGroup => ($"Add to group: {item.GroupName}", TaskKind.Automated),
+                ProfileItemType.LicenceGroup  => ($"Add to licence group: {item.GroupName}", TaskKind.Automated),
+                ProfileItemType.Hardware      => ($"Allocate and scan: {item.Description}", TaskKind.Manual),
+                ProfileItemType.StockItem     => ($"Issue from stock: {item.Description}", TaskKind.Manual),
+                _                             => (item.Description, TaskKind.Manual),
             };
             Add(serviceCase, title, kind, sourceId: item.Id);
         }
 
-        Add(serviceCase, "Activate Okta account on start date", TaskKind.Automated);
+        Add(serviceCase, "Enable the account on the start date", TaskKind.Automated);
         Add(serviceCase, "Send welcome email to manager", TaskKind.Automated);
         return serviceCase;
     }
@@ -47,7 +47,7 @@ public static class ChecklistGenerator
     {
         var serviceCase = NewCase(CaseType.Offboarding, person, serviceDeskRequestId, person.EndDate);
 
-        Add(serviceCase, "Revoke Okta and Entra sessions", TaskKind.Automated, requiresApproval: true);
+        Add(serviceCase, "Revoke Microsoft 365 sign-in sessions", TaskKind.Automated, requiresApproval: true);
         if (person.Track == ProvisioningTrack.Full)
         {
             Add(serviceCase, "Convert mailbox to shared and grant manager access", TaskKind.Automated, requiresApproval: true);
@@ -56,7 +56,7 @@ public static class ChecklistGenerator
 
         foreach (var app in assignedApplications)
         {
-            var kind = app.OktaGroupName is null ? TaskKind.Manual : TaskKind.Automated;
+            var kind = app.AccessGroupName is null ? TaskKind.Manual : TaskKind.Automated;
             Add(serviceCase, $"Remove app access: {app.Name}", kind, sourceId: app.Id);
         }
 

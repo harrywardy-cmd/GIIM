@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Boxes, LogIn } from 'lucide-react'
 
-type Config = { mode: 'Okta' | 'Development'; roles: string[] }
+type Config = { mode: 'Entra' | 'Development'; configured: boolean; roles: string[] }
 
 /**
- * Shown when nobody is signed in. With Okta, the button hands over to Okta (MFA and all) and comes back here.
+ * Shown when nobody is signed in. The button hands over to Microsoft (MFA and Conditional Access apply) and comes
+ * back here; staff opening GIIM from the My Apps tile skip this page altogether.
  * The development sign-in only exists on a developer's machine; the API refuses it anywhere else.
  */
 export function SignInPage({ onSignedIn }: { onSignedIn: () => void }) {
@@ -45,10 +46,17 @@ export function SignInPage({ onSignedIn }: { onSignedIn: () => void }) {
         <p className="muted">IT asset and lifecycle management.</p>
         {error && <p className="error">{error}</p>}
 
-        {config?.mode === 'Okta' && (
+        {config?.mode === 'Entra' && config.configured && (
           <a className="button primary signin-button" href={`/auth/login?returnUrl=${returnUrl}`}>
-            <LogIn size={16} /> Sign in with Okta
+            <LogIn size={16} /> Sign in with Microsoft
           </a>
+        )}
+
+        {config?.mode === 'Entra' && !config.configured && (
+          <p className="notice">
+            Microsoft sign-in isn't set up for this GIIM yet. An administrator needs to register GIIM in Microsoft Entra ID
+            (see docs/entra-setup.md).
+          </p>
         )}
 
         {config?.mode === 'Development' && (
@@ -78,15 +86,15 @@ export function SignInPage({ onSignedIn }: { onSignedIn: () => void }) {
   )
 }
 
-/** Signed in with Okta, but not in any GIIM group. */
+/** Signed in with Microsoft, but not given a GIIM role. */
 export function NoAccessPage({ name }: { name: string | null }) {
   return (
     <div className="signin">
       <div className="signin-card">
         <h2>No access to GIIM</h2>
         <p>
-          You're signed in{name ? ` as ${name}` : ''}, but you're not in any GIIM group. Ask the IT service desk to add you to
-          the right group (Viewer, Technician, Manager or Administrator).
+          You're signed in{name ? ` as ${name}` : ''}, but you haven't been given a GIIM role. Ask the IT service desk to give you
+          access (Viewer, Technician, Manager or Administrator).
         </p>
         <form method="post" action="/auth/logout">
           <button type="submit">Sign out</button>

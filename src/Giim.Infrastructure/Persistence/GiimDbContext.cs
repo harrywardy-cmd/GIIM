@@ -89,7 +89,6 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
         {
             e.HasIndex(p => p.EmployeeId).IsUnique();
             e.HasIndex(p => p.UserPrincipalName);
-            e.HasIndex(p => p.OktaUserId);
             e.Property(p => p.EmployeeId).HasMaxLength(50);
             e.Property(p => p.DisplayName).HasMaxLength(200);
             e.HasOne(p => p.Department).WithMany().HasForeignKey(p => p.DepartmentId).OnDelete(DeleteBehavior.Restrict);
