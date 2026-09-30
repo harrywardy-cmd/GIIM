@@ -1,5 +1,6 @@
 // Managed identities: how GIIM signs in to other services without any stored password.
-//   api     - the web app: SQL, Key Vault (Okta secret, cookie key), Blob Storage, Microsoft Graph
+//   api     - the web app: SQL, Key Vault (cookie key), Blob Storage, Microsoft Graph, and the credential the GIIM
+//             app registration trusts for staff sign-in
 //   workers - the background jobs: SQL, Key Vault, Microsoft Graph
 //   deploy  - GitHub Actions: deploys code and runs database migrations. It trusts only this repository's
 //             GitHub environment of the same name, so protection rules on that environment (required reviewers)

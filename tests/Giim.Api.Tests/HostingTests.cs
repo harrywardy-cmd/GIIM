@@ -37,13 +37,21 @@ public class HostingTests(WebApplicationFactory<Program> factory) : IClassFixtur
     }
 
     [Fact]
-    public async Task Sign_out_may_redirect_to_okta_and_nowhere_else()
+    public async Task Sign_out_may_redirect_to_microsoft_and_nowhere_else()
     {
-        using var okta = factory.WithWebHostBuilder(b => b.UseSetting("Auth:Okta:Authority", "https://example.okta.com/oauth2/default"));
+        using var entra = factory.WithWebHostBuilder(b => b.UseSetting("Auth:Mode", "Entra"));
 
-        var response = await okta.CreateClient().GetAsync("/api/auth/config");
+        var response = await entra.CreateClient().GetAsync("/api/auth/config");
         var policy = response.Headers.GetValues("Content-Security-Policy").Single();
 
-        Assert.Contains("form-action 'self' https://example.okta.com;", policy + ";", StringComparison.Ordinal);
+        Assert.Contains("form-action 'self' https://login.microsoftonline.com;", policy + ";", StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Development_sign_in_needs_no_outside_address()
+    {
+        var response = await factory.CreateClient().GetAsync("/api/auth/config");   // tests run with the development sign-in
+
+        Assert.Contains("form-action 'self';", response.Headers.GetValues("Content-Security-Policy").Single() + ";", StringComparison.Ordinal);
     }
 }

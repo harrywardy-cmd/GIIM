@@ -42,7 +42,7 @@ var departments = new (string Code, string Name, string Location)[]
 };
 
 // ---------------------------------------------------------------- app catalogue
-var apps = new (string Name, string Vendor, string Licence, int? Seats, string? OktaGroup)[]
+var apps = new (string Name, string Vendor, string Licence, int? Seats, string? AccessGroup)[]
 {
     ("Microsoft 365 E3", "Microsoft", "PerUser", 1600, "LIC-M365-E3"),
     ("Microsoft Visio", "Microsoft", "PerUser", 60, "APP-Visio"),
@@ -300,8 +300,8 @@ foreach (var p in people)
         p.Start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), p.End?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "",
         p.Track, managers[p.Dept] == p.Upn ? "" : managers[p.Dept]));
 
-var appsCsv = new StringBuilder("Name,Vendor,LicenceModel,TotalSeats,OktaGroup\n");
-foreach (var a in apps) appsCsv.AppendLine(string.Join(',', Csv(a.Name), Csv(a.Vendor), a.Licence, a.Seats?.ToString(CultureInfo.InvariantCulture) ?? "", a.OktaGroup ?? ""));
+var appsCsv = new StringBuilder("Name,Vendor,LicenceModel,TotalSeats,AccessGroup\n");
+foreach (var a in apps) appsCsv.AppendLine(string.Join(',', Csv(a.Name), Csv(a.Vendor), a.Licence, a.Seats?.ToString(CultureInfo.InvariantCulture) ?? "", a.AccessGroup ?? ""));
 
 var profiles = departments.Select(d => new
 {
@@ -315,7 +315,7 @@ var profiles = departments.Select(d => new
             items = new object[]
             {
                 new { type = "LicenceGroup", description = "Microsoft 365 E3", groupName = "LIC-M365-E3" },
-                new { type = "OktaGroup", description = "Department group", groupName = $"DEPT-{d.Code}" },
+                new { type = "SecurityGroup", description = "Department group", groupName = $"DEPT-{d.Code}" },
                 new { type = "Hardware", description = "Standard laptop", hardwareCategory = "Laptop" },
                 new { type = "Hardware", description = "24\" monitor", hardwareCategory = "Monitor" },
                 new { type = "Hardware", description = "USB-C dock", hardwareCategory = "Dock" },
@@ -325,7 +325,7 @@ var profiles = departments.Select(d => new
             {
                 type = "Application",
                 description = a,
-                groupName = apps.First(x => x.Name == a).OktaGroup,
+                groupName = apps.First(x => x.Name == a).AccessGroup,
             }))
             .Append(new { type = "ManualTask", description = "Book building access card with Facilities" })
             .ToArray(),
@@ -338,7 +338,7 @@ var profiles = departments.Select(d => new
               track = "Light",
               items = new object[]
               {
-                  new { type = "OktaGroup", description = "Department group", groupName = $"DEPT-{d.Code}" },
+                  new { type = "SecurityGroup", description = "Department group", groupName = $"DEPT-{d.Code}" },
                   new { type = "LicenceGroup", description = "Microsoft 365 F3", groupName = "LIC-M365-F3" },
                   new { type = "Application", description = "Manhattan WMS", groupName = (string?)null },
               },

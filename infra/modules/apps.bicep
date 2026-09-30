@@ -19,10 +19,9 @@ param sqlServerFqdn string
 param databaseName string
 param dataProtectionBlobUri string
 param dataProtectionKeyUri string
-param oktaSecretUri string
 param publicBaseUrl string
-param oktaAuthority string
-param oktaClientId string
+param entraTenantId string
+param entraClientId string
 @description('If not empty, only these IP ranges (CIDR) can open GIIM, e.g. office and VPN addresses.')
 param allowedIpRanges array
 param intuneSyncInterval string
@@ -52,10 +51,11 @@ var apiSettings = union(commonSettings, {
   Giim__PublicBaseUrl: publicBaseUrl
   DataProtection__BlobUri: dataProtectionBlobUri
   DataProtection__KeyUri: dataProtectionKeyUri
-  Auth__Mode: 'Okta'
-  Auth__Okta__Authority: oktaAuthority
-  Auth__Okta__ClientId: oktaClientId
-  Auth__Okta__ClientSecret: '@Microsoft.KeyVault(SecretUri=${oktaSecretUri})'
+  Auth__Mode: 'Entra'
+  Auth__Entra__TenantId: entraTenantId
+  Auth__Entra__ClientId: entraClientId
+  // The managed identity is the app registration's credential for sign-in: no client secret anywhere.
+  Auth__Entra__ManagedIdentityClientId: apiIdentity.clientId
   Intune__SyncInterval: '00:00:00' // the API only syncs on request; the workers run the schedule
 })
 

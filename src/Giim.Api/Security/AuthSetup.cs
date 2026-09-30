@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using Azure.Core;
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
@@ -6,21 +8,28 @@ using Microsoft.AspNetCore.Authorization;
 using Giim.Api.Hosting;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 namespace Giim.Api.Security;
 
 internal sealed record DevSignInRequest(string Name, string Role);
 
 /// <summary>
-/// Sign-in for GIIM. The API does the OpenID Connect sign-in with Okta and keeps the session in an HTTP-only
-/// cookie, so no tokens ever reach the browser. API calls without a session get 401 (the UI then shows the
-/// sign-in page) rather than a redirect.
+/// Sign-in for GIIM. The API does the OpenID Connect sign-in with Microsoft Entra ID (staff usually start from the
+/// GIIM tile in My Apps) and keeps the session in an HTTP-only cookie, so no tokens ever reach the browser. API calls
+/// without a session get 401 (the UI then shows the sign-in page) rather than a redirect.
 /// </summary>
 internal static class AuthSetup
 {
     public const string CsrfHeader = "X-GIIM-Request";
 
-    private static readonly string[] Scopes = ["openid", "profile", "email", "groups"];
+    /// <summary>The claim Entra puts the user's app roles in (Administrator, Technician, Manager, Viewer).</summary>
+    public const string RolesClaim = "roles";
+
+    /// <summary>What a managed identity's token must be issued for when used as the app registration's credential.</summary>
+    private const string FederatedCredentialScope = "api://AzureADTokenExchange/.default";
+
+    private static readonly string[] Scopes = ["openid", "profile", "email"];
 
     public static WebApplicationBuilder AddGiimAuth(this WebApplicationBuilder builder)
     {
@@ -29,7 +38,7 @@ internal static class AuthSetup
 
         if (options.Mode == AuthMode.Development && !builder.Environment.IsDevelopment())
             throw new InvalidOperationException(
-                "Auth:Mode 'Development' is only allowed in the Development environment. Use 'Okta' everywhere else.");
+                "Auth:Mode 'Development' is only allowed in the Development environment. Use 'Entra' everywhere else.");
 
         builder.Services.AddDataProtection().SetApplicationName("GIIM").StoreKeys(builder.Configuration);
 
@@ -52,48 +61,9 @@ internal static class AuthSetup
                 o.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
             });
 
-        if (options.Mode == AuthMode.Okta)
-        {
-            auth.AddOpenIdConnect(o =>
-            {
-                o.Authority = options.Okta.Authority;
-                o.ClientId = options.Okta.ClientId;
-                o.ClientSecret = options.Okta.ClientSecret;
-                o.ResponseType = "code";
-                o.UsePkce = true;
-                o.SaveTokens = true;                        // the id token is needed to sign out of Okta as well
-                o.GetClaimsFromUserInfoEndpoint = true;     // Okta returns group membership here
-                o.MapInboundClaims = false;
-                o.Scope.Clear();
-                foreach (var scope in Scopes) o.Scope.Add(scope);
-                o.TokenValidationParameters.NameClaimType = "preferred_username";
-                o.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
-                o.ClaimActions.MapJsonKey(GroupRoleMapper.GroupClaim, GroupRoleMapper.GroupClaim);
-                o.Events.OnTokenValidated = context =>
-                {
-                    var roleGroups = context.HttpContext.RequestServices.GetRequiredService<IOptions<AuthOptions>>().Value.RoleGroups;
-                    if (context.Principal?.Identity is ClaimsIdentity identity)
-                        GroupRoleMapper.AddRoleClaims(identity, roleGroups);
-                    return Task.CompletedTask;
-                };
-                o.Events.OnUserInformationReceived = context =>
-                {
-                    // Groups can arrive from the userinfo endpoint after token validation; map them too.
-                    var roleGroups = context.HttpContext.RequestServices.GetRequiredService<IOptions<AuthOptions>>().Value.RoleGroups;
-                    if (context.Principal?.Identity is ClaimsIdentity identity
-                        && context.User.RootElement.TryGetProperty(GroupRoleMapper.GroupClaim, out var groups))
-                    {
-                        foreach (var group in groups.EnumerateArray())
-                            if (group.GetString() is { } name && !identity.HasClaim(GroupRoleMapper.GroupClaim, name))
-                                identity.AddClaim(new Claim(GroupRoleMapper.GroupClaim, name));
-                        foreach (var role in GroupRoleMapper.RolesFor(identity.FindAll(GroupRoleMapper.GroupClaim).Select(c => c.Value), roleGroups))
-                            if (!identity.HasClaim(identity.RoleClaimType, role))
-                                identity.AddClaim(new Claim(identity.RoleClaimType, role));
-                    }
-                    return Task.CompletedTask;
-                };
-            });
-        }
+        // Until the app registration exists GIIM still runs; the sign-in page says sign-in isn't set up yet.
+        if (options.Mode == AuthMode.Entra && options.Entra.IsConfigured)
+            auth.AddOpenIdConnect(o => ConfigureEntra(o, options.Entra));
 
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(Policies.Read, p => p.RequireRole(Roles.All))
@@ -102,6 +72,37 @@ internal static class AuthSetup
             .AddPolicy(Policies.Administer, p => p.RequireRole(Roles.Administrator));
 
         return builder;
+    }
+
+    /// <summary>OpenID Connect with Microsoft Entra ID. Roles are the app roles assigned to the user (or their groups) in Entra.</summary>
+    private static void ConfigureEntra(OpenIdConnectOptions o, EntraOptions entra)
+    {
+        o.Authority = entra.Authority;
+        o.ClientId = entra.ClientId;
+        o.ClientSecret = entra.ClientSecret;
+        o.ResponseType = OpenIdConnectResponseType.Code;
+        o.UsePkce = true;
+        o.SaveTokens = true;                        // the ID token lets sign-out end the Microsoft session too
+        o.GetClaimsFromUserInfoEndpoint = false;    // everything GIIM needs is in the ID token
+        o.MapInboundClaims = false;
+        o.Scope.Clear();
+        foreach (var scope in Scopes) o.Scope.Add(scope);
+        o.TokenValidationParameters.NameClaimType = "preferred_username";
+        o.TokenValidationParameters.RoleClaimType = RolesClaim;
+
+        // In Azure GIIM proves who it is with a short-lived token from its managed identity, which the app
+        // registration trusts (a federated credential), instead of a stored client secret.
+        if (!string.IsNullOrWhiteSpace(entra.ManagedIdentityClientId))
+        {
+            var identity = new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(entra.ManagedIdentityClientId));
+            o.Events.OnAuthorizationCodeReceived = async context =>
+            {
+                var assertion = await identity.GetTokenAsync(new TokenRequestContext([FederatedCredentialScope]), context.HttpContext.RequestAborted);
+                context.TokenEndpointRequest!.ClientSecret = null;
+                context.TokenEndpointRequest.ClientAssertionType = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+                context.TokenEndpointRequest.ClientAssertion = assertion.Token;
+            };
+        }
     }
 
     /// <summary>
@@ -170,7 +171,12 @@ internal static class AuthSetup
         var options = app.Services.GetRequiredService<IOptions<AuthOptions>>().Value;
 
         // Tells the sign-in page which kind of sign-in to offer.
-        app.MapGet("/api/auth/config", () => Results.Ok(new { mode = options.Mode.ToString(), roles = Roles.All })).AllowAnonymous();
+        app.MapGet("/api/auth/config", () => Results.Ok(new
+        {
+            mode = options.Mode.ToString(),
+            configured = options.Mode == AuthMode.Development || options.Entra.IsConfigured,
+            roles = Roles.All,
+        })).AllowAnonymous();
 
         // Who is signed in. Any signed-in user may ask, even without a GIIM role, so the UI can explain.
         app.MapGet("/api/me", (ClaimsPrincipal user) => Results.Ok(new
@@ -181,15 +187,22 @@ internal static class AuthSetup
             roles = Roles.All.Where(user.IsInRole).ToArray(),
         })).RequireAuthorization();
 
-        if (options.Mode == AuthMode.Okta)
+        if (options.Mode == AuthMode.Entra)
         {
-            app.MapGet("/auth/login", (string? returnUrl) =>
-                Results.Challenge(new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl) },
+            // The My Apps tile opens this address, so sign-in starts straight away (and, already signed in to
+            // Microsoft, finishes without a prompt). Someone already signed in to GIIM just carries on.
+            app.MapGet("/auth/login", (string? returnUrl, HttpContext context) =>
+                !options.Entra.IsConfigured ? Results.Redirect("/")
+                : context.User.Identity?.IsAuthenticated == true ? Results.Redirect(SafeReturnUrl(returnUrl))
+                : Results.Challenge(new AuthenticationProperties { RedirectUri = SafeReturnUrl(returnUrl) },
                     [OpenIdConnectDefaults.AuthenticationScheme])).AllowAnonymous();
 
-            app.MapPost("/auth/logout", () =>
-                Results.SignOut(new AuthenticationProperties { RedirectUri = "/" },
-                    [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme])).AllowAnonymous();
+            // Ends the GIIM session and the Microsoft session in this browser, so a shared PC is left signed out.
+            app.MapPost("/auth/logout", () => options.Entra.IsConfigured
+                ? Results.SignOut(new AuthenticationProperties { RedirectUri = "/" },
+                    [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme])
+                : Results.SignOut(new AuthenticationProperties { RedirectUri = "/" }, [CookieAuthenticationDefaults.AuthenticationScheme]))
+                .AllowAnonymous();
         }
         else
         {

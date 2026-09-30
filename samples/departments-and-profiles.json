@@ -15,7 +15,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-FIN"
           },
@@ -83,7 +83,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-HR"
           },
@@ -146,7 +146,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-IT"
           },
@@ -219,7 +219,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-MKT"
           },
@@ -282,7 +282,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-LEG"
           },
@@ -345,7 +345,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-PRC"
           },
@@ -403,7 +403,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-OPS"
           },
@@ -461,7 +461,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-SAL"
           },
@@ -519,7 +519,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-CS"
           },
@@ -577,7 +577,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-PAY"
           },
@@ -640,7 +640,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-PROP"
           },
@@ -698,7 +698,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-SC"
           },
@@ -748,7 +748,7 @@
         "track": "Light",
         "items": [
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-SC"
           },
@@ -782,7 +782,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-LOG"
           },
@@ -827,7 +827,7 @@
         "track": "Light",
         "items": [
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-LOG"
           },
@@ -861,7 +861,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-WHS"
           },
@@ -914,7 +914,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-RISK"
           },
@@ -972,7 +972,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-DATA"
           },
@@ -1040,7 +1040,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-ECOM"
           },
@@ -1108,7 +1108,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-MER"
           },
@@ -1171,7 +1171,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-EXEC"
           },
@@ -1234,7 +1234,7 @@
             "groupName": "LIC-M365-E3"
           },
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-FAC"
           },
@@ -1274,7 +1274,7 @@
         "track": "Light",
         "items": [
           {
-            "type": "OktaGroup",
+            "type": "SecurityGroup",
             "description": "Department group",
             "groupName": "DEPT-FAC"
           },

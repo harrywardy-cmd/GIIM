@@ -6,7 +6,7 @@ Each phase ends with something usable, and nothing destructive is automated unti
 
 - Solution structure, domain model, database schema (initial migration)
 - Asset lifecycle and checklist-generation rules, with unit tests
-- Connector contracts for SDP, Intune and Okta
+- Connector contracts for SDP and Intune
 - React UI shell with an Assets page
 - Fake test data: 1,500 people, 20 departments, ~4,800 devices, messy Excel register, SDP export, Intune export
 
@@ -23,7 +23,9 @@ Goal: one trustworthy list of who has what.
 6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
 7. **SDP asset import** (API v3, read-only)
 8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). Still to do: the Active Directory source and the department profile editor
-9. ◐ **Okta SSO with four roles** ✅ built and tested with the development sign-in (see `docs/okta-setup.md`); connecting the real Okta app is waiting on the Okta admin. Moved earlier because every
+9. ◐ **Microsoft sign-in (Entra ID, My Apps tile) with four roles** ✅ built and tested with the development sign-in
+   (see `docs/entra-setup.md`); creating the app registration is waiting on the Entra admin. Replaced the earlier Okta
+   plan (30 Sep 2026: GIIM uses Microsoft Entra ID only). Moved earlier because every
    lifecycle action in Phase 1B must record *who* did it.
 10. ◐ **Azure environment** ✅ built: Bicep templates for test and prod in Australia East (App Service, Azure SQL,
     Key Vault, Blob Storage, private networking, monitoring and alerts), GitHub Actions CI and gated deployments,
@@ -84,15 +86,15 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
 ## Phase 3: Onboarding automation (low risk first)
 
 1. On-prem agent (Windows service, outbound via Service Bus)
-2. Create AD user in the correct OU → wait for Okta and Entra sync
+2. Create AD user in the correct OU → wait for Entra Connect sync
 3. `Enable-RemoteMailbox` (hybrid) → M365 licence group
-4. Okta group assignment from the profile → app access
+4. Security group membership from the profile (AD groups via the agent; cloud-only groups via Graph) → app access
 5. Activate on start date; welcome email to manager
 6. Dry-run mode and full audit for every step
 
 ## Phase 4: Offboarding automation (approval-gated)
 
-1. Leaver case from SDP ticket **or** Okta deactivation event
+1. Leaver case from SDP ticket **or** an account disabled in AD / Entra
 2. Revoke sessions → shared mailbox + manager access → out-of-office → remove licence
 3. Remove app access from actual assignments
 4. Hardware return tracking with manager reminders, using the Phase 1B return workflow; Intune wipe/retire on return

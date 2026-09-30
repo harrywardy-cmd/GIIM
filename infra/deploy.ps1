@@ -10,7 +10,6 @@
 .EXAMPLE
     ./infra/deploy.ps1 -Environment test -WhatIf          # preview only
     ./infra/deploy.ps1 -Environment test                  # preview, confirm, deploy
-    ./infra/deploy.ps1 -Environment prod -SetOktaSecret   # also store or replace the Okta client secret
 #>
 [CmdletBinding()]
 param(
@@ -23,10 +22,7 @@ param(
     [string] $Location = 'australiaeast',
 
     # Preview the changes without making them.
-    [switch] $WhatIf,
-
-    # Ask for the Okta client secret and store it in Key Vault.
-    [switch] $SetOktaSecret
+    [switch] $WhatIf
 )
 
 $ErrorActionPreference = 'Stop'
@@ -56,29 +52,16 @@ if ((Invoke-Az group exists --name $ResourceGroup) -ne 'true') {
     Invoke-Az group create --name $ResourceGroup --location $Location --tags application=GIIM environment=$Environment | Out-Null
 }
 
-try {
-    if ($SetOktaSecret) {
-        $secure = Read-Host 'Okta client secret (input hidden)' -AsSecureString
-        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
-        try { $env:GIIM_OKTA_CLIENT_SECRET = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
-        finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
-        if (-not $env:GIIM_OKTA_CLIENT_SECRET) { throw 'No secret entered.' }
-    }
-
-    # Run directly (not captured) so the preview of changes shows before the confirmation prompt.
-    if ($WhatIf) {
-        az deployment group what-if --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile
-        if ($LASTEXITCODE -ne 0) { throw 'Preview failed (see the message above).' }
-        return
-    }
-
-    az deployment group create --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile `
-        --confirm-with-what-if --output none
-    if ($LASTEXITCODE -ne 0) { throw 'Deployment failed (see the message above).' }
+# Run directly (not captured) so the preview of changes shows before the confirmation prompt.
+if ($WhatIf) {
+    az deployment group what-if --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile
+    if ($LASTEXITCODE -ne 0) { throw 'Preview failed (see the message above).' }
+    return
 }
-finally {
-    Remove-Item Env:GIIM_OKTA_CLIENT_SECRET -ErrorAction SilentlyContinue
-}
+
+az deployment group create --resource-group $ResourceGroup --name $deploymentName --parameters $paramsFile `
+    --confirm-with-what-if --output none
+if ($LASTEXITCODE -ne 0) { throw 'Deployment failed (see the message above).' }
 
 $state = az deployment group show --resource-group $ResourceGroup --name $deploymentName --query properties.provisioningState -o tsv
 if ($state -ne 'Succeeded') {
@@ -107,9 +90,11 @@ $variables = [ordered]@{
 }
 $variables.GetEnumerator() | ForEach-Object { Write-Host ("  {0,-22} {1}" -f $_.Key, $_.Value) }
 Write-Host ''
-Write-Host 'For the Okta administrator:' -ForegroundColor Cyan
-Write-Host "  Sign-in redirect URI  : $($o.oktaRedirectUri.value)"
-Write-Host "  Sign-out redirect URI : $($o.oktaSignOutRedirectUri.value)"
+Write-Host 'For the Entra administrator (docs/entra-setup.md, or infra/scripts/New-GiimAppRegistration.ps1):' -ForegroundColor Cyan
+Write-Host "  Redirect URI (web)       : $($o.signInRedirectUri.value)"
+Write-Host "  Front-channel logout URL : $($o.signOutRedirectUri.value)"
+Write-Host "  My Apps home page URL    : $($o.myAppsHomePageUrl.value)"
+Write-Host "  Trusted managed identity : object ID $($o.apiIdentityPrincipalId.value) (client ID $($o.apiIdentityClientId.value))"
 Write-Host ''
 Write-Host "GIIM's outbound IP address (for allow-lists): $($o.outboundIpAddress.value)" -ForegroundColor Cyan
 Write-Host ''

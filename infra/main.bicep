@@ -48,13 +48,11 @@ param networkAddressPrefix string = '10.20.0.0/22'
 
 // ---- Sign-in, integrations, operations ----------------------------------------------------------------------------
 
-@description('Okta authorization server, e.g. https://company.okta.com/oauth2/default. Empty until Okta is set up.')
-param oktaAuthority string = ''
-param oktaClientId string = ''
+@description('Entra tenant (directory) staff sign in with. Normally the tenant this subscription belongs to.')
+param entraTenantId string = subscription().tenantId
 
-@secure()
-@description('Okta client secret. Pass only when setting or changing it (deploy.ps1 -SetOktaSecret).')
-param oktaClientSecret string = ''
+@description('Application (client) ID of the GIIM app registration in Entra. Empty until it exists (docs/entra-setup.md).')
+param entraClientId string = ''
 
 param intuneSyncInterval string = '04:00:00'
 
@@ -118,7 +116,6 @@ module keyVault 'modules/keyvault.bicep' = {
     secretReaderPrincipalIds: [identities.outputs.api.principalId, identities.outputs.workers.principalId]
     keyUserPrincipalIds: [identities.outputs.api.principalId]
     purgeProtection: keyVaultPurgeProtection
-    oktaClientSecret: oktaClientSecret
     tags: allTags
   }
 }
@@ -176,10 +173,9 @@ module apps 'modules/apps.bicep' = {
     databaseName: sql.outputs.databaseName
     dataProtectionBlobUri: storage.outputs.dataProtectionBlobUri
     dataProtectionKeyUri: keyVault.outputs.cookieKeyUri
-    oktaSecretUri: keyVault.outputs.oktaSecretUri
     publicBaseUrl: effectivePublicUrl
-    oktaAuthority: oktaAuthority
-    oktaClientId: oktaClientId
+    entraTenantId: entraTenantId
+    entraClientId: entraClientId
     allowedIpRanges: allowedIpRanges
     intuneSyncInterval: intuneSyncInterval
     notificationMailbox: notificationMailbox
@@ -205,8 +201,9 @@ module alerts 'modules/alerts.bicep' = {
 // ---- Outputs: used by the scripts in infra/scripts and as GitHub environment variables ---------------------------
 
 output publicUrl string = effectivePublicUrl
-output oktaRedirectUri string = '${effectivePublicUrl}/signin-oidc'
-output oktaSignOutRedirectUri string = '${effectivePublicUrl}/signout-callback-oidc'
+output signInRedirectUri string = '${effectivePublicUrl}/signin-oidc'
+output signOutRedirectUri string = '${effectivePublicUrl}/signout-callback-oidc'
+output myAppsHomePageUrl string = '${effectivePublicUrl}/auth/login'
 output outboundIpAddress string = network.outputs.outboundIpAddress
 
 output apiAppName string = apps.outputs.apiName
@@ -218,6 +215,7 @@ output keyVaultName string = keyVault.outputs.name
 
 output apiIdentityName string = identities.outputs.api.name
 output apiIdentityPrincipalId string = identities.outputs.api.principalId
+output apiIdentityClientId string = identities.outputs.api.clientId
 output workersIdentityName string = identities.outputs.workers.name
 output workersIdentityPrincipalId string = identities.outputs.workers.principalId
 output workersIdentityClientId string = identities.outputs.workers.clientId

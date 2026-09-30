@@ -27,7 +27,6 @@ public sealed class Person : Entity
 
     // Identity keys in each connected system, filled in as provisioning completes.
     public Guid? AdObjectGuid { get; set; }
-    public string? OktaUserId { get; set; }
     public Guid? EntraObjectId { get; set; }
 
     /// <summary>When the directory sync last saw this person; null if they were added by hand.</summary>

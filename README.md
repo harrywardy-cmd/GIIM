@@ -6,7 +6,8 @@ Internal tool for the IT Service Desk. It links ServiceDesk Plus tickets to:
 - **Offboarding checklists** generated from what the leaver actually holds
 - **A hardware and app register** with a tracked lifecycle for every device
 
-It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, hybrid Exchange and Microsoft Intune.
+It integrates with ServiceDesk Plus Cloud (AU), Microsoft Entra ID (staff sign in from My Apps), on-prem Active Directory,
+hybrid Exchange and Microsoft Intune.
 
 > Status: **scaffold**. Structure, domain model and test data only. No integrations are live yet.
 > See [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
@@ -19,8 +20,8 @@ It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, 
 | **Backend** | .NET 10 (C#), ASP.NET Core minimal APIs (`Giim.Api`), a hosted background worker (`Giim.Workers`) |
 | **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations |
 | **Web UI** | React 19, TypeScript 6, Vite 8, lucide-react icons, oxlint. Served by the API as static files in production |
-| **Sign-in and roles** | Okta (OpenID Connect, authorization code + PKCE) handled by the API; HTTP-only session cookie; roles from Okta groups |
-| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud, the Okta API and the on-premises AD/Exchange agent are planned (see the roadmap) |
+| **Sign-in and roles** | Microsoft Entra ID (OpenID Connect, authorization code + PKCE) handled by the API, launched from the GIIM tile in My Apps; HTTP-only session cookie; roles from Entra app roles; no client secret in Azure (managed identity as a federated credential) |
+| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud and the on-premises AD/Exchange agent are planned (see the roadmap) |
 | **Documents and exports** | ClosedXML (Excel import and export), CSV export, QRCoder (asset QR codes and label sheets) |
 | **Hosting** | Azure, Australia East: App Service (Linux), Azure SQL, Key Vault, Blob Storage, private networking, all accessed with managed identities |
 | **Infrastructure as code** | Bicep templates and PowerShell scripts in `infra/` |
@@ -35,7 +36,7 @@ It integrates with ServiceDesk Plus Cloud (AU), Okta, on-prem Active Directory, 
 |---|---|
 | `src/Giim.Domain` | Business entities and rules (asset lifecycle, checklist generation). No external dependencies |
 | `src/Giim.Infrastructure` | EF Core `GiimDbContext`, migrations, Azure SQL |
-| `src/Giim.Connectors` | Contracts for ServiceDesk Plus, Intune (Graph) and Okta |
+| `src/Giim.Connectors` | Integrations: Intune and email (Microsoft Graph), the staff directory, and contracts for ServiceDesk Plus |
 | `src/Giim.Api` | ASP.NET Core API used by the web UI and SDP webhooks |
 | `src/Giim.Workers` | Background sync and automation jobs (Intune sync) |
 | `src/Giim.Web` | React + TypeScript UI (Vite) |
@@ -75,7 +76,7 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 |---|---|
 | `ConnectionStrings:Giim` | SQL Server connection (local Docker in development) |
 | `Giim:PublicBaseUrl` | The address staff use to open GIIM, e.g. `https://giim.company.com.au`. **QR labels link here**, so set it before printing labels; a label printed with the wrong address has to be reprinted. Development: `http://localhost:5173` |
-| `Auth:Mode` | `Okta` in production; `Development` (pick-a-role sign-in) only on a developer PC. See [docs/okta-setup.md](docs/okta-setup.md) |
+| `Auth:Mode`, `Auth:Entra:*` | `Entra` (Microsoft sign-in) everywhere except a developer PC, where `Development` gives a pick-a-role sign-in. See [docs/entra-setup.md](docs/entra-setup.md) |
 | `Intune:Source` | `File` (sample export) or `Graph` (live), see [docs/intune-app-registration.md](docs/intune-app-registration.md) |
 | `People:FilePath` | Staff directory export used by People sync until the Active Directory source exists |
 | `DataProtection:BlobUri`, `DataProtection:KeyUri` | Where the sign-in cookie keys are kept in Azure (Blob Storage, wrapped by a Key Vault key) so every instance shares them. Set by the deployment; leave empty locally |

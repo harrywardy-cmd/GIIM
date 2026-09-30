@@ -1,6 +1,9 @@
 namespace Giim.Api.Security;
 
-/// <summary>The four GIIM roles from the brief. Each comes from membership of an Okta group.</summary>
+/// <summary>
+/// The four GIIM roles from the brief. Each is an app role on the GIIM app registration in Entra, assigned to people
+/// or groups; the values must match these names exactly.
+/// </summary>
 internal static class Roles
 {
     public const string Administrator = "Administrator";

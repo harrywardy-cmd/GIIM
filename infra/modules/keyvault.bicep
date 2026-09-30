@@ -1,4 +1,4 @@
-// Key Vault: GIIM's secrets (Okta client secret; later ServiceDesk Plus) and the key that protects sign-in cookie
+// Key Vault: GIIM's secrets (ServiceDesk Plus later) and the key that protects sign-in cookie
 // keys. Reachable only through the private network; access is by Azure role, never by access policy or password.
 
 param name string
@@ -12,9 +12,6 @@ param secretReaderPrincipalIds array
 param keyUserPrincipalIds array
 @description('Stops anyone permanently deleting the vault or its contents for 90 days. Cannot be turned off once on.')
 param purgeProtection bool
-@secure()
-@description('Okta client secret. Leave empty to keep the value already in the vault.')
-param oktaClientSecret string
 param tags object
 
 var roles = {
@@ -46,16 +43,6 @@ resource cookieKey 'Microsoft.KeyVault/vaults/keys@2023-07-01' = {
     kty: 'RSA'
     keySize: 3072
     keyOps: ['wrapKey', 'unwrapKey']
-  }
-}
-
-// Set through the deployment (not the vault's data plane, which is private) and only when a value is given.
-resource oktaSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!empty(oktaClientSecret)) {
-  parent: vault
-  name: 'okta-client-secret'
-  properties: {
-    value: oktaClientSecret
-    contentType: 'Okta OIDC client secret for GIIM'
   }
 }
 
@@ -104,4 +91,3 @@ resource diagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' 
 output name string = vault.name
 output uri string = vault.properties.vaultUri
 output cookieKeyUri string = '${vault.properties.vaultUri}keys/${cookieKey.name}'
-output oktaSecretUri string = '${vault.properties.vaultUri}secrets/okta-client-secret'

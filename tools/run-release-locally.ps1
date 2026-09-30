@@ -7,7 +7,7 @@
     applies it to the local Docker SQL Server, then starts both apps. Open the printed address in a browser.
     Press Ctrl+C to stop.
 
-    Differences from Azure: it uses the local database, the development sign-in (there is no Okta locally), the
+    Differences from Azure: it uses the local database, the development sign-in (not Microsoft sign-in), the
     sample Intune file, plain http, and keeps sign-in cookie keys on this PC. Everything else (the built UI served
     by the API, security headers, caching, health checks, migrations) is what Azure runs.
 

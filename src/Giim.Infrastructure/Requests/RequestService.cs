@@ -29,11 +29,17 @@ public sealed record RequestList(int Total, IReadOnlyList<RequestListItem> Items
 /// </summary>
 public sealed class RequestService(GiimDbContext db, AssetLifecycleService lifecycle, AssignmentService assignments, TimeProvider clock)
 {
-    /// <summary>The signed-in user as a request actor, linked to their staff record by login or email.</summary>
-    public async Task<RequestActor> ActorAsync(string login, string displayName, string? email, bool isAdministrator,
-        bool isTechnician, bool isManager, CancellationToken cancellationToken)
+    /// <summary>
+    /// The signed-in user as a request actor, linked to their staff record: by Entra object ID when the directory
+    /// sync has recorded it (permanent), otherwise by login or email.
+    /// </summary>
+    public async Task<RequestActor> ActorAsync(string login, string displayName, string? email, Guid? entraObjectId,
+        bool isAdministrator, bool isTechnician, bool isManager, CancellationToken cancellationToken)
     {
-        var personId = await db.People.AsNoTracking()
+        var personId = entraObjectId is { } oid
+            ? await db.People.AsNoTracking().Where(p => p.EntraObjectId == oid).Select(p => (Guid?)p.Id).FirstOrDefaultAsync(cancellationToken)
+            : null;
+        personId ??= await db.People.AsNoTracking()
             .Where(p => p.UserPrincipalName == login || p.Email == login
                 || (email != null && (p.Email == email || p.UserPrincipalName == email)))
             .OrderBy(p => p.Status == PersonStatus.Left)

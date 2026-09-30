@@ -20,12 +20,9 @@ param keyVaultPurgeProtection = false // so a deleted test environment can be re
 param logRetentionDays = 30
 param networkAddressPrefix = '10.20.4.0/22'
 
-// FILL IN once the Okta test app exists (a separate app from production; see docs/okta-setup.md).
+// FILL IN once the test app registration exists (separate from production; see docs/entra-setup.md).
 param publicBaseUrl = ''
-param oktaAuthority = ''
-param oktaClientId = ''
-// Never written here: deploy.ps1 -SetOktaSecret asks for it and passes it through this environment variable.
-param oktaClientSecret = readEnvironmentVariable('GIIM_OKTA_CLIENT_SECRET', '')
+param entraClientId = ''
 
 param alertEmails = []
 

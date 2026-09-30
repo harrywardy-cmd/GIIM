@@ -6,18 +6,19 @@
 |---|---|---|
 | ServiceDesk Plus Cloud (AU, `servicedeskplus.net.au`, portal `itdesk`) | Where requests are raised; the ticket record | Webhooks in (custom triggers); REST API v3 out (Zoho OAuth via `accounts.zoho.com.au`) |
 | On-prem Active Directory | **Identity source of truth** | On-prem agent (outbound only, via Azure Service Bus) using the AD PowerShell module |
-| Okta | Imports users from AD (AD agent); app access via groups | Okta Management API; Event Hooks for deactivations |
-| Entra ID / M365 | Synced from AD by Entra Connect; licences via group-based licensing | Microsoft Graph |
+| Entra ID / M365 | Synced from AD by Entra Connect; staff sign in to GIIM from My Apps; licences and app access via groups | Microsoft Graph; OpenID Connect for sign-in |
 | Exchange (hybrid) | Mailbox attributes are owned by on-prem AD | `Enable-RemoteMailbox` via the on-prem agent; Exchange Online for shared-mailbox conversion |
 | Intune | Source of device facts (serial, primary user, last sync, compliance) | Scheduled full read of Graph managedDevices (`$select`, paged; the endpoint has no delta query) |
 
 ## Identity flow
 
 ```
-GIIM ──► on-prem agent ──► Active Directory ──► Okta (AD agent import) ──► apps via Okta groups
-                                     │
-                                     └──► Entra Connect ──► Entra ID ──► M365 licence group ──► Exchange Online mailbox
+GIIM ──► on-prem agent ──► Active Directory ──► Entra Connect ──► Entra ID ──┬─► M365 licence group ──► Exchange Online mailbox
+                                                                              └─► app access via security groups (My Apps)
 ```
+
+Groups synced from AD can only be changed in AD, so group changes for starters, movers and leavers go through the
+on-prem agent. Only cloud-only Entra groups are changed through Microsoft Graph.
 
 Sync is not instant (Entra Connect runs about every 30 minutes). Workflows therefore have explicit
 **"waiting for sync"** steps that poll until the account exists, rather than assuming it does.
@@ -30,10 +31,9 @@ React UI ──► Giim.Api (App Service, stateless, scales out)
                 ├─► Azure SQL (geo-replica to Australia Southeast)
                 └─► Service Bus queues ──► Giim.Workers
                                              ├─ SDP connector
-                                             ├─ Okta connector
                                              ├─ Graph connector (Entra, Exchange Online, Intune)
                                              └─ on-prem agent (AD + Exchange Management Tools)
-Key Vault + Managed Identity · Application Insights · Private endpoints · Okta SSO for staff login
+Key Vault + Managed Identity · Application Insights · Private endpoints · Microsoft Entra sign-in (My Apps) for staff
 ```
 
 ## Key design decisions
@@ -42,9 +42,9 @@ Key Vault + Managed Identity · Application Insights · Private endpoints · Okt
    People accumulate kit and access over time, so a template-only leaver list misses things.
    See `ChecklistGenerator` in `Giim.Domain`.
 2. **Serial number is the matching key** across Excel, SDP and Intune. Serials are normalised (trimmed, upper-cased) on import.
-3. **The UI never calls external APIs live.** Workers sync into Azure SQL (scheduled Intune reads, Okta events, SDP webhooks),
+3. **The UI never calls external APIs live.** Workers sync into Azure SQL (scheduled Intune reads, Entra account changes, SDP webhooks),
    which keeps the app fast and within API rate limits at 150k+ devices.
-4. **Managed app catalogue vs discovered inventory.** Only catalogue apps (with an owner, licence model and Okta group)
+4. **Managed app catalogue vs discovered inventory.** Only catalogue apps (with an owner, licence model and access group)
    appear in profiles. Raw Intune app inventory is for reporting only.
 5. **Hardware lifecycle is enforced in code** (`AssetLifecycle`): e.g. a returned device must be wiped before going back to stock.
 6. **Destructive automation needs approval** and everything is written to `AuditEntries`.
@@ -55,7 +55,7 @@ Key Vault + Managed Identity · Application Insights · Private endpoints · Okt
 ## Data model (summary)
 
 ```
-Department ── RoleProfile ── ProfileItem (Application | Hardware | OktaGroup | LicenceGroup | ManualTask)
+Department ── RoleProfile ── ProfileItem (Application | Hardware | StockItem | SecurityGroup | LicenceGroup | ManualTask)
 Person ─┬─ ServiceCase (Onboarding | Offboarding | Move | HardwareRequest | SoftwareRequest | Rma) ── SDP request ID
         │     └─ ChecklistTask (Manual | Automated, approval, status)
         └─ Assignment ──► Asset (lifecycle status)  or  ──► Application
@@ -65,6 +65,7 @@ AuditEntry (append-only)
 ## Security
 
 - The platform can create and disable any user account, so it is treated as a **high-value system**:
-  Okta SSO with MFA, role-based access from Okta groups, least-privilege service accounts per integration,
+  Microsoft Entra sign-in with MFA and Conditional Access, role-based access from Entra app roles, managed identities
+  instead of passwords, least-privilege permissions per integration,
   secrets only in Key Vault, private networking, full audit trail.
 - Data is hosted in Australia (Privacy Act); leaver data retention will be agreed with HR and Legal.

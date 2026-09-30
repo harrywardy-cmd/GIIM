@@ -1,5 +1,5 @@
 // Production. Fill in the values marked FILL IN before the first deployment (see infra/README.md, step 1).
-// Nothing in this file is secret; the Okta client secret is passed separately (deploy.ps1 -SetOktaSecret).
+// Nothing in this file is secret: GIIM signs in to Entra with its managed identity, so there is no client secret.
 using '../main.bicep'
 
 param environmentName = 'prod'
@@ -20,12 +20,11 @@ param storageSku = 'Standard_ZRS'
 param keyVaultPurgeProtection = true
 param logRetentionDays = 90
 
-// FILL IN once known. Until then GIIM runs at its azurewebsites.net address and sign-in won't work.
+// FILL IN once known. Until then GIIM runs at its azurewebsites.net address.
 param publicBaseUrl = ''
-param oktaAuthority = ''
-param oktaClientId = ''
-// Never written here: deploy.ps1 -SetOktaSecret asks for it and passes it through this environment variable.
-param oktaClientSecret = readEnvironmentVariable('GIIM_OKTA_CLIENT_SECRET', '')
+
+// FILL IN once the GIIM app registration exists (docs/entra-setup.md). Until then the sign-in page says it isn't set up.
+param entraClientId = ''
 
 // FILL IN: who gets alert emails, e.g. ['it-alerts@company.com.au'].
 param alertEmails = []

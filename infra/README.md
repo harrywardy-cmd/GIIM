@@ -22,8 +22,8 @@ Staff browser ──HTTPS──► App Service: web app (UI + API) ──┐    
                                                            │ private network
                   ┌────────────────────┬───────────────────┼──────────────────┐
                   ▼                    ▼                   ▼                  ▼
-            Azure SQL (giim)      Key Vault          Blob Storage       NAT gateway ──► Graph, Okta,
-            Entra sign-in only    Okta secret,       cookie keys,       (one fixed       ServiceDesk Plus
+            Azure SQL (giim)      Key Vault          Blob Storage       NAT gateway ──► Microsoft Graph,
+            Entra sign-in only    cookie key,        cookie keys,       (one fixed       ServiceDesk Plus
             audited, backed up    cookie key         attachments        outbound IP)
 ```
 
@@ -71,7 +71,7 @@ Administrator); step 5 needs an Entra admin who can grant admin consent.
 2. In Entra, create a security group for database administrators, e.g. **GIIM-SQL-Admins**, add yourself and one
    other person, and copy its **Object ID**.
 3. Fill in the `FILL IN` values in `params/test.bicepparam` and `params/prod.bicepparam`: the group name and
-   Object ID, and alert email addresses. Okta and the custom domain can wait until later.
+   Object ID, and alert email addresses. Microsoft sign-in and the custom domain can wait until later.
 
 ### 2. Preview, then deploy
 
@@ -82,7 +82,7 @@ az account set --subscription "<subscription name or id>"
 ./infra/deploy.ps1 -Environment test             # shows the changes again and asks before making them
 ```
 
-At the end it prints the values for GitHub (step 4), the Okta redirect addresses (step 6) and GIIM's outbound
+At the end it prints the values for GitHub (step 4), the addresses for the Entra app registration (step 6) and GIIM's outbound
 IP address.
 
 ### 3. Give GIIM access to its database
@@ -116,22 +116,23 @@ Install-Module Microsoft.Graph.Applications -Scope CurrentUser   # first time on
 ./infra/scripts/Grant-GraphAccess.ps1 -Environment test
 ```
 
-### 6. Okta sign-in
+### 6. Microsoft sign-in and the My Apps tile
 
-Give the Okta administrator the two redirect addresses printed by `deploy.ps1` (see
-[docs/okta-setup.md](../docs/okta-setup.md); test and prod use separate Okta apps). When they send back the
-issuer, client ID and secret:
+An Entra administrator runs `./infra/scripts/New-GiimAppRegistration.ps1 -Environment test` (or follows the manual
+steps in [docs/entra-setup.md](../docs/entra-setup.md)); test and prod use separate app registrations. It prints the
+**client ID**:
 
-1. Put the issuer and client ID in the environment's `.bicepparam` file.
-2. Run `./infra/deploy.ps1 -Environment test -SetOktaSecret` and paste the secret when asked. It goes straight
-   into Key Vault; it is never written to a file or shown on screen.
+1. Put it in the environment's `.bicepparam` file (`entraClientId`).
+2. Run `./infra/deploy.ps1 -Environment test` again.
+
+There is no client secret: the app registration trusts GIIM's managed identity instead.
 
 ### 7. Your own address (optional, recommended for prod)
 
 1. App Service (the web app) → **Custom domains** → add e.g. `giim.company.com.au`, create the DNS records it
    asks for, then **Add binding** with a free App Service managed certificate.
-2. Set `publicBaseUrl` in `params/prod.bicepparam`, run `deploy.ps1` again, and update the Okta redirect
-   addresses to match.
+2. Set `publicBaseUrl` in `params/prod.bicepparam`, run `deploy.ps1` again, and run
+   `New-GiimAppRegistration.ps1` again so the sign-in addresses and the My Apps tile match.
 
 Do this **before printing asset labels**: QR codes contain this address.
 
@@ -145,7 +146,7 @@ Repeat steps 2-6 with `-Environment prod` when test looks right.
 |---|---|
 | Release a change | Merge to `main`. It deploys to test automatically; approve the prod deployment in GitHub → Actions. |
 | Change infrastructure | Edit the templates or `.bicepparam`, then `./infra/deploy.ps1 -Environment test` (then prod). |
-| Replace the Okta secret | `./infra/deploy.ps1 -Environment prod -SetOktaSecret`. The app picks it up within 24 hours, or immediately after a restart. |
+| Give someone access to GIIM | Add them to the right group (e.g. GIIM-Technicians), or assign them a role in Entra → Enterprise applications → GIIM → Users and groups |
 | Scale up | Change `appServicePlanSku` or `sqlSku` in the `.bicepparam` and deploy. Both scale without downtime (a brief reconnect). |
 | Look at logs | Application Insights → **Logs**, e.g. `traces \| where timestamp > ago(1d) \| order by timestamp desc`. Failures: **Failures** blade. |
 | Alerts | Emailed to `alertEmails`: server errors, health checks failing, database over 80% full or 90% busy, Intune sync failures. |

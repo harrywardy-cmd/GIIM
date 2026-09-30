@@ -2,7 +2,7 @@ using Giim.Domain.Common;
 
 namespace Giim.Domain.Provisioning;
 
-public enum ProfileItemType { Application, Hardware, StockItem, OktaGroup, LicenceGroup, ManualTask }
+public enum ProfileItemType { Application, Hardware, StockItem, SecurityGroup, LicenceGroup, ManualTask }
 
 public sealed class ProfileItem : Entity
 {
@@ -18,6 +18,6 @@ public sealed class ProfileItem : Entity
     /// <summary>Stock item for StockItem items (e.g. Laptop bag).</summary>
     public Guid? StockItemId { get; set; }
 
-    /// <summary>Group name for OktaGroup / LicenceGroup items.</summary>
+    /// <summary>Group name for SecurityGroup / LicenceGroup items (an AD group, or a cloud-only Entra group).</summary>
     public string? GroupName { get; set; }
 }

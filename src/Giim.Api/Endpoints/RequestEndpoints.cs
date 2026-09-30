@@ -171,7 +171,7 @@ internal static class RequestEndpoints
         });
 
     private static Task<RequestActor> ActorAsync(RequestService requests, ICurrentUser user, CancellationToken ct) =>
-        requests.ActorAsync(user.Name, user.DisplayName, user.Email,
+        requests.ActorAsync(user.Name, user.DisplayName, user.Email, user.ObjectId,
             user.IsInRole(Roles.Administrator), user.IsInRole(Roles.Technician), user.IsInRole(Roles.Manager), ct);
 
     /// <summary>Rule broken 400, not found 404, changed by someone else 409 (a duplicate serial says which asset has it).</summary>
