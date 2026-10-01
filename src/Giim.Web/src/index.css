@@ -266,6 +266,20 @@ button.stat-button.selected { border-color: var(--accent); box-shadow: 0 0 0 1px
 .action-form { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 4px; }
 .action-form h4 { margin: 16px 0 4px; }
 
+/* Files kept with an asset: photo thumbnails, then documents. */
+.asset-files { border-top: 1px solid var(--border); margin-top: 20px; }
+.section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin: 8px 0 12px; }
+.file-thumb { margin: 0; }
+.file-thumb img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--surface-2); }
+.file-thumb figcaption { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.file-list { list-style: none; margin: 8px 0; padding: 0; }
+.file-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.file-list li:last-child { border-bottom: 0; }
+.file-list .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.remove-file { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%; }
+.remove-file input { flex: 1; min-width: 140px; }
+
 .timeline { list-style: none; margin: 0; padding: 0 0 0 16px; border-left: 2px solid var(--border); }
 .timeline li { position: relative; padding: 0 0 18px 14px; }
 .timeline li::before {

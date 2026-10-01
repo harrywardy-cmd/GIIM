@@ -283,7 +283,7 @@ internal static class AssetEndpoints
     }
 
     /// <summary>Maps domain outcomes to HTTP: rule broken 400, not found 404, changed by someone else 409.</summary>
-    private static async Task<IResult> Handle(Func<Task<IResult>> action)
+    internal static async Task<IResult> Handle(Func<Task<IResult>> action)
     {
         try
         {

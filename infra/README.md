@@ -53,6 +53,9 @@ endpoints (~$35). Test can be deleted when not needed and recreated with `deploy
 - **Least privilege.** The apps can read and write data but the database refuses to edit or delete history
   (asset timeline, audit log, stock ledger), even if the app were compromised. Only the deployment identity can
   change the schema. The Intune permission is read-only.
+- **Uploaded files** (asset photos and documents) are checked by type and content before they are stored, kept
+  under names GIIM chooses in a container only the web app can reach, never overwritten, and served with headers
+  that stop a browser running anything inside them.
 - **Audited.** Every SQL sign-in and query, every Key Vault access and every storage access is logged to
   Log Analytics, alongside the app's own logs and the HTTP logs.
 - **Browser protections.** HTTPS only (HSTS), HTTPS-only sign-in cookie, strict Content Security Policy, no framing.
@@ -189,3 +192,4 @@ MFA") after adding their IP address under SQL server → **Networking**. Remove 
 | Staging slot (zero-downtime deployments) | If the few seconds of restart during a deployment become a problem |
 | Web application firewall (Front Door) | If GIIM must be reachable from anywhere and attracts attack traffic; `allowedIpRanges` can restrict it to office/VPN addresses meanwhile |
 | Microsoft Defender for SQL / App Service | Recommended if your organisation already uses Defender for Cloud |
+| Malware scanning of uploaded files (Defender for Storage) | Recommended with Defender: scans each asset file as it arrives; charged per GB scanned (small for photos and PDFs, check current pricing) |

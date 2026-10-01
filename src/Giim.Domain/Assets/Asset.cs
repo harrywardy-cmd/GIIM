@@ -376,6 +376,24 @@ public sealed class Asset : Entity
         return NewEvent(AssetEventType.NoteAdded, context, null, null, "Note added");
     }
 
+    // ---- Files ----------------------------------------------------------------------------------------------
+
+    public AssetEvent AttachmentAdded(ActionContext context, AssetAttachment file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        return NewEvent(AssetEventType.AttachmentAdded, context, null, null,
+            $"Added {AssetAttachment.KindText(file.Kind)}: {file.FileName}",
+            new { AttachmentId = file.Id, file.FileName, file.Kind, file.SizeBytes, file.Description });
+    }
+
+    public AssetEvent AttachmentRemoved(ActionContext context, AssetAttachment file)
+    {
+        ArgumentNullException.ThrowIfNull(file);
+        return NewEvent(AssetEventType.AttachmentRemoved, context, null, null,
+            $"Removed {AssetAttachment.KindText(file.Kind)}: {file.FileName}",
+            new { AttachmentId = file.Id, file.FileName, file.Kind, Reason = file.RemovedReason });
+    }
+
     private AssetEvent ReportMissing(AssetStatus status, AssetEventType type, string summary, ActionContext context,
         string circumstances, string? reportedBy, string? policeReference)
     {

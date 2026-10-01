@@ -20,6 +20,8 @@ public enum AssetEventType
     Retired,
     Disposed,
     Moved,
+    AttachmentAdded,
+    AttachmentRemoved,
 }
 
 /// <summary>Who did it, which ticket, and why. Supplied with every lifecycle action.</summary>

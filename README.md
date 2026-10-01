@@ -24,7 +24,7 @@ hybrid Exchange and Microsoft Intune.
 | Area | Technology |
 |---|---|
 | **Backend** | .NET 10 (C#), ASP.NET Core minimal APIs (`Giim.Api`), a hosted background worker (`Giim.Workers`) |
-| **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations |
+| **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations; asset photos and documents in Azure Blob Storage |
 | **Web UI** | React 19, TypeScript 6, Vite 8, lucide-react icons, oxlint. Served by the API as static files in production |
 | **Sign-in and roles** | Microsoft Entra ID (OpenID Connect, authorization code + PKCE) handled by the API, launched from the GIIM tile in My Apps; HTTP-only session cookie; roles from Entra app roles; no client secret in Azure (managed identity as a federated credential) |
 | **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, the staff directory from Entra ID, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud API v3 (Zoho OAuth) and a webhook for new tickets. The on-premises AD/Exchange agent is planned (see the roadmap) |
@@ -89,6 +89,7 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 | `DataProtection:BlobUri`, `DataProtection:KeyUri` | Where the sign-in cookie keys are kept in Azure (Blob Storage, wrapped by a Key Vault key) so every instance shares them. Set by the deployment; leave empty locally |
 | `ServiceDesk:*` | ServiceDesk Plus connection: `Mode` (`None`, `File` stand-in, `Api`), Zoho client, webhook secret; ticket field mapping in `config/servicedesk.json`. See [docs/servicedesk-setup.md](docs/servicedesk-setup.md) |
 | `Reminders:*` | Manager emails, approval and return reminders, daily IT digest and weekly warranty list; `ItTeamAddresses` says who gets the digests. See [docs/email-notifications.md](docs/email-notifications.md) |
+| `Attachments:Mode` | Where asset photos and documents are kept: `File` (`artifacts/attachments` on a developer PC) or `Blob` (the private `attachments` container in Azure, set by the deployment) |
 | `Email:Mode`, `Email:FromMailbox` | How the workers send request emails: `File` (written to `artifacts/mail` on a developer PC), `Graph` (Microsoft 365, in Azure) or `None`. See [docs/email-notifications.md](docs/email-notifications.md) |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Sends logs and telemetry to Application Insights. Set by the deployment; leave empty locally |
 
