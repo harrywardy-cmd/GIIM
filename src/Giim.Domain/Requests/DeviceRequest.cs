@@ -105,6 +105,10 @@ public sealed class DeviceRequest : Entity
     /// <summary>The last status reported to the linked ServiceDesk Plus ticket, so each change is noted there once.</summary>
     public RequestStatus? ServiceDeskNotifiedStatus { get; set; }
 
+    /// <summary>Reminders sent to the approver while the request waits, and when the last one went.</summary>
+    public int ApprovalReminders { get; set; }
+    public DateTimeOffset? LastApprovalReminderAt { get; set; }
+
     public bool IsClosed => Status is RequestStatus.Rejected or RequestStatus.Cancelled or RequestStatus.Completed;
 
     public static string FormatReference(int number) => $"REQ{number}";

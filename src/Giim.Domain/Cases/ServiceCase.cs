@@ -25,6 +25,13 @@ public sealed class ServiceCase : Entity
     /// <summary>The last status reported to the ticket, so each change is noted there once.</summary>
     public CaseStatus? ServiceDeskNotifiedStatus { get; set; }
 
+    /// <summary>When the manager was emailed about this starter or leaver (once); null until then.</summary>
+    public DateTimeOffset? ManagerEmailedAt { get; set; }
+
+    /// <summary>Leavers: reminders sent about equipment still out after the last day, and when the last one went.</summary>
+    public int ReturnReminders { get; set; }
+    public DateTimeOffset? LastReturnReminderAt { get; set; }
+
     /// <summary>Start date (starters) or last day (leavers).</summary>
     public DateOnly? DueDate { get; set; }
 

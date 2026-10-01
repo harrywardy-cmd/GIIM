@@ -14,12 +14,6 @@ using Microsoft.Extensions.Options;
 
 namespace Giim.Infrastructure.ServiceDesk;
 
-/// <summary>The address staff use to open GIIM, for links in notes (Giim:PublicBaseUrl).</summary>
-public sealed class GiimOptions
-{
-    public string? PublicBaseUrl { get; set; }
-}
-
 /// <summary>
 /// Keeps GIIM and ServiceDesk Plus in step:
 /// 1. tickets ServiceDesk Plus told GIIM about become starter or leaver checklists (read from the ticket itself);

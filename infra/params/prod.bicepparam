@@ -32,6 +32,9 @@ param alertEmails = []
 // FILL IN once the mailbox exists: where request emails come from, e.g. 'giim@company.com.au' (docs/email-notifications.md).
 param notificationMailbox = ''
 
+// FILL IN: who gets the daily IT digest and weekly warranty list, e.g. 'it-team@company.com.au' (several: separate with ;).
+param itTeamEmails = ''
+
 // ServiceDesk Plus (docs/servicedesk-setup.md): switch to 'Api' once its administrator has set up the API client.
 param serviceDeskMode = 'None'
 param serviceDeskClientId = ''

@@ -36,10 +36,15 @@ if (builder.Configuration.GetValue<EmailMode?>("Email:Mode") is EmailMode.File o
     builder.Services.AddScoped<NotificationDispatcher>();
 builder.Services.AddHostedService<NotificationWorker>();
 
+builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
+builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
+// Manager emails, reminders and digests (Reminders:Enabled, on unless switched off).
+if (builder.Configuration.GetValue<bool?>("Reminders:Enabled") ?? true)
+    builder.Services.AddHostedService<ReminderWorker>();
+
 // ServiceDesk Plus: tickets in, notes out. Off unless ServiceDesk:Mode is File or Api.
 if (builder.Configuration.GetValue<ServiceDeskMode?>("ServiceDesk:Mode") is ServiceDeskMode.File or ServiceDeskMode.Api)
 {
-    builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
     builder.Services.AddScoped<ServiceDeskSync>();
     builder.Services.AddHostedService<ServiceDeskWorker>();
 }

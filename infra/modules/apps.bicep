@@ -27,6 +27,8 @@ param allowedIpRanges array
 param intuneSyncInterval string
 @description('Mailbox the workers send emails from; empty turns email sending off.')
 param notificationMailbox string
+@description('IT team address(es) for digests, separated by ;')
+param itTeamEmails string
 @description('ServiceDesk Plus: None or Api.')
 param serviceDeskMode string
 param serviceDeskClientId string
@@ -49,10 +51,11 @@ var commonSettings = {
   WEBSITE_RUN_FROM_PACKAGE: '1'
 }
 
-// ServiceDesk Plus: both apps know the mode; the API checks the webhook secret, the workers call the API.
-var serviceDeskSettings = { ServiceDesk__Mode: serviceDeskMode }
+// Both apps: the ServiceDesk Plus mode (the API checks the webhook secret, the workers call SDP) and the IT team
+// address (the workers send digests; the API lets administrators send one now).
+var sharedSettings = { ServiceDesk__Mode: serviceDeskMode, Reminders__ItTeamAddresses: itTeamEmails }
 
-var apiSettings = union(commonSettings, serviceDeskSettings, {
+var apiSettings = union(commonSettings, sharedSettings, {
   ServiceDesk__WebhookSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-webhook-secret)'
   AZURE_CLIENT_ID: apiIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, apiIdentity.clientId)
@@ -68,7 +71,7 @@ var apiSettings = union(commonSettings, serviceDeskSettings, {
   Intune__SyncInterval: '00:00:00' // the API only syncs on request; the workers run the schedule
 })
 
-var workersSettings = union(commonSettings, serviceDeskSettings, {
+var workersSettings = union(commonSettings, sharedSettings, {
   Giim__PublicBaseUrl: publicBaseUrl // links in ticket notes
   ServiceDesk__ClientId: serviceDeskClientId
   ServiceDesk__ClientSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-client-secret)'

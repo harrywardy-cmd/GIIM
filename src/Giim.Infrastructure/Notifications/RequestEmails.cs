@@ -27,6 +27,12 @@ public static class RequestEmails
             intro: $"{facts.Request.RequestedByName} has requested a device and needs your approval.",
             action: "Review and approve");
 
+    public static Notification ApprovalReminder(RequestEmailFacts facts, string to, string? toName, int daysWaiting, DateTimeOffset now) =>
+        Build("RequestApprovalReminder", facts, to, toName, now,
+            subject: $"Reminder: {facts.Request.Reference} {facts.Request.DeviceDescription} for {facts.RecipientName} is waiting for your approval",
+            intro: $"This request has been waiting for your approval for {daysWaiting} day{(daysWaiting == 1 ? "" : "s")}.",
+            action: "Review and approve");
+
     public static Notification InformationProvided(RequestEmailFacts facts, string to, string? toName, string answer, DateTimeOffset now) =>
         Build("RequestInfoProvided", facts, to, toName, now,
             subject: $"Information provided: {facts.Request.Reference} is waiting for your approval",

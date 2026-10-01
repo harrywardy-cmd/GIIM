@@ -4,6 +4,7 @@ using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Importing;
 using Giim.Infrastructure.Locations;
+using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.People;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Provisioning;
@@ -33,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<RequestService>();
         services.AddScoped<ProfileService>();
         services.AddScoped<CaseService>();
+        services.AddScoped<ReminderService>();
         services.AddScoped<PeopleSyncService>();
         services.AddScoped<LegacyOwnerService>();
         services.AddScoped<StockService>();
