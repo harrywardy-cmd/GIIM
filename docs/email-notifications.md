@@ -22,8 +22,8 @@ Nobody is emailed about their own action. Every email links straight to the requ
 |---|---|
 | A starter checklist is created | Their manager: start date, the devices being arranged (and which requests need their approval), apps and access |
 | A leaver checklist is created | Their manager: last day and the equipment to collect |
-| A device request has waited 2 days for approval | The approver, then every 2 days, at most 3 reminders |
-| A leaver's last day has passed and equipment is still out | Their manager, the next day, then weekly, at most 3 reminders |
+| A device request has waited 2 days for approval | The approver, then every 2 days, at most 3 reminders. If the approver asked a question, the 2 days restart when it is answered |
+| A leaver's last day has passed and equipment is still out | Their manager, the next day, then weekly, at most 3 reminders. Equipment reported lost or stolen isn't included |
 | Daily at 07:30 | The IT team: overdue checklists, unreturned equipment, starters and leavers in the next 3 days, device requests held up. **Only sent when something needs attention** |
 | Mondays at 07:30 | The IT team: warranties ending in the next 30 days |
 

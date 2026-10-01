@@ -93,6 +93,21 @@ public class AssetLifecycleTests
     }
 
     [Fact]
+    public void A_stolen_device_leaves_its_holder_and_can_be_written_off()
+    {
+        var asset = NewLaptop();
+        var holder = Guid.NewGuid();
+        asset.Assign(Tech, holder, "Sam Lee", null, []);
+
+        var e = asset.ReportStolen(Tech, "Taken from car in Richmond", "Sam Lee", "P-2026-1188");
+
+        Assert.Null(asset.AssignedToPersonId);
+        Assert.Equal(holder, JsonDocument.Parse(e.DetailsJson!).RootElement.GetProperty("PreviousHolderId").GetGuid());
+        asset.Retire(Tech, "Not recovered; insurance claim lodged", DataSanitisation.RemoteWipe, null);
+        Assert.Equal(AssetStatus.Retired, asset.Status);
+    }
+
+    [Fact]
     public void Loss_requires_circumstances()
     {
         Assert.Throws<DomainException>(() => NewLaptop(AssetStatus.Assigned).ReportLost(Tech, " ", null));

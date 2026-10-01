@@ -83,6 +83,21 @@ public sealed class Assignment : Entity
 
         return Accessories.Where(a => a.Status == AccessoryStatus.Missing).ToList();
     }
+
+    /// <summary>
+    /// Ends the assignment because the asset was reported lost or stolen: nothing came back, so there is no condition
+    /// or receiver. Accessories keep their status; tracked ones (a dock) have their own assignment and stay with the person.
+    /// </summary>
+    public void EndAsMissing(ActionContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        if (!IsActive)
+            throw new DomainException("This assignment has already ended.");
+
+        EndedAt = context.OccurredAt ?? DateTimeOffset.UtcNow;
+        ReturnTicketNumber = string.IsNullOrWhiteSpace(context.TicketNumber) ? null : context.TicketNumber.Trim().ToUpperInvariant();
+        UpdatedAt = EndedAt;
+    }
 }
 
 public enum AccessoryStatus { Issued, Returned, Missing }

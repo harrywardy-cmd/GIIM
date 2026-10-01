@@ -100,6 +100,20 @@ public class AssignmentTests
     }
 
     [Fact]
+    public void A_lost_device_ends_the_assignment_without_a_return()
+    {
+        var assignment = Assignment.Start(Harry, Guid.NewGuid(), Tech);
+
+        assignment.EndAsMissing(new ActionContext("jane.tech", "inc60001"));
+
+        Assert.False(assignment.IsActive);
+        Assert.Null(assignment.ReceivedBy);
+        Assert.Null(assignment.ReturnCondition);
+        Assert.Equal("INC60001", assignment.ReturnTicketNumber);
+        Assert.Throws<DomainException>(() => assignment.EndAsMissing(Tech));
+    }
+
+    [Fact]
     public void Returned_accessories_must_belong_to_the_assignment()
     {
         var assignment = Assignment.Start(Harry, Guid.NewGuid(), Tech);

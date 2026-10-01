@@ -22,6 +22,12 @@ internal sealed class AuthOptions
 
     /// <summary>How long a sign-in lasts without activity.</summary>
     public TimeSpan SessionIdleTimeout { get; set; } = TimeSpan.FromHours(8);
+
+    /// <summary>
+    /// The longest a sign-in lasts, however active it is, so someone whose access was removed (a leaver, a role taken
+    /// away in Entra) loses it within a working day. Signing in again from My Apps takes one click.
+    /// </summary>
+    public TimeSpan MaxSessionLifetime { get; set; } = TimeSpan.FromHours(10);
 }
 
 /// <summary>The GIIM app registration in Microsoft Entra ID (see docs/entra-setup.md).</summary>

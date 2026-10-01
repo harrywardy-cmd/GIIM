@@ -1,5 +1,7 @@
 using Giim.Domain.Assets;
+using Giim.Domain.Cases;
 using Giim.Domain.Common;
+using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -95,8 +97,20 @@ public sealed class AssetLifecycleService(GiimDbContext db)
         if (expectedStatus is { } expected && asset.Status != expected)
             throw new AssetChangedException($"{asset.DisplayName} is now {asset.Status} (you saw {expected}). Refresh and try again.");
 
+        var holderId = asset.AssignedToPersonId;
         var assetEvent = action(asset);
         db.AssetEvents.Add(assetEvent);
+
+        // A device reported lost or stolen leaves its holder: end their assignment, and a leaver checklist waiting for
+        // it ticks its "recover" task off (there is nothing to recover).
+        if (holderId is not null && assetEvent.Type is AssetEventType.ReportedLost or AssetEventType.ReportedStolen)
+        {
+            var context = new ActionContext(assetEvent.Actor, assetEvent.TicketNumber, null, assetEvent.OccurredAt);
+            foreach (var open in await db.Assignments.Where(a => a.AssetId == assetId && a.EndedAt == null).ToListAsync(cancellationToken))
+                open.EndAsMissing(context);
+            await CaseService.CompleteLinkedTasksAsync(db, t => t.Source == TaskSource.Asset && t.SourceId == assetId, assetEvent.Actor,
+                assetEvent.Summary, assetEvent.OccurredAt, cancellationToken);
+        }
 
         try
         {

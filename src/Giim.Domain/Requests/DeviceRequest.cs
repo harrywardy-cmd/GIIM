@@ -245,6 +245,8 @@ public sealed class DeviceRequest : Entity
                 ? new DomainException("Only the person who raised the request, or IT, can answer.")
                 : new DomainException($"{Reference} isn't waiting for more information.");
         var given = Clean(answer) ?? throw new DomainException("Write the information the approver asked for.");
+        // The approver's wait starts again now, so the next reminder is a full interval away, not due at once.
+        LastApprovalReminderAt = now;
         return Move(actor, now, RequestEventType.InfoProvided, RequestStatus.PendingApproval, "Information provided", given);
     }
 

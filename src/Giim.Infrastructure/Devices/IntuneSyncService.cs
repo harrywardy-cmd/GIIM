@@ -28,42 +28,25 @@ public sealed class IntuneSyncService(GiimDbContext db, IIntuneClient intune, Ti
 
         try
         {
-            var existing = await db.ManagedDevices.ToDictionaryAsync(d => d.IntuneId, StringComparer.OrdinalIgnoreCase, cancellationToken);
-            var pending = 0;
-
+            // In batches: only one batch of records is in memory at a time, so 150,000 devices take little memory
+            // and each save only checks its own batch.
+            var batch = new List<IntuneDevice>(BatchSize);
             await foreach (var device in intune.GetManagedDevicesAsync(cancellationToken))
             {
                 run.DevicesSeen++;
-                if (existing.TryGetValue(device.Id, out var record))
-                {
-                    run.Updated++;
-                }
-                else
-                {
-                    record = new ManagedDevice { IntuneId = device.Id, DeviceName = "" };
-                    db.ManagedDevices.Add(record);
-                    existing[device.Id] = record;
-                    run.Added++;
-                }
-
-                Apply(device, record, startedAt);
-
-                if (++pending >= BatchSize)
-                {
-                    await db.SaveChangesAsync(cancellationToken);
-                    pending = 0;
-                }
+                batch.Add(device);
+                if (batch.Count == BatchSize) await SaveBatchAsync(batch, run, startedAt, cancellationToken);
             }
+            await SaveBatchAsync(batch, run, startedAt, cancellationToken);
 
             // Anything a full sync didn't return has been retired or deleted in Intune.
-            foreach (var gone in existing.Values.Where(d => d.LastSeenBySyncAt < startedAt && d.RemovedFromIntuneAt is null))
-            {
-                gone.RemovedFromIntuneAt = startedAt;
-                run.Removed++;
-            }
+            run.Removed = await db.ManagedDevices
+                .Where(d => d.LastSeenBySyncAt < startedAt && d.RemovedFromIntuneAt == null)
+                .ExecuteUpdateAsync(u => u.SetProperty(d => d.RemovedFromIntuneAt, startedAt), cancellationToken);
 
             run.Status = SyncRunStatus.Succeeded;
             run.CompletedAt = clock.GetUtcNow();
+            db.SyncRuns.Update(run);
             await db.SaveChangesAsync(cancellationToken);
 
             await UpdateAssetsAsync(cancellationToken);
@@ -72,13 +55,42 @@ public sealed class IntuneSyncService(GiimDbContext db, IIntuneClient intune, Ti
         catch (Exception e) when (e is not OperationCanceledException)
         {
             db.ChangeTracker.Clear();
-            db.SyncRuns.Attach(run);
             run.Status = SyncRunStatus.Failed;
             run.CompletedAt = clock.GetUtcNow();
             run.Error = e.Message.Length > 2000 ? e.Message[..2000] : e.Message;
+            db.SyncRuns.Update(run);
             await db.SaveChangesAsync(CancellationToken.None);
             throw;
         }
+    }
+
+    /// <summary>Adds or updates one batch of devices, saves it, and lets go of it.</summary>
+    private async Task SaveBatchAsync(List<IntuneDevice> batch, SyncRun run, DateTimeOffset seenAt, CancellationToken cancellationToken)
+    {
+        if (batch.Count == 0) return;
+        var ids = batch.Select(d => d.Id).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var records = await db.ManagedDevices.Where(d => ids.Contains(d.IntuneId))
+            .ToDictionaryAsync(d => d.IntuneId, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        foreach (var device in batch)
+        {
+            if (records.TryGetValue(device.Id, out var record))
+            {
+                run.Updated++;
+            }
+            else
+            {
+                record = new ManagedDevice { IntuneId = device.Id, DeviceName = "" };
+                db.ManagedDevices.Add(record);
+                records[device.Id] = record;
+                run.Added++;
+            }
+            Apply(device, record, seenAt);
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        db.ChangeTracker.Clear();
+        batch.Clear();
     }
 
     private static void Apply(IntuneDevice source, ManagedDevice target, DateTimeOffset seenAt)

@@ -22,7 +22,7 @@ Goal: one trustworthy list of who has what.
    Verified against `samples/expected-reconciliation.json`
 6. **Connect to the real Intune tenant** (needs the Entra app permission, see `docs/intune-app-registration.md`)
 7. **SDP asset import** (API v3, read-only)
-8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). **Starter profile editor** ✅ (per department, optionally per job title or track; bulk import). Still to do: the Active Directory source
+8. ◐ **People sync** ✅ (directory source interface; sample CSV today) and **linking spreadsheet owners** ✅ (name, Intune user, department; ambiguous cases resolved by a technician). **Starter profile editor** ✅ (per department, optionally per job title or track; bulk import). Still to do: a live source for Azure, **needed before go-live** (Entra ID through Microsoft Graph recommended; see `docs/go-live-checklist.md`)
 9. ◐ **Microsoft sign-in (Entra ID, My Apps tile) with four roles** ✅ built and tested with the development sign-in
    (see `docs/entra-setup.md`); creating the app registration is waiting on the Entra admin. Replaced the earlier Okta
    plan (30 Sep 2026: GIIM uses Microsoft Entra ID only). Moved earlier because every

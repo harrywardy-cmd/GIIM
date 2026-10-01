@@ -174,6 +174,18 @@ public class DeviceRequestTests
     }
 
     [Fact]
+    public void Answering_restarts_the_approvers_reminder_clock()
+    {
+        var request = Submitted();
+        request.RequestInfo(Approver, Now.AddDays(1), "Is there a spare in stock?");
+
+        request.Answer(Technician, Now.AddDays(5), "No spares until next month.");
+
+        // Reminders wait a full interval after this, rather than counting from the original submission.
+        Assert.Equal(Now.AddDays(5), request.LastApprovalReminderAt);
+    }
+
+    [Fact]
     public void Ordered_then_received_then_handed_over()
     {
         var request = Approved();

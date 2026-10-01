@@ -7,6 +7,7 @@ using Giim.Connectors.ServiceDesk;
 using Giim.Domain.Common;
 using Giim.Domain.Integration;
 using Giim.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -36,6 +37,9 @@ internal static partial class ServiceDeskEndpoints
             if (!request.Headers.TryGetValue(SecretHeader, out var given) || !SecretMatches(given.ToString(), o.WebhookSecret))
                 return Results.Unauthorized();
             if (request.ContentLength > MaxBodyBytes) return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+            // Also when the sender doesn't say how big the body is: the server stops reading past the limit.
+            if (request.HttpContext.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } limit)
+                limit.MaxRequestBodySize = MaxBodyBytes;
 
             string? key;
             try
@@ -46,6 +50,10 @@ internal static partial class ServiceDeskEndpoints
             catch (JsonException)
             {
                 return Results.Problem("The body should be JSON like {\"requestId\": \"123456789\"}.", statusCode: 400);
+            }
+            catch (BadHttpRequestException e) when (e.StatusCode == StatusCodes.Status413PayloadTooLarge)
+            {
+                return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
             }
             if (key is null || !RequestKey().IsMatch(key))
                 return Results.Problem("The body needs the ticket's ID, e.g. {\"requestId\": \"123456789\"}.", statusCode: 400);
