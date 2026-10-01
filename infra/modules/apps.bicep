@@ -1,6 +1,7 @@
 // App Service: one Linux plan running two apps.
 //   API     - the web UI and API that staff use. Scales out with the plan.
-//   Workers - background jobs (Intune sync). Always exactly one instance, not reachable from the internet.
+//   Workers - background jobs (Intune and staff directory syncs, ServiceDesk Plus, email). Always exactly one
+//             instance, not reachable from the internet.
 // Both run as their own managed identity, send outbound traffic through the private network, and have
 // password-based deployment (FTP / basic auth) switched off.
 
@@ -25,6 +26,9 @@ param entraClientId string
 @description('If not empty, only these IP ranges (CIDR) can open GIIM, e.g. office and VPN addresses.')
 param allowedIpRanges array
 param intuneSyncInterval string
+param directoryFilter string
+param directoryTrackAttribute string
+param directoryReadLeaveDates bool
 @description('Mailbox the workers send emails from; empty turns email sending off.')
 param notificationMailbox string
 @description('IT team address(es) for digests, separated by ;')
@@ -55,7 +59,15 @@ var commonSettings = {
 // address (the workers send digests; the API lets administrators send one now).
 var sharedSettings = { ServiceDesk__Mode: serviceDeskMode, Reminders__ItTeamAddresses: itTeamEmails }
 
-var apiSettings = union(commonSettings, sharedSettings, {
+// Both apps: the staff directory from Entra ID (the workers sync on a schedule; an administrator can sync now in the API).
+var directorySettings = {
+  People__Source: 'Entra'
+  People__Entra__Filter: directoryFilter
+  People__Entra__TrackAttribute: directoryTrackAttribute
+  People__Entra__ReadLeaveDates: string(directoryReadLeaveDates)
+}
+
+var apiSettings = union(commonSettings, sharedSettings, directorySettings, {
   ServiceDesk__WebhookSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-webhook-secret)'
   AZURE_CLIENT_ID: apiIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, apiIdentity.clientId)
@@ -71,7 +83,7 @@ var apiSettings = union(commonSettings, sharedSettings, {
   Intune__SyncInterval: '00:00:00' // the API only syncs on request; the workers run the schedule
 })
 
-var workersSettings = union(commonSettings, sharedSettings, {
+var workersSettings = union(commonSettings, sharedSettings, directorySettings, {
   Giim__PublicBaseUrl: publicBaseUrl // links in ticket notes
   ServiceDesk__ClientId: serviceDeskClientId
   ServiceDesk__ClientSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-client-secret)'

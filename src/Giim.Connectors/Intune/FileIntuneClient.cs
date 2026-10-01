@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using Giim.Connectors.Graph;
 using Microsoft.Extensions.Options;
 
 namespace Giim.Connectors.Intune;
@@ -11,7 +12,7 @@ public sealed class FileIntuneClient(IOptions<IntuneOptions> options) : IIntuneC
     {
         var path = SamplePath.Resolve(options.Value.FilePath);
         await using var stream = File.OpenRead(path);
-        var page = await JsonSerializer.DeserializeAsync<GraphPage>(stream, JsonSerializerOptions.Web, cancellationToken)
+        var page = await JsonSerializer.DeserializeAsync<GraphPage<IntuneDevice>>(stream, JsonSerializerOptions.Web, cancellationToken)
             ?? throw new InvalidDataException($"{path} is empty.");
 
         foreach (var device in page.Value)

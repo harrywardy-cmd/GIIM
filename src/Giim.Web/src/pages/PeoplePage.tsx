@@ -58,8 +58,11 @@ export function PeoplePage() {
     setSyncing(true)
     setError(null)
     try {
-      const run = await api<{ devicesSeen: number; added: number; updated: number }>('/api/people/sync', { method: 'POST' })
-      setMessage(`Directory synced: ${run.devicesSeen.toLocaleString()} people (${run.added} new, ${run.updated} updated).`)
+      const run = await api<{ devicesSeen: number; added: number; updated: number; removed: number }>('/api/people/sync', { method: 'POST' })
+      setMessage(
+        `Directory synced: ${run.devicesSeen.toLocaleString()} people (${run.added} new, ${run.updated} updated)` +
+          (run.removed > 0 ? `; ${run.removed} in GIIM are no longer in the directory.` : '.'),
+      )
       setRefresh((n) => n + 1)
     } catch (e) {
       setError((e as Error).message)

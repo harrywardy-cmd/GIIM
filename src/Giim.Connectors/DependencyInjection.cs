@@ -18,7 +18,7 @@ public static class DependencyInjection
         var intune = configuration.GetSection(IntuneOptions.SectionName);
         services.Configure<IntuneOptions>(intune);
 
-        // One Graph credential for everything that calls Microsoft Graph (Intune, email).
+        // One Graph credential for everything that calls Microsoft Graph (Intune, email, staff directory).
         services.AddSingleton<TokenCredential>(sp =>
         {
             var o = sp.GetRequiredService<IOptions<IntuneOptions>>().Value;
@@ -63,9 +63,13 @@ public static class DependencyInjection
                 break;
         }
 
-        // Only the file source exists today; the AD source (via the on-prem agent) is added here later.
-        services.Configure<PeopleOptions>(configuration.GetSection(PeopleOptions.SectionName));
-        services.AddSingleton<IPeopleSource, FilePeopleSource>();
+        // Staff directory: Entra ID in Azure (read-only, through Graph), a CSV file on a developer PC.
+        var people = configuration.GetSection(PeopleOptions.SectionName);
+        services.Configure<PeopleOptions>(people);
+        if (people.GetValue<PeopleSource?>(nameof(PeopleOptions.Source)) == PeopleSource.Entra)
+            services.AddHttpClient<IPeopleSource, EntraPeopleSource>(client => client.Timeout = TimeSpan.FromMinutes(2));
+        else
+            services.AddSingleton<IPeopleSource, FilePeopleSource>();
 
         return services;
     }

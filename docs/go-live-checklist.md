@@ -7,15 +7,6 @@ that has the detail. Tick them off here (or copy the list into a ticket).
 Administrator for one step) · Exchange / Microsoft 365 administrator · ServiceDesk Plus administrator · the GIIM
 administrator (IT lead) · two or three technicians and a manager for the pilot.
 
-## Open item before go-live
-
-- [ ] **Staff directory in Azure.** GIIM's staff list (people, departments, managers, start and leave dates) currently
-  comes from a CSV file, which works on a developer PC but can't be kept up to date in Azure. Managers must be right
-  for approvals, manager emails and leaver checklists to work. Decide the source, then it needs building (about a
-  day): **recommended: read it from Entra ID through Microsoft Graph** (read-only `User.Read.All` for the workers'
-  managed identity; accounts synced from AD already carry employee ID, department, job title and manager). Check
-  first that `employeeId`, `department` and `manager` are filled in for staff in Entra.
-
 ## 1. A few weeks before
 
 - [ ] Azure subscription for GIIM, and who owns the cost.
@@ -27,6 +18,9 @@ administrator (IT lead) · two or three technicians and a manager for the pilot.
 - [ ] ServiceDesk Plus administrator booked: about 2 hours to set up the integration account, request templates and the
   trigger ([servicedesk-setup.md](servicedesk-setup.md)).
 - [ ] Alert email addresses (who hears about errors and failed syncs).
+- [ ] **Staff data in AD/Entra**: employee ID, department and manager filled in for every member of staff. GIIM's
+  staff list, approvals and manager emails come from these ([staff-directory.md](staff-directory.md)). This is
+  usually the longest job on the list, so start it first.
 
 ## 2. Test environment
 
@@ -34,7 +28,8 @@ Follow [infra/README.md](../infra/README.md), "First deployment", with `-Environ
 
 - [ ] Steps 1-3: parameters, `deploy.ps1`, database access.
 - [ ] Step 4: GitHub environments and variables, `DEPLOY_ENABLED = true`, run **Deploy**; `/health` is green.
-- [ ] Step 5: Intune read permission. Run an Intune sync and check device numbers look right.
+- [ ] Step 5: Intune and staff directory read permissions. Run an Intune sync and check device numbers look right.
+  **People → Sync directory**: check the number of staff, a few departments and managers.
 - [ ] Step 6: Microsoft sign-in and the My Apps tile (test app registration, [entra-setup.md](entra-setup.md)).
 - [ ] Email: mailbox permission and `notificationMailbox` ([email-notifications.md](email-notifications.md));
   `itTeamEmails` set.
@@ -45,7 +40,8 @@ Follow [infra/README.md](../infra/README.md), "First deployment", with `-Environ
 With real (copied) data, by the pilot group:
 
 - [ ] Each role signs in from My Apps and sees only what it should; someone with no role can't sign in.
-- [ ] **Setup:** locations, asset categories, and starter profiles for two or three departments.
+- [ ] **Setup:** locations, asset categories, and starter profiles for two or three departments (after the directory
+  sync, which creates the departments).
 - [ ] **Import register:** import the current asset spreadsheet; check the duplicates and blanks report; link
   spreadsheet owners to people.
 - [ ] **Intune reconciliation:** look through each finding list; spot-check ten devices against Intune.
