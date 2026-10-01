@@ -7,6 +7,13 @@ leavers. Open it from the **GIIM tile in My Apps**. Your access comes from the G
 Every action you take is recorded with your name and the time, and can't be edited or deleted afterwards. Put the
 **ticket number** on actions whenever there is one: it links the device's history to ServiceDesk Plus.
 
+## What needs you
+
+The **bell** at the top shows what's waiting for IT: devices approved and ready to order or hand over, and starters
+and leavers in the next 3 days (red when one is overdue). Administrators also see checklist steps waiting for their
+approval, ServiceDesk tickets GIIM couldn't use, failed syncs and emails that didn't send. Click an item to open it;
+it disappears once it's dealt with. The count also shows in the browser tab, e.g. **(3) GIIM**.
+
 ## Finding things
 
 - **Search** (top bar): a name, serial, asset tag, ticket number or REQ number. An exact serial, tag or ticket opens

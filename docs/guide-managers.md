@@ -6,8 +6,9 @@ the **GIIM tile in My Apps** (myapps.microsoft.com); there's no separate passwor
 
 ## Approving a request
 
-When a device is requested for someone in your team, you get an email with a link. Or open **Approvals** in GIIM, which
-shows a count of requests waiting for you.
+When a device is requested for someone in your team, you get an email with a link. In GIIM, the **bell** at the top
+shows requests waiting for you (and any question an approver has asked about a request you raised), as does
+**Approvals**.
 
 On the request, choose:
 

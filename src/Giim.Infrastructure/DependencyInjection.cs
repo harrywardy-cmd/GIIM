@@ -1,5 +1,6 @@
 using Giim.Infrastructure.Activity;
 using Giim.Infrastructure.Assets;
+using Giim.Infrastructure.Attention;
 using Giim.Infrastructure.Attachments;
 using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Devices;
@@ -42,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<StockService>();
         services.AddScoped<IntuneSyncService>();
         services.AddScoped<ReconciliationService>();
+        services.AddScoped<AttentionService>();
 
         return services;
     }

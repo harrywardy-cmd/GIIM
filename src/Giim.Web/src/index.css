@@ -117,6 +117,31 @@ h4 { font-size: 14px; font-weight: 600; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: 14px; }
 .icon-button { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--muted); margin: 0; padding: 0; }
 
+/* The bell: what needs you now. */
+.bell { position: relative; }
+.bell .icon-button { position: relative; }
+.bell-count { position: absolute; top: -4px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.bell-count.problem { background: var(--danger); }
+.bell-panel { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; width: min(400px, calc(100vw - 32px)); max-height: 70vh; overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 0; }
+.bell-heading { font-weight: 600; padding: 8px 16px; border-bottom: 1px solid var(--border); }
+.bell-empty { padding: 12px 16px; margin: 0; }
+.bell-group { padding: 8px 0 4px; border-bottom: 1px solid var(--border); }
+.bell-group:last-child { border-bottom: 0; }
+.bell-group-title { display: flex; align-items: center; gap: 6px; padding: 0 16px 4px; font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.bell-group-count { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--surface-2); text-align: center; }
+.bell-group-count.problem, .bell-problem-icon { color: var(--danger); }
+.bell-group ul { list-style: none; margin: 0; padding: 0; }
+.bell-item { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; margin: 0; padding: 7px 16px; border: 0; border-radius: 0; background: none; text-align: left; font-weight: 400; }
+.bell-item:hover:not(:disabled) { background: var(--surface-2); }
+.bell-item-label { color: var(--text); }
+.bell-item-detail { font-size: 12px; color: var(--muted); }
+.bell-more { display: inline-flex; align-items: center; gap: 2px; margin: 2px 16px 4px; }
+/* Narrower screens: the top bar wraps, so the panel hangs from the bar (full width, inside its padding), not the bell. */
+@media (max-width: 1100px) {
+  .bell { position: static; }
+  .bell-panel { left: 16px; right: 16px; width: auto; max-width: 400px; margin-left: auto; }
+}
+
 main { padding: 24px 32px 40px; }
 
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; }

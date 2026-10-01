@@ -233,11 +233,17 @@ public sealed class RequestService(GiimDbContext db, AssetLifecycleService lifec
 
     // ---- helpers -------------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Requests waiting for this person to decide: they are the approver named on the request; administrators also see
+    /// requests with no approver on record. Nobody decides their own. (The Approvals page and the bell both use this.)
+    /// </summary>
+    internal static IQueryable<DeviceRequest> AwaitingApproval(IQueryable<DeviceRequest> requests, RequestActor actor) =>
+        requests.Where(r => r.Status == RequestStatus.PendingApproval && r.RequestedBy != actor.Login
+            && ((actor.PersonId != null && r.ApproverPersonId == actor.PersonId) || (actor.IsAdministrator && r.ApproverPersonId == null)));
+
     private static IQueryable<DeviceRequest> Filter(IQueryable<DeviceRequest> requests, RequestView view, RequestActor actor) => view switch
     {
-        // The approver named on the request; administrators also see requests with no approver on record.
-        RequestView.AwaitingMe => requests.Where(r => r.Status == RequestStatus.PendingApproval && r.RequestedBy != actor.Login
-            && ((actor.PersonId != null && r.ApproverPersonId == actor.PersonId) || (actor.IsAdministrator && r.ApproverPersonId == null))),
+        RequestView.AwaitingMe => AwaitingApproval(requests, actor),
         RequestView.Mine => requests.Where(r => r.RequestedBy == actor.Login),
         RequestView.Pending => requests.Where(r => r.Status == RequestStatus.PendingApproval || r.Status == RequestStatus.InfoRequested),
         RequestView.Approved => requests.Where(r => r.Status == RequestStatus.Approved),
