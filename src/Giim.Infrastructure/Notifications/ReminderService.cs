@@ -295,14 +295,15 @@ public sealed class ReminderService(GiimDbContext db, IOptions<ReminderOptions> 
 
     // ---- helpers -------------------------------------------------------------------------------------------------------
 
-    /// <summary>A leaver's checklist assets that are still with them.</summary>
+    /// <summary>A leaver's checklist assets that are still with them (not ones already reported lost or stolen: there's nothing to return).</summary>
     private async Task<List<string>> OutstandingAssetsAsync(Guid caseId, Guid personId, CancellationToken cancellationToken)
     {
         var assetIds = await db.ChecklistTasks.AsNoTracking()
             .Where(t => t.CaseId == caseId && t.Source == TaskSource.Asset && t.SourceId != null && t.Status != TaskState.Done && t.Status != TaskState.Skipped)
             .Select(t => t.SourceId!.Value).ToListAsync(cancellationToken);
         return await db.Assets.AsNoTracking()
-            .Where(a => assetIds.Contains(a.Id) && a.AssignedToPersonId == personId)
+            .Where(a => assetIds.Contains(a.Id) && a.AssignedToPersonId == personId
+                && a.Status != AssetStatus.Lost && a.Status != AssetStatus.Stolen)
             .OrderBy(a => a.Model)
             .Select(a => (a.AssetTag ?? a.SerialNumber) + " " + a.Manufacturer + " " + a.Model)
             .ToListAsync(cancellationToken);

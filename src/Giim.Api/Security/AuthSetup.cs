@@ -26,6 +26,9 @@ internal static class AuthSetup
     /// <summary>The claim Entra puts the user's app roles in (Administrator, Technician, Manager, Viewer).</summary>
     public const string RolesClaim = "roles";
 
+    /// <summary>When the person signed in (Unix seconds); kept in the session so its total length can be limited.</summary>
+    public const string SignedInClaim = "giim_signed_in";
+
     /// <summary>What a managed identity's token must be issued for when used as the app registration's credential.</summary>
     private const string FederatedCredentialScope = "api://AzureADTokenExchange/.default";
 
@@ -59,6 +62,18 @@ internal static class AuthSetup
                 // The UI handles sign-in; API calls get status codes, not redirects.
                 o.Events.OnRedirectToLogin = context => { context.Response.StatusCode = StatusCodes.Status401Unauthorized; return Task.CompletedTask; };
                 o.Events.OnRedirectToAccessDenied = context => { context.Response.StatusCode = StatusCodes.Status403Forbidden; return Task.CompletedTask; };
+                // Sliding sessions would otherwise last for ever while in use; end them a fixed time after sign-in.
+                o.Events.OnValidatePrincipal = async context =>
+                {
+                    var now = context.HttpContext.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow();
+                    var signedIn = long.TryParse(context.Principal?.FindFirstValue(SignedInClaim), out var seconds)
+                        ? DateTimeOffset.FromUnixTimeSeconds(seconds) : (DateTimeOffset?)null;
+                    if (signedIn is null || now - signedIn.Value > options.MaxSessionLifetime)
+                    {
+                        context.RejectPrincipal();
+                        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    }
+                };
             });
 
         // Until the app registration exists GIIM still runs; the sign-in page says sign-in isn't set up yet.
@@ -89,6 +104,11 @@ internal static class AuthSetup
         foreach (var scope in Scopes) o.Scope.Add(scope);
         o.TokenValidationParameters.NameClaimType = "preferred_username";
         o.TokenValidationParameters.RoleClaimType = RolesClaim;
+        o.Events.OnTokenValidated = context =>
+        {
+            if (context.Principal?.Identity is ClaimsIdentity identity) identity.AddClaim(SignedInNow(context.HttpContext));
+            return Task.CompletedTask;
+        };
 
         // In Azure GIIM proves who it is with a short-lived token from its managed identity, which the app
         // registration trusts (a federated credential), instead of a stored client secret.
@@ -217,7 +237,7 @@ internal static class AuthSetup
 
                 var login = request.Name.Trim();
                 var identity = new ClaimsIdentity(
-                    [new Claim("preferred_username", login), new Claim("name", login), new Claim(ClaimTypes.Role, request.Role)],
+                    [new Claim("preferred_username", login), new Claim("name", login), new Claim(ClaimTypes.Role, request.Role), SignedInNow(context)],
                     CookieAuthenticationDefaults.AuthenticationScheme, "preferred_username", ClaimTypes.Role);
                 await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
                 return Results.NoContent();
@@ -230,6 +250,9 @@ internal static class AuthSetup
             }).AllowAnonymous();
         }
     }
+
+    private static Claim SignedInNow(HttpContext context) => new(SignedInClaim,
+        context.RequestServices.GetRequiredService<TimeProvider>().GetUtcNow().ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     /// <summary>Only same-site paths, so the sign-in can't be used to bounce someone to another website.</summary>
     internal static string SafeReturnUrl(string? returnUrl) =>

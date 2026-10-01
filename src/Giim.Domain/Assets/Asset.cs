@@ -382,12 +382,18 @@ public sealed class Asset : Entity
         if (string.IsNullOrWhiteSpace(circumstances))
             throw new DomainException("Describe the circumstances.");
 
-        return Transition(status, type, context, summary, new
+        var assetEvent = Transition(status, type, context, summary, new
         {
             Circumstances = circumstances.Trim(),
             ReportedBy = string.IsNullOrWhiteSpace(reportedBy) ? null : reportedBy.Trim(),
             PoliceReference = string.IsNullOrWhiteSpace(policeReference) ? null : policeReference.Trim(),
+            PreviousHolderId = AssignedToPersonId,
         });
+
+        // Nobody holds a missing device: who had it stays in this event and the assignment history. Otherwise it could
+        // never be retired, and would count as still held (e.g. by a leaver) for ever.
+        AssignedToPersonId = null;
+        return assetEvent;
     }
 
     private AssetEvent Transition(AssetStatus next, AssetEventType type, ActionContext context, string summary, object? details = null)

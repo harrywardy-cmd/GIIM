@@ -9,8 +9,14 @@ Internal tool for the IT Service Desk. It links ServiceDesk Plus tickets to:
 It integrates with ServiceDesk Plus Cloud (AU), Microsoft Entra ID (staff sign in from My Apps), on-prem Active Directory,
 hybrid Exchange and Microsoft Intune.
 
-> Status: **scaffold**. Structure, domain model and test data only. No integrations are live yet.
-> See [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
+> Status: **ready for a pilot, pending go-live set-up.** The asset register and lifecycle, Intune reconciliation, device
+> requests and approvals, starter and leaver checklists, the ServiceDesk Plus connection, email notifications and reports
+> are built and tested, including a load test at 1,500 staff, 34,000 assets and 150,000 Intune devices. Nothing is
+> deployed yet: [docs/go-live-checklist.md](docs/go-live-checklist.md) lists the steps, in order. Account creation and
+> removal in AD, Exchange and Entra are still done by hand and ticked off on the checklist (Phases 3-4).
+>
+> Guides: [technicians](docs/guide-technicians.md), [managers](docs/guide-managers.md). Background:
+> [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
 > [docs/lifecycle-gap-analysis.md](docs/lifecycle-gap-analysis.md) for how the asset lifecycle brief maps onto GIIM.
 
 ## Tech stack
@@ -21,7 +27,7 @@ hybrid Exchange and Microsoft Intune.
 | **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations |
 | **Web UI** | React 19, TypeScript 6, Vite 8, lucide-react icons, oxlint. Served by the API as static files in production |
 | **Sign-in and roles** | Microsoft Entra ID (OpenID Connect, authorization code + PKCE) handled by the API, launched from the GIIM tile in My Apps; HTTP-only session cookie; roles from Entra app roles; no client secret in Azure (managed identity as a federated credential) |
-| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud and the on-premises AD/Exchange agent are planned (see the roadmap) |
+| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud API v3 (Zoho OAuth) and a webhook for new tickets. The on-premises AD/Exchange agent is planned (see the roadmap) |
 | **Documents and exports** | ClosedXML (Excel import and export), CSV export, QRCoder (asset QR codes and label sheets) |
 | **Hosting** | Azure, Australia East: App Service (Linux), Azure SQL, Key Vault, Blob Storage, private networking, all accessed with managed identities |
 | **Infrastructure as code** | Bicep templates and PowerShell scripts in `infra/` |
@@ -35,13 +41,14 @@ hybrid Exchange and Microsoft Intune.
 | Path | What it is |
 |---|---|
 | `src/Giim.Domain` | Business entities and rules (asset lifecycle, checklist generation). No external dependencies |
-| `src/Giim.Infrastructure` | EF Core `GiimDbContext`, migrations, Azure SQL |
-| `src/Giim.Connectors` | Integrations: Intune and email (Microsoft Graph), the staff directory, and contracts for ServiceDesk Plus |
-| `src/Giim.Api` | ASP.NET Core API used by the web UI and SDP webhooks |
-| `src/Giim.Workers` | Background sync and automation jobs (Intune sync) |
+| `src/Giim.Infrastructure` | EF Core `GiimDbContext`, migrations, and the services behind each feature (assets, requests, checklists, syncs, reminders, reports) |
+| `src/Giim.Connectors` | Integrations: Intune and email (Microsoft Graph), the staff directory, and ServiceDesk Plus |
+| `src/Giim.Api` | ASP.NET Core API used by the web UI and the ServiceDesk Plus webhook; serves the built UI |
+| `src/Giim.Workers` | Background jobs: Intune sync, ServiceDesk Plus tickets and notes, sending email, reminders and digests |
 | `src/Giim.Web` | React + TypeScript UI (Vite) |
 | `tests/` | xUnit tests |
 | `tools/SampleData` | Fake test-data generator |
+| `config/` | Settings that aren't secrets and change with the business, e.g. the ServiceDesk Plus field mapping |
 | `samples/` | Generated fake data. **Real exports go in `samples/private/` (git-ignored)** |
 | `infra/` | Azure infrastructure (Bicep) and deployment runbook: see [infra/README.md](infra/README.md) |
 | `.github/workflows/` | CI (build, tests, lint, templates) and deployment to test and prod |

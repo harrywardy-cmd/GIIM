@@ -77,7 +77,8 @@ Then put the **client ID** it prints into `infra/params/prod.bicepparam` (`entra
 | `Auth:Entra:ClientId` | Application (client) ID. Until it is set, GIIM runs and the sign-in page says sign-in isn't set up |
 | `Auth:Entra:ManagedIdentityClientId` | In Azure: the web app's managed identity, trusted by the app registration (set by the deployment) |
 | `Auth:Entra:ClientSecret` | Only for testing real Microsoft sign-in from a developer PC (user-secrets). Never in Azure |
-| `Auth:SessionIdleTimeout` | Default `08:00:00` |
+| `Auth:SessionIdleTimeout` | Default `08:00:00`: signed out after this long without using GIIM |
+| `Auth:MaxSessionLifetime` | Default `10:00:00`: signed out this long after signing in, even if GIIM is in use all day, so a role removed in Entra takes effect by the next working day at the latest |
 
 Day-to-day development uses the pick-a-role sign-in, so none of this is needed to work on GIIM. To test real
 Microsoft sign-in from a developer PC:
@@ -115,6 +116,9 @@ Remove the secret afterwards (`dotnet user-secrets clear --project src/Giim.Api`
   `AuthSetup.AdministratorOnly`).
 - Changes must carry an `X-GIIM-Request` header. Other websites can't add custom headers to requests they trigger,
   which blocks cross-site request forgery.
+- A session ends after 8 hours unused, and in any case 10 hours after signing in. Signing in again picks up any
+  role change made in Entra since (roles are read at sign-in). To remove someone's access at once, also revoke their
+  sessions in Entra (**Users → the person → Revoke sessions**) and remove their GIIM role.
 - Signing out ends the GIIM session and the Microsoft session in that browser, so a shared PC is left signed out.
 - Every timeline entry, stock movement and audit entry records the signed-in user's sign-in name (UPN).
 
