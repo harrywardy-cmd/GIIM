@@ -10,7 +10,7 @@ group in **Australia East**. Code is deployed by GitHub Actions; this folder onl
 | `params/test.bicepparam`, `params/prod.bicepparam` | Settings for each environment (no secrets) |
 | `deploy.ps1` | Creates or updates an environment, after showing what will change |
 | `scripts/Grant-SqlAccess.ps1`, `sql/grant-access.sql` | One-off: gives GIIM's identities access to the database |
-| `scripts/Grant-GraphAccess.ps1` | One-off: lets GIIM read Intune devices |
+| `scripts/Grant-GraphAccess.ps1` | One-off: lets GIIM read Intune devices and the staff directory |
 | `../.github/workflows/` | CI on every change; deployment to test, then prod after approval |
 
 ## What gets created
@@ -18,7 +18,7 @@ group in **Australia East**. Code is deployed by GitHub Actions; this folder onl
 ```
 Staff browser ──HTTPS──► App Service: web app (UI + API) ──┐        GitHub Actions
                                                            │        (deploys code, runs DB migrations)
-                         App Service: workers (Intune) ────┤
+                         App Service: workers (syncs) ─────┤
                                                            │ private network
                   ┌────────────────────┬───────────────────┼──────────────────┐
                   ▼                    ▼                   ▼                  ▼
@@ -107,7 +107,7 @@ In GitHub → the GIIM repository → **Settings**:
 3. **Actions** → **Deploy** → **Run workflow**. It builds, tests, updates the database, deploys, checks
    `/health`, and then waits for approval before production.
 
-### 5. Let GIIM read Intune
+### 5. Let GIIM read Intune and the staff directory
 
 An Entra admin (Privileged Role Administrator or Global Administrator) runs:
 
@@ -115,6 +115,9 @@ An Entra admin (Privileged Role Administrator or Global Administrator) runs:
 Install-Module Microsoft.Graph.Applications -Scope CurrentUser   # first time only
 ./infra/scripts/Grant-GraphAccess.ps1 -Environment test
 ```
+
+This grants read-only access to Intune devices and to user accounts (names, departments, managers, employee IDs).
+GIIM then syncs the staff list from Entra every 4 hours; see [docs/staff-directory.md](../docs/staff-directory.md).
 
 ### 6. Microsoft sign-in and the My Apps tile
 
@@ -154,7 +157,8 @@ Repeat steps 2-6 with `-Environment prod` when test looks right.
 | Give someone access to GIIM | Add them to the right group (e.g. GIIM-Technicians), or assign them a role in Entra → Enterprise applications → GIIM → Users and groups |
 | Scale up | Change `appServicePlanSku` or `sqlSku` in the `.bicepparam` and deploy. Both scale without downtime (a brief reconnect). |
 | Look at logs | Application Insights → **Logs**, e.g. `traces \| where timestamp > ago(1d) \| order by timestamp desc`. Failures: **Failures** blade. |
-| Alerts | Emailed to `alertEmails`: server errors, health checks failing, database over 80% full or 90% busy, Intune sync failures. |
+| Alerts | Emailed to `alertEmails`: server errors, health checks failing, database over 80% full or 90% busy, Intune or staff directory sync failures. |
+| Someone is missing from GIIM | Check their employee ID, department and manager in AD; see [docs/staff-directory.md](../docs/staff-directory.md) |
 
 ### Restoring the database
 

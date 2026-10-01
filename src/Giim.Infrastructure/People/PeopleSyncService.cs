@@ -24,6 +24,8 @@ public sealed class PeopleSyncService(GiimDbContext db, IPeopleSource source, Ti
         try
         {
             var departments = await db.Departments.ToDictionaryAsync(d => d.Code, StringComparer.OrdinalIgnoreCase, cancellationToken);
+            var departmentsByName = departments.Values.GroupBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
             var people = await db.People.ToDictionaryAsync(p => p.EmployeeId, StringComparer.OrdinalIgnoreCase, cancellationToken);
             var managerUpns = new Dictionary<Person, string?>();
 
@@ -31,17 +33,22 @@ public sealed class PeopleSyncService(GiimDbContext db, IPeopleSource source, Ti
             {
                 run.DevicesSeen++;  // SyncRun counts "records seen"; for this source they are people
 
-                if (!departments.TryGetValue(record.DepartmentCode, out var department))
+                // By code, then by name: a department set up with its own code (e.g. by the profile import) is matched
+                // by the name Entra uses, rather than added twice.
+                if (!departments.TryGetValue(record.DepartmentCode, out var department)
+                    && (record.DepartmentName is null || !departmentsByName.TryGetValue(record.DepartmentName, out department)))
                 {
                     department = new Department { Code = record.DepartmentCode, Name = record.DepartmentName ?? record.DepartmentCode };
                     db.Departments.Add(department);
                     departments[department.Code] = department;
+                    departmentsByName.TryAdd(department.Name, department);
                 }
                 else if (record.DepartmentName is not null && department.Name != record.DepartmentName)
                 {
                     department.Name = record.DepartmentName;
                 }
 
+                var wasPending = false;
                 if (!people.TryGetValue(record.EmployeeId, out var person))
                 {
                     person = new Person { EmployeeId = record.EmployeeId, DisplayName = record.DisplayName };
@@ -51,18 +58,24 @@ public sealed class PeopleSyncService(GiimDbContext db, IPeopleSource source, Ti
                 }
                 else
                 {
+                    wasPending = person.Status == PersonStatus.Pending;
                     run.Updated++;
                 }
 
+                // The directory is the source of truth, but what it doesn't hold (e.g. the track or start date IT entered
+                // for a new starter) is kept rather than blanked.
                 person.DisplayName = record.DisplayName;
                 person.UserPrincipalName = record.UserPrincipalName;
-                person.Email ??= record.UserPrincipalName;
-                person.JobTitle = record.JobTitle;
-                person.Location = record.Location;
+                person.Email = record.Email ?? person.Email ?? record.UserPrincipalName;
+                person.EntraObjectId = record.EntraObjectId ?? person.EntraObjectId;
+                person.JobTitle = record.JobTitle ?? person.JobTitle;
+                person.Location = record.Location ?? person.Location;
                 person.DepartmentId = department.Id;
-                person.Status = Enum.TryParse<PersonStatus>(record.Status, ignoreCase: true, out var status) ? status : PersonStatus.Active;
-                person.Track = Enum.TryParse<ProvisioningTrack>(record.Track, ignoreCase: true, out var track) ? track : ProvisioningTrack.Full;
-                person.StartDate = record.StartDate;
+                var status = Enum.TryParse<PersonStatus>(record.Status, ignoreCase: true, out var s) ? s : PersonStatus.Active;
+                // A starter's account is often created disabled: they haven't left, they haven't started.
+                person.Status = status == PersonStatus.Left && wasPending ? PersonStatus.Pending : status;
+                if (Enum.TryParse<ProvisioningTrack>(record.Track, ignoreCase: true, out var track)) person.Track = track;
+                person.StartDate = record.StartDate ?? person.StartDate;
                 person.EndDate = record.EndDate;
                 person.LastSyncedAt = startedAt;
                 person.UpdatedAt = startedAt;

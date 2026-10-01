@@ -27,7 +27,7 @@ hybrid Exchange and Microsoft Intune.
 | **Data** | SQL Server (Docker locally, Azure SQL in Azure), Entity Framework Core 10 with code-first migrations |
 | **Web UI** | React 19, TypeScript 6, Vite 8, lucide-react icons, oxlint. Served by the API as static files in production |
 | **Sign-in and roles** | Microsoft Entra ID (OpenID Connect, authorization code + PKCE) handled by the API, launched from the GIIM tile in My Apps; HTTP-only session cookie; roles from Entra app roles; no client secret in Azure (managed identity as a federated credential) |
-| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud API v3 (Zoho OAuth) and a webhook for new tickets. The on-premises AD/Exchange agent is planned (see the roadmap) |
+| **Integrations** | Microsoft Graph via Azure.Identity: Intune device sync, the staff directory from Entra ID, and email from a Microsoft 365 mailbox. ServiceDesk Plus Cloud API v3 (Zoho OAuth) and a webhook for new tickets. The on-premises AD/Exchange agent is planned (see the roadmap) |
 | **Documents and exports** | ClosedXML (Excel import and export), CSV export, QRCoder (asset QR codes and label sheets) |
 | **Hosting** | Azure, Australia East: App Service (Linux), Azure SQL, Key Vault, Blob Storage, private networking, all accessed with managed identities |
 | **Infrastructure as code** | Bicep templates and PowerShell scripts in `infra/` |
@@ -42,9 +42,9 @@ hybrid Exchange and Microsoft Intune.
 |---|---|
 | `src/Giim.Domain` | Business entities and rules (asset lifecycle, checklist generation). No external dependencies |
 | `src/Giim.Infrastructure` | EF Core `GiimDbContext`, migrations, and the services behind each feature (assets, requests, checklists, syncs, reminders, reports) |
-| `src/Giim.Connectors` | Integrations: Intune and email (Microsoft Graph), the staff directory, and ServiceDesk Plus |
+| `src/Giim.Connectors` | Integrations: Intune, the staff directory and email (Microsoft Graph), and ServiceDesk Plus |
 | `src/Giim.Api` | ASP.NET Core API used by the web UI and the ServiceDesk Plus webhook; serves the built UI |
-| `src/Giim.Workers` | Background jobs: Intune sync, ServiceDesk Plus tickets and notes, sending email, reminders and digests |
+| `src/Giim.Workers` | Background jobs: Intune and staff directory syncs, ServiceDesk Plus tickets and notes, sending email, reminders and digests |
 | `src/Giim.Web` | React + TypeScript UI (Vite) |
 | `tests/` | xUnit tests |
 | `tools/SampleData` | Fake test-data generator |
@@ -85,7 +85,7 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 | `Giim:PublicBaseUrl` | The address staff use to open GIIM, e.g. `https://giim.company.com.au`. **QR labels link here**, so set it before printing labels; a label printed with the wrong address has to be reprinted. Development: `http://localhost:5173` |
 | `Auth:Mode`, `Auth:Entra:*` | `Entra` (Microsoft sign-in) everywhere except a developer PC, where `Development` gives a pick-a-role sign-in. See [docs/entra-setup.md](docs/entra-setup.md) |
 | `Intune:Source` | `File` (sample export) or `Graph` (live), see [docs/intune-app-registration.md](docs/intune-app-registration.md) |
-| `People:FilePath` | Staff directory export used by People sync until the Active Directory source exists |
+| `People:Source` | Where the staff list comes from: `Entra` (Entra ID through Microsoft Graph, in Azure, synced every 4 hours) or `File` (`People:FilePath`, a CSV on a developer PC). See [docs/staff-directory.md](docs/staff-directory.md) |
 | `DataProtection:BlobUri`, `DataProtection:KeyUri` | Where the sign-in cookie keys are kept in Azure (Blob Storage, wrapped by a Key Vault key) so every instance shares them. Set by the deployment; leave empty locally |
 | `ServiceDesk:*` | ServiceDesk Plus connection: `Mode` (`None`, `File` stand-in, `Api`), Zoho client, webhook secret; ticket field mapping in `config/servicedesk.json`. See [docs/servicedesk-setup.md](docs/servicedesk-setup.md) |
 | `Reminders:*` | Manager emails, approval and return reminders, daily IT digest and weekly warranty list; `ItTeamAddresses` says who gets the digests. See [docs/email-notifications.md](docs/email-notifications.md) |

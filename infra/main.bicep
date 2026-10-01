@@ -56,6 +56,16 @@ param entraClientId string = ''
 
 param intuneSyncInterval string = '04:00:00'
 
+// Staff directory from Entra ID (docs/staff-directory.md). Every member account with an employee ID is read by default.
+@description('Extra filter on Entra accounts, e.g. companyName eq \'Contoso\'. Empty: every member account with an employee ID.')
+param directoryFilter string = ''
+
+@description('On-premises extension attribute holding the starter track (Full or Light), e.g. extensionAttribute5. Empty: tracks are set in GIIM.')
+param directoryTrackAttribute string = ''
+
+@description('Read leave dates from Entra. Needs User-LifeCycleInfo.Read.All: run Grant-GraphAccess.ps1 with -IncludeLeaveDates first.')
+param directoryReadLeaveDates bool = false
+
 @description('Mailbox GIIM sends emails from, e.g. giim@company.com.au. Empty: emails wait in the outbox (see docs/email-notifications.md).')
 param notificationMailbox string = ''
 
@@ -203,6 +213,9 @@ module apps 'modules/apps.bicep' = {
     entraClientId: entraClientId
     allowedIpRanges: allowedIpRanges
     intuneSyncInterval: intuneSyncInterval
+    directoryFilter: directoryFilter
+    directoryTrackAttribute: directoryTrackAttribute
+    directoryReadLeaveDates: directoryReadLeaveDates
     notificationMailbox: notificationMailbox
     itTeamEmails: itTeamEmails
     serviceDeskMode: serviceDeskMode

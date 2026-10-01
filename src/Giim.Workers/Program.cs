@@ -1,6 +1,7 @@
 using Azure.Monitor.OpenTelemetry.AspNetCore;
 using Giim.Connectors;
 using Giim.Connectors.Email;
+using Giim.Connectors.People;
 using Giim.Connectors.ServiceDesk;
 using Giim.Infrastructure;
 using Giim.Infrastructure.Notifications;
@@ -31,6 +32,9 @@ if (!string.IsNullOrEmpty(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_
     builder.Services.AddOpenTelemetry().UseAzureMonitor();
 
 builder.Services.AddHostedService<IntuneSyncWorker>();
+// Staff directory from Entra ID on a schedule. A CSV source (developer PC) is only synced on request.
+if (builder.Configuration.GetValue<PeopleSource?>("People:Source") == PeopleSource.Entra)
+    builder.Services.AddHostedService<PeopleSyncWorker>();
 // Sends queued emails; only the workers send (the API just queues them in the same save as the change).
 if (builder.Configuration.GetValue<EmailMode?>("Email:Mode") is EmailMode.File or EmailMode.Graph)
     builder.Services.AddScoped<NotificationDispatcher>();

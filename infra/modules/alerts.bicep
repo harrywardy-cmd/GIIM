@@ -1,5 +1,5 @@
 // Alerts, emailed to the IT team: the site is failing, an app is unhealthy, the database is nearly full or
-// overloaded, or the Intune sync has failed.
+// overloaded, or the Intune or staff directory sync has failed.
 
 param name string
 param location string
@@ -119,12 +119,13 @@ resource alerts 'Microsoft.Insights/metricAlerts@2018-03-01' = [for alert in met
   }
 }]
 
+// Named for Intune when it was the only sync; kept so redeploying updates this alert rather than adding another.
 resource intuneSyncFailed 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = {
   name: '${name}-intune-sync-failed'
   location: location
   tags: tags
   properties: {
-    description: 'The Intune device sync failed. GIIM retries at the next interval; check the workers logs.'
+    description: 'The Intune device sync or the staff directory sync failed. GIIM retries at the next interval; check the workers logs.'
     severity: 2
     enabled: true
     scopes: [appInsightsId]
@@ -133,7 +134,7 @@ resource intuneSyncFailed 'Microsoft.Insights/scheduledQueryRules@2023-03-15-pre
     criteria: {
       allOf: [
         {
-          query: 'traces | where message startswith "Intune sync failed"'
+          query: 'traces | where message startswith "Intune sync failed" or message startswith "Staff directory sync failed"'
           timeAggregation: 'Count'
           operator: 'GreaterThan'
           threshold: 0

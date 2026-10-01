@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Giim.Connectors.Intune;
 
 /// <summary>
@@ -23,7 +21,3 @@ public sealed record IntuneDevice(
     string? ComplianceState,
     DateTimeOffset? LastSyncDateTime,
     DateTimeOffset? EnrolledDateTime);
-
-internal sealed record GraphPage(
-    [property: JsonPropertyName("value")] IReadOnlyList<IntuneDevice> Value,
-    [property: JsonPropertyName("@odata.nextLink")] string? NextLink);
