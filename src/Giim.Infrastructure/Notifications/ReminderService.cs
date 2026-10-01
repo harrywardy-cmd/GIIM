@@ -72,7 +72,7 @@ public sealed class ReminderService(GiimDbContext db, IOptions<ReminderOptions> 
         var cases = await db.Cases
             .Where(c => c.ManagerEmailedAt == null && (c.Type == CaseType.Onboarding || c.Type == CaseType.Offboarding)
                 && c.Status != CaseStatus.Cancelled && c.Status != CaseStatus.Completed)
-            .Take(50).ToListAsync(cancellationToken);
+            .OrderBy(c => c.CreatedAt).Take(50).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var c in cases)
         {
@@ -133,7 +133,7 @@ public sealed class ReminderService(GiimDbContext db, IOptions<ReminderOptions> 
         var requests = await db.DeviceRequests
             .Where(r => r.Status == RequestStatus.PendingApproval && r.ApproverPersonId != null && r.ApprovalReminders < O.MaxApprovalReminders
                 && r.SubmittedAt <= waitingSince)
-            .Take(100).ToListAsync(cancellationToken);
+            .OrderBy(r => r.SubmittedAt).Take(100).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var r in requests)
         {
@@ -165,7 +165,7 @@ public sealed class ReminderService(GiimDbContext db, IOptions<ReminderOptions> 
         var cases = await db.Cases
             .Where(c => c.Type == CaseType.Offboarding && c.Status != CaseStatus.Cancelled && c.Status != CaseStatus.Completed
                 && c.DueDate < today && c.ReturnReminders < O.MaxReturnReminders)
-            .Take(100).ToListAsync(cancellationToken);
+            .OrderBy(c => c.DueDate).Take(100).ToListAsync(cancellationToken);
         var sent = 0;
         foreach (var c in cases)
         {

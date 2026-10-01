@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { api } from '../api'
 import { LocationSelect } from '../LocationSelect'
+import { uploadFiles } from '../files'
+import { FilePicker } from './AssetFiles'
 
 type Done = () => void
 
@@ -30,10 +32,12 @@ function Form({ title, children, error, saving, submitLabel, disabled, onSubmit,
 function useSubmit(onDone: Done) {
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const submit = async (url: string, json: unknown) => {
+  /** `after` runs once the action is saved (e.g. attaching files), before the form closes. */
+  const submit = async (url: string, json: unknown, after?: () => Promise<void>) => {
     setSaving(true)
     try {
       await api(url, { method: 'POST', json })
+      await after?.()
       onDone()
     } catch (e) {
       setError((e as Error).message)
@@ -245,12 +249,18 @@ export function RetireForm({ assetId, status, onDone, onCancel }: { assetId: str
   )
 }
 
-export function DisposeForm({ assetId, onDone, onCancel }: { assetId: string; onDone: Done; onCancel: Done }) {
+export function DisposeForm({ assetId, onDone, onCancel, onFileProblems }: {
+  assetId: string
+  onDone: Done
+  onCancel: Done
+  onFileProblems: (problems: string[]) => void
+}) {
   const [method, setMethod] = useState('EWasteRecycling')
   const [company, setCompany] = useState('')
   const [certificateNumber, setCertificateNumber] = useState('')
   const [disposedOn, setDisposedOn] = useState(new Date().toISOString().slice(0, 10))
   const [ticketNumber, setTicketNumber] = useState('')
+  const [certificate, setCertificate] = useState<File[]>([])
   const { error, saving, submit } = useSubmit(onDone)
   const auditable = method === 'EWasteRecycling' || method === 'Destroyed'
 
@@ -271,6 +281,10 @@ export function DisposeForm({ assetId, onDone, onCancel }: { assetId: string; on
           certificateNumber: certificateNumber || null,
           disposedOn,
           ticketNumber: ticketNumber || null,
+        }, async () => {
+          if (certificate.length === 0) return
+          const problems = await uploadFiles(assetId, certificate, { kind: 'DisposalCertificate', ticketNumber })
+          if (problems.length) onFileProblems(problems)
         })
       }
     >
@@ -302,6 +316,9 @@ export function DisposeForm({ assetId, onDone, onCancel }: { assetId: string; on
           Ticket
           <input value={ticketNumber} onChange={(e) => setTicketNumber(e.target.value)} />
         </label>
+      </div>
+      <div className="form-row">
+        <FilePicker label="Certificate file (optional, e.g. the PDF from the recycler)" onChange={setCertificate} />
       </div>
       <p className="muted small">This is the final step. The record stays in GIIM permanently for audits.</p>
     </Form>

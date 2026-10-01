@@ -26,6 +26,7 @@ builder.Services.AddGiimInfrastructure(
     builder.Configuration.GetConnectionString("Giim")
     ?? throw new InvalidOperationException("Connection string 'Giim' is not configured."));
 builder.Services.AddGiimConnectors(builder.Configuration);
+builder.Services.AddGiimAttachments(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddHealthChecks().AddDbContextCheck<GiimDbContext>();
@@ -71,6 +72,7 @@ app.MapServiceDeskWebhook();
 // Everything else needs a GIIM role; changes need Technician (see AuthSetup.MapSecuredApi).
 var api = app.MapSecuredApi();
 api.MapAssetEndpoints();
+api.MapAttachmentEndpoints();
 api.MapImportEndpoints();
 api.MapCategoryEndpoints();
 api.MapStockEndpoints();

@@ -25,6 +25,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Location> Locations => Set<Location>();
     public DbSet<AssetEvent> AssetEvents => Set<AssetEvent>();
     public DbSet<Repair> Repairs => Set<Repair>();
+    public DbSet<AssetAttachment> AssetAttachments => Set<AssetAttachment>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {
@@ -161,6 +162,24 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(x => x.TicketNumber).HasMaxLength(50);
             e.Property(x => x.Summary).HasMaxLength(500);
             e.Property(x => x.Note).HasMaxLength(2000);
+            e.HasOne<Asset>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<AssetAttachment>(e =>
+        {
+            e.ToTable("AssetAttachments");
+            e.HasIndex(x => new { x.AssetId, x.CreatedAt });
+            e.HasIndex(x => x.StorageKey).IsUnique();
+            e.Property(x => x.FileName).HasMaxLength(AssetAttachment.MaxFileNameLength);
+            e.Property(x => x.ContentType).HasMaxLength(100);
+            e.Property(x => x.Description).HasMaxLength(AssetAttachment.MaxDescriptionLength);
+            e.Property(x => x.StorageKey).HasMaxLength(200);
+            e.Property(x => x.Sha256).HasMaxLength(64).IsFixedLength();
+            e.Property(x => x.UploadedBy).HasMaxLength(200);
+            e.Property(x => x.TicketNumber).HasMaxLength(50);
+            e.Property(x => x.RemovedBy).HasMaxLength(200);
+            e.Property(x => x.RemovedReason).HasMaxLength(500);
+            e.Ignore(x => x.IsRemoved);
             e.HasOne<Asset>().WithMany().HasForeignKey(x => x.AssetId).OnDelete(DeleteBehavior.Restrict);
         });
 

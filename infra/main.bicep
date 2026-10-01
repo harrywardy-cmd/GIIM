@@ -165,6 +165,7 @@ module storage 'modules/storage.bicep' = {
     endpointSubnetId: network.outputs.endpointSubnetId
     dnsZoneId: network.outputs.dnsZoneIds.blob
     dataProtectionPrincipalIds: [identities.outputs.api.principalId]
+    attachmentsPrincipalIds: [identities.outputs.api.principalId]
     tags: allTags
   }
 }
@@ -208,6 +209,7 @@ module apps 'modules/apps.bicep' = {
     databaseName: sql.outputs.databaseName
     dataProtectionBlobUri: storage.outputs.dataProtectionBlobUri
     dataProtectionKeyUri: keyVault.outputs.cookieKeyUri
+    attachmentsContainerUri: storage.outputs.attachmentsContainerUri
     publicBaseUrl: effectivePublicUrl
     entraTenantId: entraTenantId
     entraClientId: entraClientId

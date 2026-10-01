@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { searchUrl, useSearch } from '../search'
 import { LocationSelect } from '../LocationSelect'
+import { uploadFiles } from '../files'
+import { FilePicker } from './AssetFiles'
 
 export type PersonOption = { id: string; displayName: string; userPrincipalName: string | null; department: string | null; status: string }
 export type AssetOption = { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string }
@@ -270,7 +272,7 @@ export function ReturnForm({
   expectedStatus: string
   holderName: string | null
   accessories: AccessoryLine[]
-  onDone: (missing: string[]) => void
+  onDone: (missing: string[], fileProblems: string[]) => void
   onCancel: () => void
 }) {
   const [returned, setReturned] = useState<Set<string>>(() => new Set(accessories.map((a) => a.id)))
@@ -279,6 +281,7 @@ export function ReturnForm({
   const [returnStockTo, setReturnStockTo] = useState('')
   const [ticketNumber, setTicketNumber] = useState('')
   const [note, setNote] = useState('')
+  const [photos, setPhotos] = useState<File[]>([])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -307,7 +310,11 @@ export function ReturnForm({
           returnStockToLocationId: hasStock ? returnStockTo || null : null,
         },
       })
-      onDone(result.missing)
+      // Photos once the return is saved; one that fails is reported, the return stands.
+      const fileProblems = photos.length
+        ? await uploadFiles(assetId, photos, { kind: 'Photo', description: `On return (${condition.toLowerCase()})`, ticketNumber })
+        : []
+      onDone(result.missing, fileProblems)
     } catch (e) {
       setError((e as Error).message)
     } finally {
@@ -370,6 +377,9 @@ export function ReturnForm({
           Note
           <input value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
+      </div>
+      <div className="form-row">
+        <FilePicker label="Photos (optional, e.g. of damage)" onChange={setPhotos} />
       </div>
       {(condition === 'Damaged' || condition === 'Faulty') && (
         <p className="muted small">Damaged or faulty devices should go to repair rather than back into stock.</p>

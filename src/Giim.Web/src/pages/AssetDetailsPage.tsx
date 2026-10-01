@@ -8,6 +8,7 @@ import { useNav } from '../nav'
 import { useUser } from '../user'
 import { statusText } from '../status'
 import { AssignForm, ReturnForm, type AccessoryLine } from './AssignReturnForms'
+import { AssetFiles } from './AssetFiles'
 import { CompleteRepairForm, DisposeForm, RetireForm, SendToRepairForm } from './RepairEndOfLifeForms'
 
 type TimelineEvent = {
@@ -320,9 +321,12 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               expectedStatus={asset.status}
               holderName={asset.assignedTo?.displayName ?? asset.legacyAssignedTo}
               accessories={asset.currentAssignment?.accessories ?? []}
-              onDone={(missing) => {
+              onDone={(missing, fileProblems) => {
                 setAction(null)
-                setNotice(missing.length ? `Returned. Missing: ${missing.join(', ')}` : 'Returned with everything accounted for.')
+                setNotice(
+                  (missing.length ? `Returned. Missing: ${missing.join(', ')}.` : 'Returned with everything accounted for.') +
+                    (fileProblems.length ? ` These photos couldn't be added: ${fileProblems.join('; ')}` : ''),
+                )
                 setRefresh((n) => n + 1)
               }}
               onCancel={() => setAction(null)}
@@ -335,7 +339,14 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
             <CompleteRepairForm assetId={asset.id} repairId={openRepair.id} onDone={done} onCancel={() => setAction(null)} />
           )}
           {action === 'Retire' && <RetireForm assetId={asset.id} status={asset.status} onDone={done} onCancel={() => setAction(null)} />}
-          {action === 'Dispose' && <DisposeForm assetId={asset.id} onDone={done} onCancel={() => setAction(null)} />}
+          {action === 'Dispose' && (
+            <DisposeForm
+              assetId={asset.id}
+              onDone={done}
+              onCancel={() => setAction(null)}
+              onFileProblems={(problems) => setNotice(`Disposal recorded, but these files couldn't be added: ${problems.join('; ')}`)}
+            />
+          )}
           {action && simpleActions.includes(action) && (
             <ActionForm
               key={action}
@@ -348,6 +359,8 @@ export function AssetDetailsPage({ assetId, onBack }: { assetId: string; onBack:
               onCancel={() => setAction(null)}
             />
           )}
+
+          <AssetFiles assetId={asset.id} refreshKey={refresh} onChanged={() => setRefresh((n) => n + 1)} />
         </section>
 
         <section className="panel">

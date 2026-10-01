@@ -124,6 +124,20 @@ public class AuthorisationTests(WebApplicationFactory<Program> factory) : IClass
     }
 
     [Theory]
+    [InlineData("Viewer", HttpStatusCode.Forbidden)]
+    [InlineData("Manager", HttpStatusCode.Forbidden)]
+    [InlineData("Technician", HttpStatusCode.BadRequest)]   // allowed in; the upload without a file is then refused
+    public async Task Only_it_adds_files_to_assets(string role, HttpStatusCode expected)
+    {
+        var client = await SignedInAs(role);
+
+        using var form = new MultipartFormDataContent { { new StringContent("Photo"), "kind" } };
+        var response = await client.PostAsync($"/api/assets/{Guid.NewGuid()}/attachments", form);
+
+        Assert.Equal(expected, response.StatusCode);
+    }
+
+    [Theory]
     [InlineData("Technician", HttpStatusCode.Forbidden)]
     [InlineData("Administrator", HttpStatusCode.BadRequest)]
     public async Task Only_administrators_change_starter_profiles(string role, HttpStatusCode expected)

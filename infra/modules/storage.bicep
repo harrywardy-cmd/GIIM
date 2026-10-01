@@ -1,4 +1,4 @@
-// Blob Storage: sign-in cookie keys now; asset photos and attachments later. Private network only, no account
+// Blob Storage: sign-in cookie keys, and asset photos and documents. Private network only, no account
 // keys or anonymous access: every read and write is by a managed identity with an Azure role. Deleted or
 // overwritten files can be recovered for 30 days.
 
@@ -11,6 +11,8 @@ param endpointSubnetId string
 param dnsZoneId string
 @description('Identities that read and write the cookie keys (the API).')
 param dataProtectionPrincipalIds array
+@description('Identities that read and write asset files (the API).')
+param attachmentsPrincipalIds array
 param tags object
 
 var blobDataContributor = 'ba92f5b4-2d11-453d-a403-e96b0029c9fe' // Storage Blob Data Contributor
@@ -58,6 +60,17 @@ resource attachments 'Microsoft.Storage/storageAccounts/blobServices/containers@
 resource dataProtectionAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in dataProtectionPrincipalIds: {
   name: guid(dataProtection.id, principalId, blobDataContributor)
   scope: dataProtection
+  properties: {
+    principalId: principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', blobDataContributor)
+  }
+}]
+
+// Only the attachments container: the API can't reach the cookie keys through this, nor anything else in the account.
+resource attachmentsAccess 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in attachmentsPrincipalIds: {
+  name: guid(attachments.id, principalId, blobDataContributor)
+  scope: attachments
   properties: {
     principalId: principalId
     principalType: 'ServicePrincipal'

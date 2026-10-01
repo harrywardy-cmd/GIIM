@@ -50,6 +50,7 @@ With real (copied) data, by the pilot group:
 - [ ] **Leaver:** leaver ticket → checklist lists their devices → return one, report one lost → both tasks close;
   access tasks need an administrator's approval.
 - [ ] **Labels:** print a sheet, scan with a phone and a 2D scanner.
+- [ ] **Files:** add a photo from a phone and a PDF to a device; open both from another computer.
 - [ ] **Daily email:** Setup → Notifications → **Send now** on the IT digest; check it arrives and reads well.
 - [ ] **Restore drill:** restore the test database to an hour ago ([infra/README.md](../infra/README.md), "Restoring
   the database"), then delete the copy.

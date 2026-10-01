@@ -20,6 +20,8 @@ param sqlServerFqdn string
 param databaseName string
 param dataProtectionBlobUri string
 param dataProtectionKeyUri string
+@description('Blob container for asset photos and documents.')
+param attachmentsContainerUri string
 param publicBaseUrl string
 param entraTenantId string
 param entraClientId string
@@ -75,6 +77,8 @@ var apiSettings = union(commonSettings, sharedSettings, directorySettings, {
   Giim__PublicBaseUrl: publicBaseUrl
   DataProtection__BlobUri: dataProtectionBlobUri
   DataProtection__KeyUri: dataProtectionKeyUri
+  Attachments__Mode: 'Blob'
+  Attachments__ContainerUri: attachmentsContainerUri
   Auth__Mode: 'Entra'
   Auth__Entra__TenantId: entraTenantId
   Auth__Entra__ClientId: entraClientId

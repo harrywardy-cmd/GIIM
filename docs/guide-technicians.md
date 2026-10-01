@@ -67,6 +67,11 @@ Received → Ready to deploy → Assigned → (Return requested) → Returned �
 | **Retire**, then **Record disposal** | End of life. Record how the data was dealt with, then the disposal method and certificate |
 | **Move**, **Add note**, **Print label** | Any time. Print a sheet of labels from **Assets** by ticking several devices |
 
+**Files** (on the device page, under the buttons): keep the invoice, warranty documents, repair reports and photos
+with the device. **Add files** takes photos (JPG, PNG, HEIC: on a phone it offers the camera), PDFs, Word, Excel,
+Outlook messages and text files, up to 20 MB each. The **Return** form can take photos of damage, and **Record
+disposal** the recycler's certificate. **Remove** asks why; the file is hidden but kept, and the timeline shows both.
+
 If someone changed the device while you had it open, GIIM refuses the action and asks you to refresh, so two people
 can't return the same laptop twice.
 
