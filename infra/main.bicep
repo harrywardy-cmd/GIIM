@@ -59,6 +59,9 @@ param intuneSyncInterval string = '04:00:00'
 @description('Mailbox GIIM sends emails from, e.g. giim@company.com.au. Empty: emails wait in the outbox (see docs/email-notifications.md).')
 param notificationMailbox string = ''
 
+@description('Who gets the daily IT digest and weekly warranty list, e.g. it-team@company.com.au (several: separate with ;).')
+param itTeamEmails string = ''
+
 @allowed(['None', 'Api'])
 @description('Connect to ServiceDesk Plus (docs/servicedesk-setup.md). None until its administrator has set up the API client and trigger.')
 param serviceDeskMode string = 'None'
@@ -201,6 +204,7 @@ module apps 'modules/apps.bicep' = {
     allowedIpRanges: allowedIpRanges
     intuneSyncInterval: intuneSyncInterval
     notificationMailbox: notificationMailbox
+    itTeamEmails: itTeamEmails
     serviceDeskMode: serviceDeskMode
     serviceDeskClientId: serviceDeskClientId
     keyVaultUri: keyVault.outputs.uri

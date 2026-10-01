@@ -64,6 +64,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<ServiceDeskInboundEvent> ServiceDeskInbound => Set<ServiceDeskInboundEvent>();
     public DbSet<ServiceDeskUpdate> ServiceDeskUpdates => Set<ServiceDeskUpdate>();
+    public DbSet<ScheduledJobRun> ScheduledJobRuns => Set<ScheduledJobRun>();
 
     /// <summary>Numbers device requests REQ1001, REQ1002...</summary>
     public const string RequestNumberSequence = "DeviceRequestNumbers";
@@ -380,6 +381,13 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(x => x.RequestKey).HasMaxLength(30);
             e.Property(x => x.Content).HasMaxLength(4000);
             e.Property(x => x.LastError).HasMaxLength(1000);
+        });
+
+        modelBuilder.Entity<ScheduledJobRun>(e =>
+        {
+            e.HasKey(r => r.Name);
+            e.Property(r => r.Name).HasMaxLength(50);
+            e.Property(r => r.LastResult).HasMaxLength(500);
         });
 
         modelBuilder.Entity<Notification>(e =>

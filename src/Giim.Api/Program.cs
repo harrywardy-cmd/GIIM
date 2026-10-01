@@ -4,6 +4,7 @@ using Giim.Api.Hosting;
 using Giim.Api.Security;
 using Giim.Connectors;
 using Giim.Infrastructure;
+using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
@@ -30,6 +31,8 @@ builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddHealthChecks().AddDbContextCheck<GiimDbContext>();
 builder.AddGiimAuth();
 builder.AddGiimTelemetry();
+builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
+builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
 
 // The ServiceDesk Plus webhook is the one address open without a sign-in, so it is rate-limited as well as secret-checked.
 builder.Services.AddRateLimiter(o =>
@@ -81,6 +84,7 @@ api.MapReportEndpoints();
 api.MapRequestEndpoints();
 api.MapCaseEndpoints();
 api.MapServiceDeskEndpoints();
+api.MapNotificationEndpoints();
 
 // Unknown /api addresses get 404; every other address gets the web UI (built into wwwroot when published).
 app.MapUserInterfaceFallback(api);

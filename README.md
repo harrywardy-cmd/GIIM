@@ -81,6 +81,7 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 | `People:FilePath` | Staff directory export used by People sync until the Active Directory source exists |
 | `DataProtection:BlobUri`, `DataProtection:KeyUri` | Where the sign-in cookie keys are kept in Azure (Blob Storage, wrapped by a Key Vault key) so every instance shares them. Set by the deployment; leave empty locally |
 | `ServiceDesk:*` | ServiceDesk Plus connection: `Mode` (`None`, `File` stand-in, `Api`), Zoho client, webhook secret; ticket field mapping in `config/servicedesk.json`. See [docs/servicedesk-setup.md](docs/servicedesk-setup.md) |
+| `Reminders:*` | Manager emails, approval and return reminders, daily IT digest and weekly warranty list; `ItTeamAddresses` says who gets the digests. See [docs/email-notifications.md](docs/email-notifications.md) |
 | `Email:Mode`, `Email:FromMailbox` | How the workers send request emails: `File` (written to `artifacts/mail` on a developer PC), `Graph` (Microsoft 365, in Azure) or `None`. See [docs/email-notifications.md](docs/email-notifications.md) |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | Sends logs and telemetry to Application Insights. Set by the deployment; leave empty locally |
 

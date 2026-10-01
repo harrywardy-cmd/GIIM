@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
+  Bell,
   Boxes,
   ChartColumn,
   ClipboardCheck,
@@ -35,6 +36,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { ImportPage } from './pages/ImportPage'
 import { LocationsPage } from './pages/LocationsPage'
 import { PeoplePage } from './pages/PeoplePage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { PersonProfile } from './pages/PersonProfile'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ReconciliationPage } from './pages/ReconciliationPage'
@@ -62,6 +64,7 @@ export type PageKey =
   | 'locations'
   | 'profiles'
   | 'servicedesk'
+  | 'notifications'
 
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean; approversOnly?: boolean }
 
@@ -99,6 +102,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { key: 'locations', label: 'Locations', icon: <MapPin size={18} /> },
       { key: 'profiles', label: 'Starter profiles', icon: <ListChecks size={18} /> },
       { key: 'servicedesk', label: 'ServiceDesk Plus', icon: <Link2 size={18} />, adminOnly: true },
+      { key: 'notifications', label: 'Notifications', icon: <Bell size={18} />, adminOnly: true },
     ],
   },
 ]
@@ -246,6 +250,7 @@ function Shell({ user }: { user: User }) {
     cases: <CasesPage />,
     profiles: <ProfilesPage />,
     servicedesk: <ServiceDeskPage />,
+    notifications: <NotificationsPage />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
     locations: <LocationsPage />,

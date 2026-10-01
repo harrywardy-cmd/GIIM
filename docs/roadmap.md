@@ -87,7 +87,9 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
    SDP hardware request templates retired or pointed at GIIM (agree with the SDP administrator)
 8. ✅ **Purchasing** (N15) and **receiving** (N16): approved request → PO → delivery → asset record created → handed
    over with accessories; or handed over from stock
-9. **Other notifications** (N21): in-app and email for receipt, returns, repairs, warranty and overdue returns
+9. ◐ **Other notifications** (N21): ✅ emails to starters' and leavers' managers, approval reminders, unreturned-equipment
+   reminders, a daily IT digest and a weekly warranty list, all sent once and visible under Setup → Notifications.
+   Still to do: in-app notifications (a bell), and repair updates
 10. ✅ Request report added to Reports (approval rate, time to decide, time to hand over), and a pending-approval tile on the dashboard
 
 ## Phase 3: Onboarding automation (low risk first)

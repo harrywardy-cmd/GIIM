@@ -1,6 +1,10 @@
 # Email notifications
 
-GIIM emails people about device requests:
+GIIM emails people about device requests, new starters and leavers, and sends the IT team a daily digest.
+Administrators can see every email and whether it was sent under **Setup → Notifications**.
+
+## Device requests
+
 
 | When | Who gets it |
 |---|---|
@@ -11,6 +15,30 @@ GIIM emails people about device requests:
 | The device is handed over | The person who raised it |
 
 Nobody is emailed about their own action. Every email links straight to the request in GIIM.
+
+## Starters, leavers and reminders
+
+| When | Who gets it |
+|---|---|
+| A starter checklist is created | Their manager: start date, the devices being arranged (and which requests need their approval), apps and access |
+| A leaver checklist is created | Their manager: last day and the equipment to collect |
+| A device request has waited 2 days for approval | The approver, then every 2 days, at most 3 reminders |
+| A leaver's last day has passed and equipment is still out | Their manager, the next day, then weekly, at most 3 reminders |
+| Daily at 07:30 | The IT team: overdue checklists, unreturned equipment, starters and leavers in the next 3 days, device requests held up. **Only sent when something needs attention** |
+| Mondays at 07:30 | The IT team: warranties ending in the next 30 days |
+
+Each email is sent once: checklists and requests remember what was sent, and each scheduled job remembers the day it
+last ran, so restarts and frequent checks never send anything twice. **Setup → Notifications → Send now** sends a
+digest straight away (useful to check it); that counts as that day's run.
+
+| Setting (`Reminders:`) | Default |
+|---|---|
+| `ItTeamAddresses` | Who gets the digests, separated by `;`. In Azure: `itTeamEmails` in the `.bicepparam` file |
+| `Enabled`, `ManagerEmails` | `true`, `true` |
+| `DigestTime`, `WarrantyDay`, `TimeZone` | `07:30`, `Monday`, `Australia/Sydney` |
+| `DueSoonDays`, `WarrantyDays` | `3`, `30` |
+| `ApprovalReminderAfter`, `MaxApprovalReminders` | 2 days, `3` |
+| `ReturnReminderEvery`, `MaxReturnReminders` | 7 days, `3` |
 
 ## How it works
 
