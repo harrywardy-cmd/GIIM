@@ -170,7 +170,7 @@ internal static class RequestEndpoints
             return Results.Ok(new { change.ToStatus });
         });
 
-    private static Task<RequestActor> ActorAsync(RequestService requests, ICurrentUser user, CancellationToken ct) =>
+    internal static Task<RequestActor> ActorAsync(RequestService requests, ICurrentUser user, CancellationToken ct) =>
         requests.ActorAsync(user.Name, user.DisplayName, user.Email, user.ObjectId,
             user.IsInRole(Roles.Administrator), user.IsInRole(Roles.Technician), user.IsInRole(Roles.Manager), ct);
 

@@ -91,7 +91,8 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
    over with accessories; or handed over from stock
 9. ◐ **Other notifications** (N21): ✅ emails to starters' and leavers' managers, approval reminders, unreturned-equipment
    reminders, a daily IT digest and a weekly warranty list, all sent once and visible under Setup → Notifications.
-   Still to do: in-app notifications (a bell), and repair updates
+   ✅ **In-app**: a bell showing what needs each person now (approvals, questions, handovers, starters and leavers due,
+   checklist approvals, and for administrators tickets GIIM couldn't use, failed syncs and emails). Still to do: repair updates
 10. ✅ Request report added to Reports (approval rate, time to decide, time to hand over), and a pending-approval tile on the dashboard
 
 ## Phase 3: Onboarding automation (low risk first)

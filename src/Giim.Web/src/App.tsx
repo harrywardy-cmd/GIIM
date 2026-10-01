@@ -21,6 +21,8 @@ import {
   Upload,
   Users,
 } from 'lucide-react'
+import { AttentionBell } from './AttentionBell'
+import type { AttentionSummary } from './attention'
 import { api, signedOutEvent } from './api'
 import { NoAccessPage, SignInPage } from './pages/SignInPage'
 import { initials, permissions, UserContext, type User } from './user'
@@ -151,21 +153,11 @@ function Shell({ user }: { user: User }) {
   const { canAdminister } = permissions(user)
   // Managers and administrators decide requests; everyone else has no approvals queue.
   const isApprover = user.roles.includes('Manager') || user.roles.includes('Administrator')
-  const [awaiting, setAwaiting] = useState(0)
+  const [attention, setAttention] = useState<AttentionSummary | null>(null)
   const [requestsChanged, setRequestsChanged] = useState(0)
   const onRequestsChanged = () => setRequestsChanged((n) => n + 1)
-
-  // The Approvals badge: refreshed after any request change and every minute.
-  useEffect(() => {
-    if (!isApprover) return
-    const load = () =>
-      api<{ count: number }>('/api/requests/awaiting-count')
-        .then((r) => setAwaiting(r.count))
-        .catch(() => undefined)
-    load()
-    const timer = setInterval(load, 60_000)
-    return () => clearInterval(timer)
-  }, [isApprover, requestsChanged])
+  // The Approvals badge counts the same requests as the bell's approvals group.
+  const awaiting = isApprover ? (attention?.groups.find((g) => g.key === 'approvals')?.count ?? 0) : 0
   const [page, setPage] = useState<PageKey>('dashboard')
   // A QR label or shared link opens the asset straight away.
   const [views, setViews] = useState<View[]>(() => {
@@ -181,6 +173,31 @@ function Shell({ user }: { user: User }) {
   const [assetSearch, setAssetSearch] = useState('')
   const searchRef = useRef<HTMLInputElement>(null)
   const current = views.at(-1)
+
+  // The bell (and the Approvals badge): every minute, when GIIM comes back into view, and on moving around or changing
+  // a request, so something just dealt with disappears straight away.
+  useEffect(() => {
+    const load = () =>
+      api<AttentionSummary>('/api/attention')
+        .then(setAttention)
+        .catch(() => undefined)
+    load()
+    const timer = setInterval(load, 60_000)
+    const visible = () => {
+      if (document.visibilityState === 'visible') load()
+    }
+    document.addEventListener('visibilitychange', visible)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', visible)
+    }
+  }, [requestsChanged, page, views.length])
+
+  // The count in the browser tab, so it shows while GIIM is in the background.
+  const total = attention?.total ?? 0
+  useEffect(() => {
+    document.title = total > 0 ? `(${total}) GIIM` : 'GIIM'
+  }, [total])
 
   const show = (next: View[]) => {
     setViews(next)
@@ -341,6 +358,13 @@ function Shell({ user }: { user: User }) {
               />
             </div>
             <div className="topbar-actions">
+              <AttentionBell
+                summary={attention}
+                onOpenItem={(item) =>
+                  item.target === 'Request' ? nav.openRequest(item.id) : item.target === 'Case' ? nav.openCase(item.id) : go(item.id as PageKey)
+                }
+                onViewAll={(target) => go(target as PageKey)}
+              />
               <button className="icon-button" title="Scan a barcode" aria-label="Scan a barcode" onClick={() => searchRef.current?.focus()}>
                 <ScanLine size={18} />
               </button>
