@@ -4,6 +4,7 @@ using Giim.Connectors.Email;
 using Giim.Connectors.People;
 using Giim.Connectors.ServiceDesk;
 using Giim.Infrastructure;
+using Giim.Infrastructure.Automation;
 using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.ServiceDesk;
@@ -41,6 +42,9 @@ if (builder.Configuration.GetValue<EmailMode?>("Email:Mode") is EmailMode.File o
 builder.Services.AddHostedService<NotificationWorker>();
 
 builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
+builder.Services.Configure<AutomationOptions>(builder.Configuration.GetSection(AutomationOptions.SectionName));
+// GIIM's own automation steps (cloud-sync wait, welcome email); the on-prem agent does the AD and Exchange ones.
+builder.Services.AddHostedService<AutomationWorker>();
 builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
 // Manager emails, reminders and digests (Reminders:Enabled, on unless switched off).
 if (builder.Configuration.GetValue<bool?>("Reminders:Enabled") ?? true)

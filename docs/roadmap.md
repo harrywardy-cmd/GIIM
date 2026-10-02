@@ -97,12 +97,15 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
 
 ## Phase 3: Onboarding automation (low risk first)
 
-1. On-prem agent (Windows service, outbound via Service Bus)
-2. Create AD user in the correct OU → wait for Entra Connect sync
-3. `Enable-RemoteMailbox` (hybrid) → M365 licence group
-4. Security group membership from the profile (AD groups via the agent; cloud-only groups via Graph) → app access
-5. Activate on start date; welcome email to manager
-6. Dry-run mode and full audit for every step
+1. ◐ **On-prem agent** ✅ (Windows service, outbound HTTPS to GIIM; its own Entra identity with a certificate; group
+   allow-list; see `docs/onprem-agent.md`). Built and tested with a **stand-in directory**; the real AD and Exchange
+   steps wait for the AD administrators' decisions (username format, OUs, groups, service account)
+2. ✅ Create AD user (disabled, random password GIIM never sees) in the right OU → ✅ wait for Entra Connect sync (Graph)
+3. ✅ `Enable-RemoteMailbox` (hybrid) → ✅ M365 licence group
+4. ✅ AD group membership from the profile → app access. Still to do: cloud-only groups via Graph
+5. ✅ Enable on the start date; ✅ welcome email to manager
+6. ✅ Dry-run mode (on by default) and a full record of every step; ✅ retry, or stop and do by hand
+7. Still to do: start automatically when a starter ticket arrives (a setting, once trusted)
 
 ## Phase 4: Offboarding automation (approval-gated)
 

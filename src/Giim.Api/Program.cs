@@ -4,6 +4,7 @@ using Giim.Api.Hosting;
 using Giim.Api.Security;
 using Giim.Connectors;
 using Giim.Infrastructure;
+using Giim.Infrastructure.Automation;
 using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -31,9 +32,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
 builder.Services.AddHealthChecks().AddDbContextCheck<GiimDbContext>();
 builder.AddGiimAuth();
+builder.AddGiimAgentAuth();
 builder.AddGiimTelemetry();
 builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim"));
 builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
+builder.Services.Configure<AutomationOptions>(builder.Configuration.GetSection(AutomationOptions.SectionName));
 
 // The ServiceDesk Plus webhook is the one address open without a sign-in, so it is rate-limited as well as secret-checked.
 builder.Services.AddRateLimiter(o =>
@@ -42,6 +45,13 @@ builder.Services.AddRateLimiter(o =>
     o.AddFixedWindowLimiter(ServiceDeskEndpoints.RateLimitPolicy, w =>
     {
         w.PermitLimit = 120;
+        w.Window = TimeSpan.FromMinutes(1);
+        w.QueueLimit = 0;
+    });
+    // The on-prem agent polls every 15 seconds; this leaves room for results without letting a stolen credential hammer GIIM.
+    o.AddFixedWindowLimiter("agent", w =>
+    {
+        w.PermitLimit = 300;
         w.Window = TimeSpan.FromMinutes(1);
         w.QueueLimit = 0;
     });
@@ -62,12 +72,14 @@ app.UseAuthorization();
 app.UseCsrfHeaderCheck();
 app.UseRateLimiter();
 
-// Anonymous: health probes, sign-in, sign-in configuration and the ServiceDesk Plus webhook (secret-checked). /health/live only says the app is running (Azure
+// Anonymous: health probes, sign-in, sign-in configuration and the ServiceDesk Plus webhook (secret-checked). The on-prem
+// agent's /agent endpoints use its own sign-in (AgentAuth). /health/live only says the app is running (Azure
 // restarts an instance that fails it); /health also checks the database.
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/health");
 app.MapAuthEndpoints();
 app.MapServiceDeskWebhook();
+app.MapAgentEndpoints();
 
 // Everything else needs a GIIM role; changes need Technician (see AuthSetup.MapSecuredApi).
 var api = app.MapSecuredApi();
@@ -88,6 +100,7 @@ api.MapCaseEndpoints();
 api.MapServiceDeskEndpoints();
 api.MapNotificationEndpoints();
 api.MapAttentionEndpoints();
+api.MapAutomationEndpoints();
 
 // Unknown /api addresses get 404; every other address gets the web UI (built into wwwroot when published).
 app.MapUserInterfaceFallback(api);

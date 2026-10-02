@@ -473,6 +473,8 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); bo
 .task-Done .task-mark { background: var(--success); border-color: var(--success); }
 .task-Skipped .task-mark { background: var(--muted); border-color: var(--muted); }
 .task-Waiting .task-mark { border-color: var(--accent); color: var(--accent); }
+.task-Running .task-mark { border-color: var(--accent); color: var(--accent); }
+.task-Failed .task-mark { background: var(--danger); border-color: var(--danger); }
 .task-body { flex: 1; min-width: 0; display: grid; gap: 4px; }
 .task-title.finished { color: var(--muted); }
 .task-Skipped .task-title { text-decoration: line-through; }
@@ -501,3 +503,19 @@ textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--border); bo
   .inbound-Failed, .update-Failed { background: #43181a; color: #ff9a92; }
 }
 code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--surface-2); }
+
+/* Starter checklist automation (the on-prem agent and GIIM's own steps). */
+.automation h3 { display: flex; align-items: center; gap: 6px; }
+.automation-preview { margin: 4px 0 8px; padding-left: 20px; display: grid; gap: 3px; }
+.automation-steps { list-style: none; margin: 14px 0 0; padding: 0; }
+.automation-steps li { display: grid; gap: 3px; padding: 8px 0; border-top: 1px solid var(--border); }
+.automation-step-head { display: flex; align-items: baseline; gap: 8px; }
+.automation-step-head .tag { flex: none; }
+.automation-step-actions { display: flex; gap: 14px; }
+.automation-step-actions button { display: inline-flex; align-items: center; gap: 4px; }
+.tag.step-Succeeded:not(.dry) { background: #e5f6ed; color: #12744f; border-color: transparent; }
+.tag.step-Running, .tag.step-Queued { color: var(--accent); border-color: var(--accent); }
+.tag.step-Failed { background: var(--danger); color: #fff; border-color: transparent; }
+@media (prefers-color-scheme: dark) {
+  .tag.step-Succeeded:not(.dry) { background: #133a2b; color: #6ee0a8; }
+}

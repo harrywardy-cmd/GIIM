@@ -34,8 +34,18 @@ internal static partial class GraphReader
         }
     }
 
+    /// <summary>One object, or null if Graph says it doesn't exist (404).</summary>
+    public static async Task<T?> GetAsync<T>(HttpClient http, TokenCredential credential, Uri url, int maxRetries, ILogger logger,
+        CancellationToken cancellationToken) where T : class
+    {
+        using var response = await SendWithRetryAsync(http, credential, url, maxRetries, logger, cancellationToken, allowNotFound: true);
+        return response.StatusCode == HttpStatusCode.NotFound
+            ? null
+            : await response.Content.ReadFromJsonAsync<T>(JsonSerializerOptions.Web, cancellationToken);
+    }
+
     private static async Task<HttpResponseMessage> SendWithRetryAsync(HttpClient http, TokenCredential credential, Uri url, int maxRetries,
-        ILogger logger, CancellationToken cancellationToken)
+        ILogger logger, CancellationToken cancellationToken, bool allowNotFound = false)
     {
         for (var attempt = 1; ; attempt++)
         {
@@ -44,7 +54,7 @@ internal static partial class GraphReader
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
 
             var response = await http.SendAsync(request, cancellationToken);
-            if (response.IsSuccessStatusCode) return response;
+            if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound) return response;
 
             var retryable = response.StatusCode is HttpStatusCode.TooManyRequests
                 or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;

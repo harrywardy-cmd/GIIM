@@ -1,4 +1,5 @@
 using Giim.Domain.Assets;
+using Giim.Domain.Automation;
 using Giim.Domain.People;
 using Giim.Domain.Provisioning;
 using Giim.Domain.Software;
@@ -18,10 +19,11 @@ public static class ChecklistGenerator
         var serviceCase = NewCase(CaseType.Onboarding, person, serviceDeskRequestId, person.StartDate, createdBy);
         serviceCase.RoleProfileId = profile.Id;
 
-        Add(serviceCase, "Create AD account", TaskKind.Automated);
-        Add(serviceCase, "Wait for Entra Connect to sync the new account to Microsoft 365", TaskKind.Automated);
+        Add(serviceCase, "Create AD account", TaskKind.Automated, step: AutomationStep.CreateAccount);
+        Add(serviceCase, "Wait for Entra Connect to sync the new account to Microsoft 365", TaskKind.Automated,
+            step: AutomationStep.WaitForCloudSync);
         if (person.Track == ProvisioningTrack.Full)
-            Add(serviceCase, "Enable remote mailbox (hybrid Exchange)", TaskKind.Automated);
+            Add(serviceCase, "Enable remote mailbox (hybrid Exchange)", TaskKind.Automated, step: AutomationStep.EnableRemoteMailbox);
 
         foreach (var item in profile.Items)
         {
@@ -34,12 +36,15 @@ public static class ChecklistGenerator
                 ProfileItemType.StockItem     => ($"Issue from stock: {item.Description}", TaskKind.Manual),
                 _                             => (item.Description, TaskKind.Manual),
             };
+            // Apps with an access group, security groups and licence groups are AD group memberships the agent can add.
+            var group = kind == TaskKind.Automated && !string.IsNullOrWhiteSpace(item.GroupName) ? item.GroupName.Trim() : null;
             Add(serviceCase, title, kind, TaskSource.ProfileItem, item.Id,
-                categoryId: item.Type == ProfileItemType.Hardware ? item.CategoryId : null);
+                categoryId: item.Type == ProfileItemType.Hardware ? item.CategoryId : null,
+                step: group is null ? null : AutomationStep.AddToGroup, stepTarget: group);
         }
 
-        Add(serviceCase, "Enable the account on the start date", TaskKind.Automated);
-        Add(serviceCase, "Send welcome email to manager", TaskKind.Automated);
+        Add(serviceCase, "Enable the account on the start date", TaskKind.Automated, step: AutomationStep.EnableAccount);
+        Add(serviceCase, "Send welcome email to manager", TaskKind.Automated, step: AutomationStep.SendWelcomeEmail);
         return serviceCase;
     }
 
@@ -88,7 +93,8 @@ public static class ChecklistGenerator
         };
 
     private static void Add(ServiceCase serviceCase, string title, TaskKind kind, TaskSource source = TaskSource.None,
-        Guid? sourceId = null, Guid? categoryId = null, bool requiresApproval = false) =>
+        Guid? sourceId = null, Guid? categoryId = null, bool requiresApproval = false, AutomationStep? step = null,
+        string? stepTarget = null) =>
         serviceCase.Tasks.Add(new ChecklistTask
         {
             CaseId = serviceCase.Id,
@@ -99,5 +105,7 @@ public static class ChecklistGenerator
             SourceId = sourceId,
             CategoryId = categoryId,
             RequiresApproval = requiresApproval,
+            Step = step,
+            StepTarget = stepTarget,
         });
 }

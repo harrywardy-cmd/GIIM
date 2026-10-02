@@ -1,5 +1,6 @@
 using Azure.Core;
 using Azure.Identity;
+using Giim.Connectors.CloudAccounts;
 using Giim.Connectors.Email;
 using Giim.Connectors.Intune;
 using Giim.Connectors.People;
@@ -70,6 +71,14 @@ public static class DependencyInjection
             services.AddHttpClient<IPeopleSource, EntraPeopleSource>(client => client.Timeout = TimeSpan.FromMinutes(2));
         else
             services.AddSingleton<IPeopleSource, FilePeopleSource>();
+
+        // Whether a new account has reached Entra ID yet (automation): Graph in Azure, the stand-in agent's file locally.
+        var cloud = configuration.GetSection(CloudDirectoryOptions.SectionName);
+        services.Configure<CloudDirectoryOptions>(cloud);
+        if (cloud.GetValue<CloudDirectorySource?>(nameof(CloudDirectoryOptions.Source)) == CloudDirectorySource.Graph)
+            services.AddHttpClient<ICloudDirectory, GraphCloudDirectory>(client => client.Timeout = TimeSpan.FromSeconds(30));
+        else
+            services.AddSingleton<ICloudDirectory, FileCloudDirectory>();
 
         return services;
     }

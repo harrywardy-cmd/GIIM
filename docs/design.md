@@ -5,8 +5,9 @@ for developers joining the project and for the IT staff reviewing it before go-l
 
 > **Status (2 October 2026):** the features below are built and tested locally, including a load test at real
 > scale. Nothing is deployed yet; [go-live-checklist.md](go-live-checklist.md) lists the steps.
-> Account creation and removal in AD, Exchange and Entra are still manual checklist steps; automating them through an
-> on-premises agent is the next piece of work ([roadmap.md](roadmap.md), Phase 3).
+> Starter account steps can be automated through the on-prem agent (section 5.14); its real AD and Exchange steps wait
+> for the AD administrators' decisions, so for now it runs against a stand-in directory. Leaver steps are still manual
+> ([roadmap.md](roadmap.md), Phases 3-4).
 
 **Contents:** [1 Purpose](#1-purpose) · [2 Tech stack](#2-tech-stack) · [3 How it fits together](#3-how-it-fits-together) ·
 [4 Roles](#4-roles-and-permissions) · [5 Features](#5-features) · [6 Data model](#6-data-model) ·
@@ -58,6 +59,7 @@ flowchart LR
   Infra --> Domain
   Connectors["Giim.Connectors<br/>Graph, ServiceDesk Plus, email, directory"] --> Domain
   Domain["Giim.Domain<br/>entities and business rules<br/>(no dependencies)"]
+  Agent["Giim.Agent<br/>on-prem Windows service<br/>(standalone)"] -- "HTTPS /agent" --> Api
 ```
 
 | Project | Holds |
@@ -67,6 +69,7 @@ flowchart LR
 | `Giim.Infrastructure` | `GiimDbContext` and migrations, and one service per feature (e.g. `AssignmentService`, `CaseService`, `RequestService`) |
 | `Giim.Api` | Minimal API endpoints (`Endpoints/`), sign-in and authorisation (`Security/`), security headers and static UI (`Hosting/`) |
 | `Giim.Workers` | Background services: syncs, ServiceDesk Plus, email sending, reminders |
+| `Giim.Agent` | The on-prem agent: a Windows service that takes starter automation jobs from GIIM and carries them out in AD and Exchange (stand-in directory for now). Standalone, so it deploys on its own |
 | `Giim.Web` | The UI: `src/pages/` (one file per page or form), `src/App.tsx` (shell, navigation, bell) |
 | `tools/SampleData` | Generates the fake test data in `samples/` |
 | `infra/` | Bicep templates, deployment and permission scripts |
@@ -90,7 +93,7 @@ flowchart TB
   Entra["Microsoft Entra ID"]
   Graph["Microsoft Graph<br/>Intune · users · mail"]
   Sdp["ServiceDesk Plus Cloud"]
-  Agent["On-prem agent (planned)<br/>AD · Exchange"]
+  Agent["On-prem agent<br/>AD · Exchange"]
 
   Browser -- "HTTPS, session cookie" --> Api
   Browser -. "sign-in" .-> Entra
@@ -102,7 +105,7 @@ flowchart TB
   Workers --> Sdp
   Api -- "admin 'sync now'" --> Graph
   Sdp -- "webhook: ticket ID only" --> Api
-  Agent -. "outbound HTTPS (planned)" .-> Api
+  Agent -- "outbound HTTPS: jobs and results" --> Api
 ```
 
 - **The UI never calls other systems directly.** Workers copy what GIIM needs (Intune devices, staff, tickets) into
@@ -331,6 +334,24 @@ view showing everything recorded against a ticket; and top-bar search across ass
 - **Automated tests:** `ReportExporterTests` (including protection against spreadsheet formula injection).
 - **Try it:** **Reports → Asset inventory → Excel**; search a ticket number from a device's timeline.
 
+### 5.14 Starter automation (on-prem agent)
+
+A technician clicks **Run automated steps** on a starter checklist after a preview. GIIM queues jobs in order: the
+on-prem agent creates the AD account (disabled, random password GIIM never sees), enables the remote mailbox and adds
+the profile's groups; GIIM waits for the account to reach Entra ID; the agent enables it at 06:00 on the start date;
+GIIM emails the manager. Each step ticks its task off, or fails with the reason for a technician to retry or do by
+hand. Dry-run mode (the default) only reports what would happen. The agent connects outbound only, signs in with its
+own certificate, and refuses privileged groups and any group not on its allow-list.
+
+- **Code:** `Domain/Automation` (`AutomationJob`, `AutomationPlanner`), `Infrastructure/Automation/AutomationService.cs`,
+  `Connectors/CloudAccounts`, `Endpoints/AutomationEndpoints.cs`, `Security/AgentAuth.cs`, `Workers/AutomationWorker.cs`;
+  the agent in `src/Giim.Agent`; UI `AutomationPanel.tsx`, `AutomationPage.tsx`.
+- **Automated tests:** `AutomationTests` (planning order, start-date waits, dry runs, claims and leases, retries),
+  `AgentAuthTests` (only the agent's credential reaches `/agent`; only IT starts automation), `Giim.Agent.Tests`
+  (usernames, each step against a stand-in directory, dry runs, group allow-list).
+- **Try it:** run the API, workers and `dotnet run --project src/Giim.Agent`; open a starter checklist → **Automation**
+  → **Run automated steps**. See [onprem-agent.md](onprem-agent.md) for a real (non-dry) run and a failing step.
+
 ---
 
 ## 6. Data model
@@ -374,6 +395,9 @@ erDiagram
   ServiceDeskInboundEvent }o--o| ServiceCase : "created"
   ServiceCase ||--o{ ServiceDeskUpdate : "notes to the ticket"
   DeviceRequest ||--o{ Notification : "emails"
+  ServiceCase ||--o{ AutomationJob : "automated steps"
+  ChecklistTask ||--o{ AutomationJob : "carried out by"
+  AutomationJob |o--o{ AutomationJob : "waits for"
 ```
 
 | Table | What it is |
@@ -390,6 +414,7 @@ erDiagram
 | `DeviceRequests`, `DeviceRequestEvents` | Requests and their history (append-only) |
 | `ServiceDeskInboundEvents`, `ServiceDeskUpdates` | Tickets in (inbox) and notes out (outbox) |
 | `Notifications`, `ScheduledJobRuns` | Emails (outbox); when each daily or weekly job last ran |
+| `AutomationJobs`, `AgentCheckIns` | Starter automation steps (one active per task, guaranteed by the database), and when each agent last checked in |
 | `AuditEntries` | Audit log (append-only) |
 
 Concurrency: `Assets`, `DeviceRequests` and `Cases` carry a row version, and actions send the status the user saw,
@@ -430,7 +455,8 @@ flowchart LR
 | A checklist's tasks are all done | It completes; the ticket can be resolved |
 | The directory sync runs | Updates people and managers (so approvers are right); never deletes anyone |
 | The Intune sync runs | Links assets to devices; feeds reconciliation and "last seen" on each asset |
-| Anything fails (ticket, sync, email) | Shown in the Administrator's bell and on the relevant Setup page; alerts in Azure |
+| Starter automation runs | Each step ticks its checklist task; GIIM records the new account's sign-in name, AD GUID, Entra ID and email; the manager is emailed on the start date |
+| Anything fails (ticket, sync, email, automated step) | Shown in the bell (IT or Administrators) and on the relevant Setup page; alerts in Azure |
 
 ---
 
@@ -454,6 +480,8 @@ flowchart LR
    local file-based version, so the whole system runs and is testable on a developer PC.
 9. **Nothing destructive without approval.** Disabling accounts and converting mailboxes need an Administrator's
    approval and a second person.
+10. **Automation is a queue the agent pulls from.** Jobs run in order, are held for a limited time (a dead agent's
+    jobs are handed out again), and every step is safe to repeat; GIIM never holds a password.
 
 ---
 
@@ -467,6 +495,7 @@ All in `Giim.Workers` (one instance in Azure):
 | `PeopleSyncWorker` | Every 4 hours (`People:SyncInterval`), Entra source only | Reads staff from Entra ID |
 | `ServiceDeskWorker` | Every 30 seconds | Processes incoming tickets; sends notes to tickets |
 | `NotificationWorker` | Every 30 seconds | Sends waiting emails, with retries |
+| `AutomationWorker` | Every 30 seconds | GIIM's automation steps: waiting for a new account in Entra ID, the welcome email |
 | `ReminderWorker` | Every 5 minutes | Manager emails, approval and return reminders; the daily digest and weekly warranty list at 07:30 Sydney time |
 
 ---
@@ -483,6 +512,8 @@ All in `Giim.Workers` (one instance in Azure):
   the browser can't run them.
 - **Inputs:** the ServiceDesk webhook is secret-checked, size-limited and rate-limited, and only a ticket ID is taken
   from it; spreadsheet exports are protected against formula injection.
+- **On-prem agent:** outbound only; its own Entra identity with a certificate, accepted only on `/agent`; least-privilege
+  AD rights; privileged groups always refused (details in [onprem-agent.md](onprem-agent.md)).
 - **Audit:** every action records who did it; SQL, Key Vault and storage access are logged.
 
 More: [infra/README.md](../infra/README.md) ("Security design").
@@ -494,15 +525,16 @@ More: [infra/README.md](../infra/README.md) ("Security design").
 ### Automated tests
 
 ```powershell
-dotnet test Giim.slnx                         # 349 tests, no database needed
+dotnet test Giim.slnx                         # 399 tests, no database needed
 cd src/Giim.Web; npm run lint; npx tsc -b      # UI lint and type checks
 ```
 
 | Suite | Tests | Covers |
 |---|---|---|
-| `Giim.Domain.Tests` | 219 | Business rules: lifecycle, assignments, repairs, checklists, requests, imports, reconciliation, stock, file rules |
+| `Giim.Domain.Tests` | 239 | Business rules: lifecycle, assignments, repairs, checklists, requests, imports, reconciliation, stock, file rules, automation planning and jobs |
 | `Giim.Infrastructure.Tests` | 78 | Graph clients against simulated responses, the directory source, file storage, reminders, emails, exports, the sample data end to end |
-| `Giim.Api.Tests` | 52 | The real API in memory: sign-in, each role's access, the change rule on every endpoint, sessions, the webhook, hosting headers |
+| `Giim.Api.Tests` | 58 | The real API in memory: sign-in, each role's access, the change rule on every endpoint, sessions, the webhook, the agent's sign-in, hosting headers |
+| `Giim.Agent.Tests` | 24 | The agent: usernames, each step against a stand-in directory, dry runs, the group allow-list |
 
 CI runs all of these, the UI checks and a Bicep build on every push (`.github/workflows/ci.yml`).
 
@@ -516,6 +548,7 @@ dotnet tool restore
 dotnet ef database update --project src/Giim.Infrastructure   # create or upgrade the database
 dotnet run --project src/Giim.Api                              # API on http://localhost:5080
 dotnet run --project src/Giim.Workers                          # background jobs (health on :5081)
+dotnet run --project src/Giim.Agent                            # stand-in on-prem agent (optional)
 cd src/Giim.Web; npm install; npm run dev                      # UI on http://localhost:5173
 ```
 
@@ -528,6 +561,7 @@ Open http://localhost:5173 and pick a name and role. Locally every integration u
 | ServiceDesk Plus | `samples/servicedesk-requests.json` in, notes out | `artifacts/servicedesk/notes.log` |
 | Email | `.eml` files | `artifacts/mail` |
 | Files | A folder | `artifacts/attachments` |
+| AD and Exchange (agent) | A pretend directory | `artifacts/agent/directory.json` |
 
 `dotnet run tools/SampleData/generate-sample-data.cs` regenerates the fake data (1,500 people, 20 departments, about
 4,800 devices, a messy spreadsheet, tickets and an Intune export). No real staff data goes in the repository;
@@ -564,4 +598,5 @@ section 3.
 | [guide-technicians.md](guide-technicians.md), [guide-managers.md](guide-managers.md) | How to use GIIM |
 | [infra/README.md](../infra/README.md) | Azure environment, deployment, day-to-day operations |
 | [entra-setup.md](entra-setup.md), [staff-directory.md](staff-directory.md), [intune-app-registration.md](intune-app-registration.md), [servicedesk-setup.md](servicedesk-setup.md), [email-notifications.md](email-notifications.md) | Setting up each integration |
+| [onprem-agent.md](onprem-agent.md) | Starter automation and the on-prem agent: how it works, security, decisions for AD admins |
 | [lifecycle-gap-analysis.md](lifecycle-gap-analysis.md) | How the asset lifecycle brief maps onto GIIM |

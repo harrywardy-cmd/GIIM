@@ -127,6 +127,42 @@ public sealed class ServiceCase : Entity
         UpdatedAt = now;
     }
 
+    // ---- Automation ----------------------------------------------------------------------------------------------
+
+    /// <summary>An automated step has been queued: Running, or Waiting when it is held until a date.</summary>
+    public ChecklistTask StartAutomatedTask(Guid taskId, bool waitingForDate, string note, DateTimeOffset now)
+    {
+        var task = OpenTask(taskId);
+        if (task.Step is null) throw new DomainException($"“{task.Title}” can't be automated.");
+        task.Status = waitingForDate ? TaskState.Waiting : TaskState.Running;
+        task.Notes = AppendNote(task.Notes, note);
+        task.UpdatedAt = now;
+        Refresh(now);
+        return task;
+    }
+
+    /// <summary>The automated step failed: the task shows why, for a person to retry it or do it by hand.</summary>
+    public ChecklistTask FailAutomatedTask(Guid taskId, string error, DateTimeOffset now)
+    {
+        var task = OpenTask(taskId);
+        task.Status = TaskState.Failed;
+        task.Notes = AppendNote(task.Notes, $"Automation failed: {error}");
+        task.UpdatedAt = now;
+        Refresh(now);
+        return task;
+    }
+
+    /// <summary>Back to a person (automation stopped, or a dry run finished): the task is pending again.</summary>
+    public ChecklistTask ReturnTaskToPerson(Guid taskId, string note, DateTimeOffset now)
+    {
+        var task = OpenTask(taskId);
+        task.Status = TaskState.Pending;
+        task.Notes = AppendNote(task.Notes, note);
+        task.UpdatedAt = now;
+        Refresh(now);
+        return task;
+    }
+
     /// <summary>Links a hardware task to the device request raised for it.</summary>
     public void LinkDeviceRequest(Guid taskId, Guid requestId, string reference, string actor, DateTimeOffset now)
     {
@@ -178,11 +214,16 @@ public sealed class ServiceCase : Entity
             return;
         }
         CompletedAt = null;
-        Status = Tasks.Any(t => t.Status is TaskState.Done or TaskState.Skipped or TaskState.Waiting) ? CaseStatus.InProgress : CaseStatus.Open;
+        Status = Tasks.Any(t => t.Status is TaskState.Done or TaskState.Skipped or TaskState.Waiting or TaskState.Running or TaskState.Failed)
+            ? CaseStatus.InProgress : CaseStatus.Open;
     }
 
-    private static string AppendNote(string? existing, string note) =>
-        string.IsNullOrWhiteSpace(existing) ? note : $"{existing}\n{note}";
+    /// <summary>Adds a line to a task's notes, keeping the most recent ones if they grow past what is stored.</summary>
+    private static string AppendNote(string? existing, string note)
+    {
+        var notes = string.IsNullOrWhiteSpace(existing) ? note : $"{existing}\n{note}";
+        return notes.Length <= ChecklistTask.MaxNotesLength ? notes : "…" + notes[^(ChecklistTask.MaxNotesLength - 1)..];
+    }
 
     private static string? Clean(string? text) => string.IsNullOrWhiteSpace(text) ? null : text.Trim();
 }

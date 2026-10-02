@@ -65,7 +65,7 @@ internal static class CaseEndpoints
                 Tasks = c.Tasks.OrderBy(t => t.Order).Select(t => new
                 {
                     t.Id, t.Order, t.Title, t.Kind, t.Status, t.RequiresApproval, t.ApprovedBy, t.ApprovedAt, t.Source, t.SourceId,
-                    t.CategoryId, t.CompletedBy, t.CompletedAt, t.Notes,
+                    t.CategoryId, t.CompletedBy, t.CompletedAt, t.Notes, t.Step, t.StepTarget,
                     Request = t.DeviceRequestId is { } r && requests.TryGetValue(r, out var request) ? request : null,
                     Asset = t.Source == TaskSource.Asset && t.SourceId is { } a && assets.TryGetValue(a, out var asset) ? asset : null,
                 }),

@@ -12,8 +12,9 @@ hybrid Exchange and Microsoft Intune.
 > Status: **ready for a pilot, pending go-live set-up.** The asset register and lifecycle, Intune reconciliation, device
 > requests and approvals, starter and leaver checklists, the ServiceDesk Plus connection, email notifications and reports
 > are built and tested, including a load test at 1,500 staff, 34,000 assets and 150,000 Intune devices. Nothing is
-> deployed yet: [docs/go-live-checklist.md](docs/go-live-checklist.md) lists the steps, in order. Account creation and
-> removal in AD, Exchange and Entra are still done by hand and ticked off on the checklist (Phases 3-4).
+> deployed yet: [docs/go-live-checklist.md](docs/go-live-checklist.md) lists the steps, in order. Starter account steps
+> can be automated by the on-prem agent, which runs against a stand-in directory until the AD administrators agree its
+> rules ([docs/onprem-agent.md](docs/onprem-agent.md)); leaver account steps are still done by hand (Phase 4).
 >
 > **Design, features, data model and how to test each feature: [docs/design.md](docs/design.md).**
 >
@@ -46,7 +47,8 @@ hybrid Exchange and Microsoft Intune.
 | `src/Giim.Infrastructure` | EF Core `GiimDbContext`, migrations, and the services behind each feature (assets, requests, checklists, syncs, reminders, reports) |
 | `src/Giim.Connectors` | Integrations: Intune, the staff directory and email (Microsoft Graph), and ServiceDesk Plus |
 | `src/Giim.Api` | ASP.NET Core API used by the web UI and the ServiceDesk Plus webhook; serves the built UI |
-| `src/Giim.Workers` | Background jobs: Intune and staff directory syncs, ServiceDesk Plus tickets and notes, sending email, reminders and digests |
+| `src/Giim.Workers` | Background jobs: Intune and staff directory syncs, ServiceDesk Plus tickets and notes, sending email, reminders and digests, GIIM's automation steps |
+| `src/Giim.Agent` | The on-prem agent: a Windows service that carries out starter account steps in AD and Exchange (stand-in directory for now). See [docs/onprem-agent.md](docs/onprem-agent.md) |
 | `src/Giim.Web` | React + TypeScript UI (Vite) |
 | `tests/` | xUnit tests |
 | `tools/SampleData` | Fake test-data generator |
@@ -74,6 +76,7 @@ dotnet ef database update --project src/Giim.Infrastructure   # create/upgrade t
 
 dotnet run --project src/Giim.Api      # API on http://localhost:5080
 dotnet run --project src/Giim.Workers  # scheduled Intune sync (optional locally), health on http://localhost:5081
+dotnet run --project src/Giim.Agent    # stand-in on-prem agent for starter automation (optional)
 cd src/Giim.Web && npm install && npm run dev                 # UI on http://localhost:5173
 
 dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake test data
@@ -90,6 +93,7 @@ dotnet run tools/SampleData/generate-sample-data.cs           # regenerate fake 
 | `People:Source` | Where the staff list comes from: `Entra` (Entra ID through Microsoft Graph, in Azure, synced every 4 hours) or `File` (`People:FilePath`, a CSV on a developer PC). See [docs/staff-directory.md](docs/staff-directory.md) |
 | `DataProtection:BlobUri`, `DataProtection:KeyUri` | Where the sign-in cookie keys are kept in Azure (Blob Storage, wrapped by a Key Vault key) so every instance shares them. Set by the deployment; leave empty locally |
 | `ServiceDesk:*` | ServiceDesk Plus connection: `Mode` (`None`, `File` stand-in, `Api`), Zoho client, webhook secret; ticket field mapping in `config/servicedesk.json`. See [docs/servicedesk-setup.md](docs/servicedesk-setup.md) |
+| `Automation:*`, `Agent:*` | Starter automation through the on-prem agent: `Automation:DryRun` (on by default), how the agent signs in. See [docs/onprem-agent.md](docs/onprem-agent.md) |
 | `Reminders:*` | Manager emails, approval and return reminders, daily IT digest and weekly warranty list; `ItTeamAddresses` says who gets the digests. See [docs/email-notifications.md](docs/email-notifications.md) |
 | `Attachments:Mode` | Where asset photos and documents are kept: `File` (`artifacts/attachments` on a developer PC) or `Blob` (the private `attachments` container in Azure, set by the deployment) |
 | `Email:Mode`, `Email:FromMailbox` | How the workers send request emails: `File` (written to `artifacts/mail` on a developer PC), `Graph` (Microsoft 365, in Azure) or `None`. See [docs/email-notifications.md](docs/email-notifications.md) |
