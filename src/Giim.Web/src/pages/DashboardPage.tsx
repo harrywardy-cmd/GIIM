@@ -1,12 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { CircleCheck, Clock, Laptop, PackageCheck, PackageX, ShieldAlert, TriangleAlert, UserX, Wrench } from 'lucide-react'
+import { ArrowDown, ArrowUp, CircleCheck, Clock, Laptop, PackageCheck, PackageX, ShieldAlert, TriangleAlert, UserX, Wrench } from 'lucide-react'
 import { api } from '../api'
 import { useNav } from '../nav'
 import type { PageKey } from '../App'
 import { PageHeader } from '../PageHeader'
 
+type Totals = { inService: number; assigned: number; available: number; inRepair: number; retired: number; disposed: number; pendingApproval: number }
+
 type Dashboard = {
-  totals: { inService: number; assigned: number; available: number; inRepair: number; retired: number; disposed: number; pendingApproval: number }
+  totals: Totals
+  /** The same totals on an earlier day (about a week ago), or null until there is history. */
+  trend: { since: string; then: Totals } | null
   statusBreakdown: { key: string; label: string; count: number }[]
   warrantyExpiring: { id: string; assetTag: string | null; serialNumber: string; manufacturer: string; model: string; category: string; warrantyExpiry: string; daysLeft: number }[]
   attention: {
@@ -62,6 +66,7 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
   if (!data) return error ? <p className="error">Could not load the dashboard: {error}</p> : <p className="muted">Loading…</p>
 
   const { totals, attention } = data
+  const was = (key: keyof Totals) => (data.trend ? { then: data.trend.then[key], since: data.trend.since } : undefined)
   const breakdownTotal = data.statusBreakdown.reduce((sum, b) => sum + b.count, 0)
   const focus = data.statusBreakdown.find((b) => b.key === hovered)
 
@@ -80,12 +85,12 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
       <PageHeader title="Dashboard" subtitle="Overview of IT assets, what needs attention, and recent activity." />
 
       <div className="stats">
-        <Tile label="Assets in service" value={totals.inService} icon={<Laptop size={18} />} tone="tone-violet" />
-        <Tile label="Assigned" value={totals.assigned} icon={<CircleCheck size={18} />} tone="tone-green" />
-        <Tile label="Ready to deploy" value={totals.available} icon={<PackageCheck size={18} />} tone="tone-blue" />
-        <Tile label="Requests pending approval" value={totals.pendingApproval} icon={<Clock size={18} />} tone="tone-amber" />
-        <Tile label="In repair" value={totals.inRepair} icon={<Wrench size={18} />} tone="tone-rose" />
-        <Tile label="Retired" value={totals.retired} icon={<PackageX size={18} />} tone="tone-grey" note={`${number(totals.disposed)} disposed`} />
+        <Tile label="Assets in service" value={totals.inService} was={was('inService')} icon={<Laptop size={18} />} tone="tone-violet" />
+        <Tile label="Assigned" value={totals.assigned} was={was('assigned')} icon={<CircleCheck size={18} />} tone="tone-green" />
+        <Tile label="Ready to deploy" value={totals.available} was={was('available')} icon={<PackageCheck size={18} />} tone="tone-blue" />
+        <Tile label="Requests pending approval" value={totals.pendingApproval} was={was('pendingApproval')} icon={<Clock size={18} />} tone="tone-amber" />
+        <Tile label="In repair" value={totals.inRepair} was={was('inRepair')} icon={<Wrench size={18} />} tone="tone-rose" />
+        <Tile label="Retired" value={totals.retired} was={was('retired')} icon={<PackageX size={18} />} tone="tone-grey" note={`${number(totals.disposed)} disposed`} />
       </div>
 
       <div className="dash-grid">
@@ -241,11 +246,27 @@ export function DashboardPage({ onOpenAsset, onNavigate }: { onOpenAsset: (id: s
   )
 }
 
-function Tile({ label, value, icon, tone, note }: { label: string; value: number; icon: ReactNode; tone: string; note?: string }) {
+function Tile({ label, value, was, icon, tone, note }: {
+  label: string
+  value: number
+  /** The value on an earlier day, for the arrow (neutral colour: up isn't always good). */
+  was?: { then: number; since: string }
+  icon: ReactNode
+  tone: string
+  note?: string
+}) {
+  const change = was ? value - was.then : 0
+  const since = was ? new Date(`${was.since}T00:00`).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }) : ''
   return (
     <div className="stat">
       <span className="muted small">{label}</span>
       <span className="stat-value">{number(value)}</span>
+      {was && (
+        <span className="stat-trend small" title={`${number(was.then)} on ${since}`}>
+          {change > 0 ? <ArrowUp size={12} /> : change < 0 ? <ArrowDown size={12} /> : null}
+          {change === 0 ? `no change since ${since}` : `${number(Math.abs(change))} since ${since}`}
+        </span>
+      )}
       {note && <span className="muted small">{note}</span>}
       <span className={`stat-icon ${tone}`}>{icon}</span>
     </div>

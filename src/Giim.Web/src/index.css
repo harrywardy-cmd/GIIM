@@ -227,6 +227,7 @@ tr.inactive td { opacity: 0.5; }
   box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 2px; position: relative;
 }
 .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.stat-trend { display: inline-flex; align-items: center; gap: 3px; color: var(--muted); }
 .stat-icon { position: absolute; right: 14px; top: 14px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; }
 .tone-blue { background: #e8f0fe; color: #1f5fbf; }
 .tone-green { background: #e5f6ed; color: #12744f; }

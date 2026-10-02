@@ -17,6 +17,8 @@ public enum AutomationStep
     EnableAccount,
     /// <summary>GIIM: email the manager that their starter is set up.</summary>
     SendWelcomeEmail,
+    /// <summary>GIIM: add the account to a cloud-only Entra group, through Graph, once it has synced.</summary>
+    AddToCloudGroup,
 }
 
 /// <summary>Who carries a step out.</summary>
@@ -63,7 +65,8 @@ public sealed class AutomationJob : Entity
     public string? Log { get; private set; }
 
     public static AutomationRunner RunnerFor(AutomationStep step) =>
-        step is AutomationStep.WaitForCloudSync or AutomationStep.SendWelcomeEmail ? AutomationRunner.Giim : AutomationRunner.Agent;
+        step is AutomationStep.WaitForCloudSync or AutomationStep.SendWelcomeEmail or AutomationStep.AddToCloudGroup
+            ? AutomationRunner.Giim : AutomationRunner.Agent;
 
     public bool IsFinished => Status is JobStatus.Succeeded or JobStatus.Failed or JobStatus.Cancelled;
 

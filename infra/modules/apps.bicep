@@ -33,6 +33,7 @@ param directoryTrackAttribute string
 param directoryReadLeaveDates bool
 param agentClientId string
 param automationDryRun bool
+param automationStartFromServiceDesk bool
 @description('Mailbox the workers send emails from; empty turns email sending off.')
 param notificationMailbox string
 @description('IT team address(es) for digests, separated by ;')
@@ -68,6 +69,7 @@ var sharedSettings = { ServiceDesk__Mode: serviceDeskMode, Reminders__ItTeamAddr
 // accounts in Entra ID through Graph.
 var automationSettings = {
   Automation__DryRun: string(automationDryRun)
+  Automation__StartFromServiceDesk: string(automationStartFromServiceDesk)
   Automation__CloudDirectory__Source: 'Graph'
 }
 

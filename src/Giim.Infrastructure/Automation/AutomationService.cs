@@ -30,6 +30,12 @@ public sealed class AutomationOptions
     public TimeSpan CloudSyncCheckEvery { get; set; } = TimeSpan.FromMinutes(2);
     public TimeSpan CloudSyncTimeout { get; set; } = TimeSpan.FromHours(24);
 
+    /// <summary>
+    /// Start a starter's automation as soon as their ServiceDesk Plus ticket creates the checklist, instead of waiting
+    /// for a technician. Off until the automation has been trusted for a while; dry run still applies.
+    /// </summary>
+    public bool StartFromServiceDesk { get; set; }
+
     /// <summary>An agent that hasn't checked in for this long is shown as offline.</summary>
     public TimeSpan AgentOfflineAfter { get; set; } = TimeSpan.FromMinutes(5);
 }
@@ -287,6 +293,7 @@ public sealed class AutomationService(GiimDbContext db, ICloudDirectory cloud, I
             {
                 AutomationStep.WaitForCloudSync => await CloudSyncAsync(job, person, cancellationToken),
                 AutomationStep.SendWelcomeEmail => await WelcomeEmailAsync(job, person, cancellationToken),
+                AutomationStep.AddToCloudGroup => await CloudGroupAsync(job, person, cancellationToken),
                 _ => new JobResult(false, null, $"GIIM can't run {job.Step}.", null, false),
             };
             db.ChangeTracker.Clear();
@@ -323,6 +330,26 @@ public sealed class AutomationService(GiimDbContext db, ICloudDirectory cloud, I
         tracking.Postpone(GiimRunner, now + O.CloudSyncCheckEvery, $"{upn} isn't in Entra ID yet; checking again", now);
         await db.SaveChangesAsync(cancellationToken);
         return null;
+    }
+
+    /// <summary>Adds the synced account to a cloud-only Entra group (one the agent can't reach, as it isn't in AD).</summary>
+    private async Task<JobResult> CloudGroupAsync(AutomationJob job, Person person, CancellationToken cancellationToken)
+    {
+        var group = JsonDocument.Parse(job.ParametersJson).RootElement.TryGetProperty("group", out var g) ? g.GetString() : null;
+        if (string.IsNullOrWhiteSpace(group)) return new JobResult(false, null, "The step doesn't say which group.", null, false);
+        if (job.DryRun)
+            return new JobResult(true, null, null, $"Would add {person.UserPrincipalName ?? person.DisplayName} to the Entra group {group}", false);
+        if (person.EntraObjectId is not { } accountId)
+            return new JobResult(false, null, "The account isn't in Entra ID yet; the cloud-sync step must finish first.", null, Retryable: true);
+        try
+        {
+            var added = await cloud.AddToGroupAsync(accountId, group, cancellationToken);
+            return new JobResult(true, null, null, added ? $"Added to the Entra group {group}" : $"Already in the Entra group {group}; nothing to do", false);
+        }
+        catch (CloudDirectoryException e)
+        {
+            return new JobResult(false, null, e.Message, null, e.Retryable);
+        }
     }
 
     private async Task<JobResult> WelcomeEmailAsync(AutomationJob job, Person person, CancellationToken cancellationToken)

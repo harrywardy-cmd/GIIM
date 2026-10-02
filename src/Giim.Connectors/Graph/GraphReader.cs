@@ -44,14 +44,23 @@ internal static partial class GraphReader
             : await response.Content.ReadFromJsonAsync<T>(JsonSerializerOptions.Web, cancellationToken);
     }
 
+    /// <summary>
+    /// A change (e.g. adding a group member). Throttling is retried; any other answer is returned for the caller to read,
+    /// since Graph explains refusals (already a member, not allowed) in the status and body.
+    /// </summary>
+    public static Task<HttpResponseMessage> PostAsync(HttpClient http, TokenCredential credential, Uri url, string json, int maxRetries,
+        ILogger logger, CancellationToken cancellationToken) =>
+        SendWithRetryAsync(http, credential, url, maxRetries, logger, cancellationToken, allowNotFound: true, postJson: json, anyAnswer: true);
+
     private static async Task<HttpResponseMessage> SendWithRetryAsync(HttpClient http, TokenCredential credential, Uri url, int maxRetries,
-        ILogger logger, CancellationToken cancellationToken, bool allowNotFound = false)
+        ILogger logger, CancellationToken cancellationToken, bool allowNotFound = false, string? postJson = null, bool anyAnswer = false)
     {
         for (var attempt = 1; ; attempt++)
         {
             var token = await credential.GetTokenAsync(GraphScope, cancellationToken);
-            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            using var request = new HttpRequestMessage(postJson is null ? HttpMethod.Get : HttpMethod.Post, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+            if (postJson is not null) request.Content = new StringContent(postJson, System.Text.Encoding.UTF8, "application/json");
 
             var response = await http.SendAsync(request, cancellationToken);
             if (response.IsSuccessStatusCode || allowNotFound && response.StatusCode == HttpStatusCode.NotFound) return response;
@@ -59,6 +68,7 @@ internal static partial class GraphReader
             var retryable = response.StatusCode is HttpStatusCode.TooManyRequests
                 or HttpStatusCode.ServiceUnavailable or HttpStatusCode.GatewayTimeout;
 
+            if (!retryable && anyAnswer) return response;
             if (!retryable || attempt > maxRetries)
             {
                 var body = await response.Content.ReadAsStringAsync(cancellationToken);

@@ -301,7 +301,7 @@ can't use (e.g. unknown department) are flagged for an Administrator.
 
 ### 5.11 Email notifications, reminders and digests
 
-Emails for request steps; managers of new starters and leavers; approval reminders (from 2 days, every 2 days, at
+Emails for request steps; managers of new starters and leavers; the holder of a device going for repair and when it's done; approval reminders (from 2 days, every 2 days, at
 most 3); unreturned-equipment reminders to a leaver's manager (weekly, at most 3); a daily IT digest (only when
 something needs attention) and a weekly warranty list. Every email is saved in the same transaction as the change
 (an outbox) and sent by the workers with retries; each is sent once.
@@ -325,7 +325,7 @@ from current data each time, so items disappear once dealt with.
 
 ### 5.13 Dashboard, reports, tickets and search
 
-The dashboard (summary cards, statuses, needs attention, warranty, recent activity); reports with screen view and
+The dashboard (summary cards with week-on-week arrows from hourly snapshots, statuses, needs attention, warranty, recent activity); reports with screen view and
 CSV/Excel export (inventory, warranty, repairs, technician activity, leavers holding kit, stock, requests); a tickets
 view showing everything recorded against a ticket; and top-bar search across assets, people, tickets and requests.
 
@@ -341,7 +341,9 @@ on-prem agent creates the AD account (disabled, random password GIIM never sees)
 the profile's groups; GIIM waits for the account to reach Entra ID; the agent enables it at 06:00 on the start date;
 GIIM emails the manager. Each step ticks its task off, or fails with the reason for a technician to retry or do by
 hand. Dry-run mode (the default) only reports what would happen. The agent connects outbound only, signs in with its
-own certificate, and refuses privileged groups and any group not on its allow-list.
+own certificate, and refuses privileged groups and any group not on its allow-list. Cloud-only Entra groups are added by GIIM
+through Graph after the cloud sync, and automation can start on its own when the ServiceDesk ticket arrives (a
+setting, off by default).
 
 - **Code:** `Domain/Automation` (`AutomationJob`, `AutomationPlanner`), `Infrastructure/Automation/AutomationService.cs`,
   `Connectors/CloudAccounts`, `Endpoints/AutomationEndpoints.cs`, `Security/AgentAuth.cs`, `Workers/AutomationWorker.cs`;
@@ -415,6 +417,7 @@ erDiagram
 | `ServiceDeskInboundEvents`, `ServiceDeskUpdates` | Tickets in (inbox) and notes out (outbox) |
 | `Notifications`, `ScheduledJobRuns` | Emails (outbox); when each daily or weekly job last ran |
 | `AutomationJobs`, `AgentCheckIns` | Starter automation steps (one active per task, guaranteed by the database), and when each agent last checked in |
+| `DashboardSnapshots` | The dashboard totals for each day, for the week-on-week arrows |
 | `AuditEntries` | Audit log (append-only) |
 
 Concurrency: `Assets`, `DeviceRequests` and `Cases` carry a row version, and actions send the status the user saw,
@@ -495,7 +498,8 @@ All in `Giim.Workers` (one instance in Azure):
 | `PeopleSyncWorker` | Every 4 hours (`People:SyncInterval`), Entra source only | Reads staff from Entra ID |
 | `ServiceDeskWorker` | Every 30 seconds | Processes incoming tickets; sends notes to tickets |
 | `NotificationWorker` | Every 30 seconds | Sends waiting emails, with retries |
-| `AutomationWorker` | Every 30 seconds | GIIM's automation steps: waiting for a new account in Entra ID, the welcome email |
+| `AutomationWorker` | Every 30 seconds | GIIM's automation steps: waiting for a new account in Entra ID, cloud-only groups, the welcome email |
+| `SnapshotWorker` | Every hour | Records the dashboard totals for the day |
 | `ReminderWorker` | Every 5 minutes | Manager emails, approval and return reminders; the daily digest and weekly warranty list at 07:30 Sydney time |
 
 ---
@@ -525,14 +529,14 @@ More: [infra/README.md](../infra/README.md) ("Security design").
 ### Automated tests
 
 ```powershell
-dotnet test Giim.slnx                         # 399 tests, no database needed
+dotnet test Giim.slnx                         # 411 tests, no database needed
 cd src/Giim.Web; npm run lint; npx tsc -b      # UI lint and type checks
 ```
 
 | Suite | Tests | Covers |
 |---|---|---|
-| `Giim.Domain.Tests` | 239 | Business rules: lifecycle, assignments, repairs, checklists, requests, imports, reconciliation, stock, file rules, automation planning and jobs |
-| `Giim.Infrastructure.Tests` | 78 | Graph clients against simulated responses, the directory source, file storage, reminders, emails, exports, the sample data end to end |
+| `Giim.Domain.Tests` | 240 | Business rules: lifecycle, assignments, repairs, checklists, requests, imports, reconciliation, stock, file rules, automation planning and jobs |
+| `Giim.Infrastructure.Tests` | 89 | Graph clients against simulated responses (Intune, users, cloud groups), the directory source, file storage, reminders, request and repair emails, dashboard totals, exports, the sample data end to end |
 | `Giim.Api.Tests` | 58 | The real API in memory: sign-in, each role's access, the change rule on every endpoint, sessions, the webhook, the agent's sign-in, hosting headers |
 | `Giim.Agent.Tests` | 24 | The agent: usernames, each step against a stand-in directory, dry runs, the group allow-list |
 

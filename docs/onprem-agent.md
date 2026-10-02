@@ -51,6 +51,7 @@ sequenceDiagram
 | Wait for Entra Connect | GIIM (Graph, every 2 minutes, up to 24 hours) | When the account is in Entra ID |
 | Enable remote mailbox | Agent | When enabled (GIIM records the email address) |
 | Add to group (security, licence, app access) | Agent | When added |
+| Add to a cloud-only Entra group (ticked *cloud-only* on the profile item) | GIIM through Graph, after the cloud sync | When added |
 | Enable the account | Agent, at 06:00 on the start date | When enabled |
 | Send welcome email to manager | GIIM, after the account is enabled | When queued |
 
@@ -90,6 +91,22 @@ Needed before the real AD and Exchange steps are built:
   Exchange Management Tools installed), and that it can reach GIIM's address on 443.
 - [ ] **First-day sign-in**: Temporary Access Pass (recommended) or another process.
 - [ ] **Attributes** to set beyond name, employee ID, department, title, office and manager (e.g. company, cost centre).
+
+### Cloud-only groups
+
+Groups made in Entra ID (not synced from AD, e.g. a Teams team's group) can't be changed by the agent. Tick
+**Cloud-only group (Entra)** on the starter profile item, and GIIM adds the new account through Graph once Entra Connect
+has synced it. GIIM's workers get the **Groups Administrator** role over one **administrative unit**
+("GIIM managed groups") only, so they can change the groups you put in that unit and no others; groups synced from AD,
+groups that grant admin roles and dynamic groups are refused regardless. Set up with
+`./infra/scripts/Grant-GraphAccess.ps1 -Environment prod -IncludeCloudGroups`, then add the groups to the unit.
+
+### Starting automatically
+
+With `Automation:StartFromServiceDesk` (`automationStartFromServiceDesk` in Azure; off by default), a starter's
+automation starts as soon as their ServiceDesk Plus ticket creates the checklist, without waiting for a technician.
+Turn it on once the automation has been trusted for a while; dry run still applies. If it can't start (e.g. no start
+date) the checklist is created as usual and a technician starts it.
 
 ## Trying it on a developer PC
 
@@ -144,6 +161,7 @@ GIIM (`Automation:*` and `Agent:*`; in Azure from the `.bicepparam` file):
 | `Automation:EnableAt` | `06:00` | When on the start date the account is enabled (`Automation:TimeZone`, default Australia/Sydney) |
 | `Automation:CloudSyncCheckEvery`, `CloudSyncTimeout` | 2 minutes, 24 hours | Waiting for Entra Connect |
 | `Automation:AgentOfflineAfter` | 5 minutes | When the agent counts as offline (the bell tells administrators if steps are waiting) |
+| `Automation:StartFromServiceDesk` | `false` | Start automation when a starter ticket creates the checklist (`automationStartFromServiceDesk` in Azure) |
 | `Agent:Auth` | `None` | `Entra` in Azure (set by the deployment when `agentClientId` is given); `Key` on a developer PC |
 
 The agent (`appsettings.json` on its server):

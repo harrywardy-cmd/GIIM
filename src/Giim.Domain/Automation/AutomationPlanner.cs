@@ -45,16 +45,18 @@ public static class AutomationPlanner
         if (tasks.Count == 0) return [];
 
         var planned = new List<PlannedStep>();
-        AutomationJob? account = null, enable = null;
+        AutomationJob? account = null, cloudSync = null, enable = null;
         foreach (var task in tasks)
         {
             var step = task.Step!.Value;
-            if (step == AutomationStep.AddToGroup && string.IsNullOrWhiteSpace(task.StepTarget)) continue;
+            if (step is AutomationStep.AddToGroup or AutomationStep.AddToCloudGroup && string.IsNullOrWhiteSpace(task.StepTarget)) continue;
 
             var after = step switch
             {
                 AutomationStep.CreateAccount => null,
                 AutomationStep.SendWelcomeEmail => enable ?? account,
+                // Graph can only add the account once Entra Connect has synced it.
+                AutomationStep.AddToCloudGroup => cloudSync ?? account,
                 _ => account,
             };
             // A dry run reports every step straight away (that's its point); a real run waits for the start date.
@@ -76,6 +78,7 @@ public static class AutomationPlanner
             if (waitsForStart) job.Delay(enableAt);
             if (step == AutomationStep.CreateAccount) account = job;
             if (step == AutomationStep.EnableAccount) enable = job;
+            if (step == AutomationStep.WaitForCloudSync) cloudSync = job;
             planned.Add(new PlannedStep(task, job, Describe(step, facts, task.StepTarget, onStartDate ? enableAt : null)));
         }
         return planned;
@@ -86,7 +89,7 @@ public static class AutomationPlanner
         AutomationStep.CreateAccount => 0,
         AutomationStep.WaitForCloudSync => 1,
         AutomationStep.EnableRemoteMailbox => 2,
-        AutomationStep.AddToGroup => 3,
+        AutomationStep.AddToGroup or AutomationStep.AddToCloudGroup => 3,
         AutomationStep.EnableAccount => 4,
         _ => 5,
     };
@@ -95,7 +98,7 @@ public static class AutomationPlanner
     {
         AutomationStep.CreateAccount => f,
         // Every step carries the name, so the agent can say which account it means even in a dry run (when none exists).
-        AutomationStep.AddToGroup => new { f.EmployeeId, f.DisplayName, f.GivenName, f.Surname, Group = target },
+        AutomationStep.AddToGroup or AutomationStep.AddToCloudGroup => new { f.EmployeeId, f.DisplayName, f.GivenName, f.Surname, Group = target },
         _ => new { f.EmployeeId, f.DisplayName, f.GivenName, f.Surname },
     }, JsonSerializerOptions.Web);
 
@@ -106,6 +109,7 @@ public static class AutomationPlanner
         AutomationStep.WaitForCloudSync => "Wait until Entra Connect has synced the account to Microsoft 365",
         AutomationStep.EnableRemoteMailbox => "Enable the remote mailbox (hybrid Exchange)",
         AutomationStep.AddToGroup => $"Add to the AD group {target}",
+        AutomationStep.AddToCloudGroup => $"Add to the cloud-only Entra group {target} (GIIM, through Graph, once synced)",
         AutomationStep.EnableAccount => "Enable the account" + (notBefore is { } at ? $" from {at:ddd d MMM HH:mm}" : " straight away (the start date has passed)"),
         _ => "Email the manager that their starter is set up" + (notBefore is { } on ? $", on {on:ddd d MMM}" : ""),
     };

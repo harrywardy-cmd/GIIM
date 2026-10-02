@@ -13,6 +13,9 @@ public sealed class ReminderOptions
     /// <summary>Email a starter's or leaver's manager when their checklist is created.</summary>
     public bool ManagerEmails { get; set; } = true;
 
+    /// <summary>Email the person whose device goes for repair, and again when it's done.</summary>
+    public bool RepairEmails { get; set; } = true;
+
     public TimeOnly DigestTime { get; set; } = new(7, 30);
     public DayOfWeek WarrantyDay { get; set; } = DayOfWeek.Monday;
 

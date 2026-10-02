@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<ReconciliationService>();
         services.AddScoped<AttentionService>();
         services.AddScoped<AutomationService>();
+        services.AddScoped<DashboardHistory>();
 
         return services;
     }

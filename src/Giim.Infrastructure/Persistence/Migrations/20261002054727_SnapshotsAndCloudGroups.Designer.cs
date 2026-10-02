@@ -4,6 +4,7 @@ using Giim.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Giim.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(GiimDbContext))]
-    partial class GiimDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002054727_SnapshotsAndCloudGroups")]
+    partial class SnapshotsAndCloudGroups
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

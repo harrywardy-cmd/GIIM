@@ -12,6 +12,7 @@ const stepText: Record<string, string> = {
   AddToGroup: 'Add to group',
   EnableAccount: 'Enable account',
   SendWelcomeEmail: 'Welcome email',
+  AddToCloudGroup: 'Add to Entra group',
 }
 
 /** The on-prem agent and starter automation: connected agents, the queue, recent failures. Administrators. */

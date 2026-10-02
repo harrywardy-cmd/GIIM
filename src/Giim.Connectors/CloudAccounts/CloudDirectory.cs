@@ -9,10 +9,22 @@ namespace Giim.Connectors.CloudAccounts;
 /// <summary>An account as Entra ID sees it, once Entra Connect has synced it from AD.</summary>
 public sealed record CloudAccount(Guid Id, string UserPrincipalName);
 
-/// <summary>Finds a newly created account in Entra ID. Read-only; used to tell when Entra Connect has synced it.</summary>
+/// <summary>Graph refused or couldn't do something. Retryable: worth trying again later.</summary>
+public sealed class CloudDirectoryException(string message, bool retryable) : Exception(message)
+{
+    public bool Retryable { get; } = retryable;
+}
+
+/// <summary>
+/// Entra ID for automation: finds a newly created account (to tell when Entra Connect has synced it), and adds accounts to
+/// cloud-only groups. Groups synced from AD, groups that grant admin roles and dynamic groups are refused.
+/// </summary>
 public interface ICloudDirectory
 {
     Task<CloudAccount?> FindAsync(string userPrincipalName, CancellationToken cancellationToken);
+
+    /// <summary>Adds the account to the cloud-only group; false if it was already a member.</summary>
+    Task<bool> AddToGroupAsync(Guid accountId, string groupName, CancellationToken cancellationToken);
 }
 
 public enum CloudDirectorySource
@@ -51,7 +63,43 @@ public sealed class GraphCloudDirectory(HttpClient http, TokenCredential credent
         return user is null || !Guid.TryParse(user.Id, out var id) ? null : new CloudAccount(id, user.UserPrincipalName ?? userPrincipalName);
     }
 
+    public async Task<bool> AddToGroupAsync(Guid accountId, string groupName, CancellationToken cancellationToken)
+    {
+        var o = options.Value;
+        var filter = Uri.EscapeDataString($"displayName eq '{groupName.Replace("'", "''", StringComparison.Ordinal)}'");
+        var found = await GraphReader.GetAsync<GroupPage>(http, credential,
+            new Uri(o.GraphBaseUrl, $"groups?$filter={filter}&$select=id,displayName,onPremisesSyncEnabled,groupTypes,isAssignableToRole"),
+            o.MaxRetries, logger, cancellationToken);
+        var group = (found?.Value.Count ?? 0) switch
+        {
+            0 => throw new CloudDirectoryException($"There is no Entra group called {groupName}.", retryable: false),
+            1 => found!.Value[0],
+            _ => throw new CloudDirectoryException($"More than one Entra group is called {groupName}; rename one.", retryable: false),
+        };
+        if (group.OnPremisesSyncEnabled == true)
+            throw new CloudDirectoryException($"{groupName} is synced from AD, so it can only be changed there: untick 'cloud-only' on the profile item and the agent will add it.", retryable: false);
+        if (group.IsAssignableToRole == true)
+            throw new CloudDirectoryException($"{groupName} grants admin roles; GIIM never adds people to it.", retryable: false);
+        if (group.GroupTypes?.Contains("DynamicMembership", StringComparer.OrdinalIgnoreCase) == true)
+            throw new CloudDirectoryException($"{groupName} has dynamic membership; Entra adds people to it by its rule.", retryable: false);
+
+        using var response = await GraphReader.PostAsync(http, credential, new Uri(o.GraphBaseUrl, $"groups/{group.Id}/members/$ref"),
+            $$"""{"@odata.id":"{{o.GraphBaseUrl}}directoryObjects/{{accountId}}"}""", o.MaxRetries, logger, cancellationToken);
+        if (response.IsSuccessStatusCode) return true;
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (response.StatusCode == System.Net.HttpStatusCode.BadRequest && body.Contains("already exist", StringComparison.OrdinalIgnoreCase)) return false;
+        throw response.StatusCode switch
+        {
+            System.Net.HttpStatusCode.Forbidden => new CloudDirectoryException(
+                $"GIIM isn't allowed to change {groupName}: add the group to GIIM's administrative unit (docs/onprem-agent.md).", retryable: false),
+            System.Net.HttpStatusCode.NotFound => new CloudDirectoryException("The account isn't in Entra ID yet.", retryable: true),
+            _ => new CloudDirectoryException($"Graph returned {(int)response.StatusCode} adding to {groupName}.", retryable: (int)response.StatusCode >= 500),
+        };
+    }
+
     private sealed record GraphUser(string Id, string? UserPrincipalName);
+    private sealed record GroupPage(IReadOnlyList<GraphGroup> Value);
+    private sealed record GraphGroup(string Id, string? DisplayName, bool? OnPremisesSyncEnabled, IReadOnlyList<string>? GroupTypes, bool? IsAssignableToRole);
 }
 
 /// <summary>
@@ -79,6 +127,34 @@ public sealed class FileCloudDirectory(IOptions<CloudDirectoryOptions> options, 
         }
         return null;
     }
+
+    /// <summary>Stand-in: memberships are kept in cloud-groups.json next to the pretend AD. "MISSING-" groups don't exist.</summary>
+    public async Task<bool> AddToGroupAsync(Guid accountId, string groupName, CancellationToken cancellationToken)
+    {
+        if (groupName.StartsWith("MISSING-", StringComparison.OrdinalIgnoreCase))
+            throw new CloudDirectoryException($"There is no Entra group called {groupName}.", retryable: false);
+        var path = Path.Combine(Path.GetDirectoryName(RepoPath(options.Value.FilePath))!, "cloud-groups.json");
+        await Gate.WaitAsync(cancellationToken);
+        try
+        {
+            var groups = File.Exists(path)
+                ? JsonSerializer.Deserialize<Dictionary<string, List<Guid>>>(await File.ReadAllTextAsync(path, cancellationToken)) ?? []
+                : [];
+            var members = groups.TryGetValue(groupName, out var list) ? list : groups[groupName] = [];
+            if (members.Contains(accountId)) return false;
+            members.Add(accountId);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(groups, Indented), cancellationToken);
+            return true;
+        }
+        finally
+        {
+            Gate.Release();
+        }
+    }
+
+    private static readonly SemaphoreSlim Gate = new(1, 1);
+    private static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
 
     internal static string RepoPath(string path)
     {

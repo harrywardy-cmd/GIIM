@@ -10,6 +10,7 @@ using Giim.Domain.Notifications;
 using Giim.Domain.People;
 using Giim.Domain.Repairs;
 using Giim.Domain.Provisioning;
+using Giim.Domain.Reporting;
 using Giim.Domain.Requests;
 using Giim.Domain.Software;
 using Giim.Domain.Stock;
@@ -69,6 +70,7 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<ScheduledJobRun> ScheduledJobRuns => Set<ScheduledJobRun>();
     public DbSet<AutomationJob> AutomationJobs => Set<AutomationJob>();
     public DbSet<AgentCheckIn> AgentCheckIns => Set<AgentCheckIn>();
+    public DbSet<DashboardSnapshot> DashboardSnapshots => Set<DashboardSnapshot>();
 
     /// <summary>Numbers device requests REQ1001, REQ1002...</summary>
     public const string RequestNumberSequence = "DeviceRequestNumbers";
@@ -427,6 +429,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             // Two runners claiming the same job at once: the second save fails and it moves on.
             e.Property<byte[]>("RowVersion").IsRowVersion();
         });
+
+        modelBuilder.Entity<DashboardSnapshot>(e => e.HasKey(s => s.Date));
 
         modelBuilder.Entity<AgentCheckIn>(e =>
         {

@@ -55,7 +55,7 @@ Goal: every asset has a complete, append-only history, and every action records 
 
 ## Phase 1C: Visibility (new, from the brief)
 
-1. ✅ **Dashboard** (N17): summary cards, status chart, needs-attention list, warranty expiring, recent activity (trend arrows need history snapshots; later)
+1. ✅ **Dashboard** (N17): summary cards, status chart, needs-attention list, warranty expiring, recent activity ✅ week-on-week arrows on the cards (from hourly snapshots)
 2. ✅ **Employee profile page** (N19): details, manager, assigned assets, assignment history and device requests
 3. ✅ **Reports** (N18) with CSV / Excel export: asset inventory (status/category/location filters), warranty
    (expiring within N days, expired, not recorded), repairs (cost, turnaround, warranty claims, repeat assets),
@@ -92,7 +92,7 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
 9. ◐ **Other notifications** (N21): ✅ emails to starters' and leavers' managers, approval reminders, unreturned-equipment
    reminders, a daily IT digest and a weekly warranty list, all sent once and visible under Setup → Notifications.
    ✅ **In-app**: a bell showing what needs each person now (approvals, questions, handovers, starters and leavers due,
-   checklist approvals, and for administrators tickets GIIM couldn't use, failed syncs and emails). Still to do: repair updates
+   checklist approvals, and for administrators tickets GIIM couldn't use, failed syncs and emails). ✅ Repair updates by email to the device's holder
 10. ✅ Request report added to Reports (approval rate, time to decide, time to hand over), and a pending-approval tile on the dashboard
 
 ## Phase 3: Onboarding automation (low risk first)
@@ -102,10 +102,10 @@ New from the brief (replaces the earlier "hardware request, replacement and RMA 
    steps wait for the AD administrators' decisions (username format, OUs, groups, service account)
 2. ✅ Create AD user (disabled, random password GIIM never sees) in the right OU → ✅ wait for Entra Connect sync (Graph)
 3. ✅ `Enable-RemoteMailbox` (hybrid) → ✅ M365 licence group
-4. ✅ AD group membership from the profile → app access. Still to do: cloud-only groups via Graph
+4. ✅ AD group membership from the profile → app access; ✅ cloud-only Entra groups via Graph (Groups Administrator over one administrative unit only)
 5. ✅ Enable on the start date; ✅ welcome email to manager
 6. ✅ Dry-run mode (on by default) and a full record of every step; ✅ retry, or stop and do by hand
-7. Still to do: start automatically when a starter ticket arrives (a setting, once trusted)
+7. ✅ Start automatically when a starter ticket arrives (`Automation:StartFromServiceDesk`, off by default)
 
 ## Phase 4: Offboarding automation (approval-gated)
 

@@ -5,6 +5,7 @@ using Giim.Domain.Common;
 using Giim.Domain.Integration;
 using Giim.Domain.People;
 using Giim.Domain.Requests;
+using Giim.Infrastructure.Automation;
 using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Persistence;
 using Giim.Infrastructure.Requests;
@@ -24,6 +25,8 @@ public sealed partial class ServiceDeskSync(
     GiimDbContext db,
     IServiceDeskClient client,
     CaseService cases,
+    AutomationService automation,
+    IOptions<AutomationOptions> automationOptions,
     IOptions<ServiceDeskOptions> options,
     IOptions<GiimOptions> giim,
     TimeProvider clock,
@@ -114,12 +117,41 @@ public sealed partial class ServiceDeskSync(
         var raised = kind == TicketKind.Starter && Options.AutoRaiseDeviceRequests
             ? await RaiseDeviceRequestsAsync(created.Id, cancellationToken)
             : [];
+        var automated = kind == TicketKind.Starter && automationOptions.Value.StartFromServiceDesk
+            ? await StartAutomationAsync(created.Id, cancellationToken)
+            : null;
         db.ChangeTracker.Clear();
         db.ServiceDeskInbound.Update(inbound);   // the whole record, including what was learned before the clear
         inbound.Processed(created.Id, $"{(kind == TicketKind.Starter ? "Starter" : "Leaver")} checklist created" +
-            (raised.Count > 0 ? $"; device requests {string.Join(", ", raised)} raised." : "."), clock.GetUtcNow());
+            (raised.Count > 0 ? $"; device requests {string.Join(", ", raised)} raised" : "") +
+            (automated is null ? "." : $"; {automated}."), clock.GetUtcNow());
         await db.SaveChangesAsync(cancellationToken);
         LogProcessed(logger, ticket.DisplayId, kind);
+    }
+
+    /// <summary>
+    /// Starts the new starter's automation (Automation:StartFromServiceDesk). It's an extra: if it can't start (no start
+    /// date, nothing to automate, or anything unexpected) the checklist still stands and a technician can start it.
+    /// </summary>
+    private async Task<string> StartAutomationAsync(Guid caseId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            db.ChangeTracker.Clear();
+            var steps = await automation.StartAsync(caseId, Actor, cancellationToken);
+            return $"automation started ({steps} step{(steps == 1 ? "" : "s")}{(automationOptions.Value.DryRun ? ", dry run" : "")})";
+        }
+        catch (DomainException e)
+        {
+            return $"automation not started: {e.Message}";
+        }
+#pragma warning disable CA1031 // Automation is optional here; the ticket's checklist must still be recorded.
+        catch (Exception e) when (e is not OperationCanceledException)
+#pragma warning restore CA1031
+        {
+            LogAutomationFailed(logger, caseId, e);
+            return "automation not started (see the log); start it from the checklist";
+        }
     }
 
     private TicketKind Classify(string? template) =>
@@ -342,6 +374,9 @@ public sealed partial class ServiceDeskSync(
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "ServiceDesk Plus ticket {Ticket} needs attention: {Reason}")]
     private static partial void LogNeedsAttention(ILogger logger, string ticket, string reason);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't start automation for checklist {CaseId}.")]
+    private static partial void LogAutomationFailed(ILogger logger, Guid caseId, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Couldn't raise a device request for checklist {CaseId}: {Reason}")]
     private static partial void LogDeviceRequestFailed(ILogger logger, Guid caseId, string reason);

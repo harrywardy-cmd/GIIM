@@ -45,6 +45,8 @@ builder.Services.Configure<GiimOptions>(builder.Configuration.GetSection("Giim")
 builder.Services.Configure<AutomationOptions>(builder.Configuration.GetSection(AutomationOptions.SectionName));
 // GIIM's own automation steps (cloud-sync wait, welcome email); the on-prem agent does the AD and Exchange ones.
 builder.Services.AddHostedService<AutomationWorker>();
+// Dashboard totals once an hour, for the week-on-week arrows.
+builder.Services.AddHostedService<SnapshotWorker>();
 builder.Services.Configure<ReminderOptions>(builder.Configuration.GetSection(ReminderOptions.SectionName));
 // Manager emails, reminders and digests (Reminders:Enabled, on unless switched off).
 if (builder.Configuration.GetValue<bool?>("Reminders:Enabled") ?? true)

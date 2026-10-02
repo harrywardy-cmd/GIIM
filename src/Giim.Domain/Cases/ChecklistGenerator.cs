@@ -36,11 +36,12 @@ public static class ChecklistGenerator
                 ProfileItemType.StockItem     => ($"Issue from stock: {item.Description}", TaskKind.Manual),
                 _                             => (item.Description, TaskKind.Manual),
             };
-            // Apps with an access group, security groups and licence groups are AD group memberships the agent can add.
+            // Apps with an access group, security groups and licence groups: AD groups the agent adds people to, or
+            // cloud-only Entra groups GIIM adds them to through Graph.
             var group = kind == TaskKind.Automated && !string.IsNullOrWhiteSpace(item.GroupName) ? item.GroupName.Trim() : null;
             Add(serviceCase, title, kind, TaskSource.ProfileItem, item.Id,
                 categoryId: item.Type == ProfileItemType.Hardware ? item.CategoryId : null,
-                step: group is null ? null : AutomationStep.AddToGroup, stepTarget: group);
+                step: group is null ? null : item.CloudGroup ? AutomationStep.AddToCloudGroup : AutomationStep.AddToGroup, stepTarget: group);
         }
 
         Add(serviceCase, "Enable the account on the start date", TaskKind.Automated, step: AutomationStep.EnableAccount);

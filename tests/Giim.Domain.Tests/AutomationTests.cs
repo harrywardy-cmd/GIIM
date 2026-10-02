@@ -77,6 +77,22 @@ public class AutomationTests
     }
 
     [Fact]
+    public void A_cloud_only_group_is_added_by_giim_after_the_account_has_synced()
+    {
+        var profile = new RoleProfile { Name = "Finance" };
+        profile.Items.Add(new ProfileItem { Type = ProfileItemType.SecurityGroup, Description = "Teams: Finance", GroupName = "Finance Team", CloudGroup = true });
+        var person = new Person { EmployeeId = "E1001", DisplayName = "Priya Patel", StartDate = new DateOnly(2026, 10, 12) };
+
+        var plan = AutomationPlanner.Plan(ChecklistGenerator.ForOnboarding(person, profile, null), Facts, new HashSet<Guid>(), StartMorning, Now,
+            dryRun: false, "jane.tech");
+
+        var sync = plan.Single(p => p.Job.Step == AutomationStep.WaitForCloudSync).Job;
+        var cloud = plan.Single(p => p.Job.Step == AutomationStep.AddToCloudGroup);
+        Assert.Equal((AutomationRunner.Giim, sync.Id, "Finance Team"), (cloud.Job.Runner, cloud.Job.DependsOnJobId, cloud.Task.StepTarget));
+        Assert.Contains("cloud-only Entra group", cloud.Description, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_dry_run_reports_every_step_at_once_but_still_says_when_it_would_happen()
     {
         var plan = AutomationPlanner.Plan(Starter(), Facts, new HashSet<Guid>(), StartMorning, Now, dryRun: true, "jane.tech");
