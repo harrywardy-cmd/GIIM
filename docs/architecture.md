@@ -1,12 +1,15 @@
 # Architecture
 
+> The full design (features, data model, how features relate, testing) is in [design.md](design.md). This page
+> covers GIIM's context: the other systems and the identity flow.
+
 ## Context
 
 | System | Role | How GIIM talks to it |
 |---|---|---|
 | ServiceDesk Plus Cloud (AU, `servicedeskplus.net.au`, portal `itdesk`) | Where requests are raised; the ticket record | Webhooks in (custom triggers); REST API v3 out (Zoho OAuth via `accounts.zoho.com.au`) |
-| On-prem Active Directory | **Identity source of truth** | On-prem agent (outbound only, via Azure Service Bus) using the AD PowerShell module |
-| Entra ID / M365 | Synced from AD by Entra Connect; staff sign in to GIIM from My Apps; licences and app access via groups | Microsoft Graph; OpenID Connect for sign-in |
+| On-prem Active Directory | **Identity source of truth** | On-prem agent (planned; outbound HTTPS to GIIM only) using the AD PowerShell module |
+| Entra ID / M365 | Synced from AD by Entra Connect; staff sign in to GIIM from My Apps; GIIM's staff list is read from it; licences and app access via groups | Microsoft Graph (read-only users); OpenID Connect for sign-in |
 | Exchange (hybrid) | Mailbox attributes are owned by on-prem AD | `Enable-RemoteMailbox` via the on-prem agent; Exchange Online for shared-mailbox conversion |
 | Intune | Source of device facts (serial, primary user, last sync, compliance) | Scheduled full read of Graph managedDevices (`$select`, paged; the endpoint has no delta query) |
 
@@ -26,13 +29,15 @@ Sync is not instant (Entra Connect runs about every 30 minutes). Workflows there
 ## Runtime (Azure, Australia East)
 
 ```
-React UI ──► Giim.Api (App Service, stateless, scales out)
-                │
-                ├─► Azure SQL (geo-replica to Australia Southeast)
-                └─► Service Bus queues ──► Giim.Workers
-                                             ├─ SDP connector
-                                             ├─ Graph connector (Entra, Exchange Online, Intune)
-                                             └─ on-prem agent (AD + Exchange Management Tools)
+React UI ──► Giim.Api (App Service, stateless, scales out) ◄── ServiceDesk Plus webhook (ticket ID only)
+                │                                         ◄── on-prem agent, outbound HTTPS (planned: AD + Exchange)
+                ├─► Azure SQL (backups copied to Australia Southeast) ◄──┐
+                └─► Blob Storage (asset files)                           │ shared database: outbox and inbox rows
+                                                                         │
+              Giim.Workers (one instance) ───────────────────────────────┘
+                ├─ Intune and staff directory syncs (Microsoft Graph, read-only)
+                ├─ ServiceDesk Plus: tickets in, notes out (API v3)
+                └─ email (Graph sendMail) and reminders
 Key Vault + Managed Identity · Application Insights · Private endpoints · Microsoft Entra sign-in (My Apps) for staff
 ```
 

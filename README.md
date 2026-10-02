@@ -15,6 +15,8 @@ hybrid Exchange and Microsoft Intune.
 > deployed yet: [docs/go-live-checklist.md](docs/go-live-checklist.md) lists the steps, in order. Account creation and
 > removal in AD, Exchange and Entra are still done by hand and ticked off on the checklist (Phases 3-4).
 >
+> **Design, features, data model and how to test each feature: [docs/design.md](docs/design.md).**
+>
 > Guides: [technicians](docs/guide-technicians.md), [managers](docs/guide-managers.md). Background:
 > [docs/roadmap.md](docs/roadmap.md) for the build plan, [docs/architecture.md](docs/architecture.md) for the design, and
 > [docs/lifecycle-gap-analysis.md](docs/lifecycle-gap-analysis.md) for how the asset lifecycle brief maps onto GIIM.
