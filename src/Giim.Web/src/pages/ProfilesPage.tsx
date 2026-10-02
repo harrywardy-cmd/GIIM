@@ -19,7 +19,7 @@ type Profile = {
   track: string
   departmentId: string
   department: string
-  items: { id: string; type: string; description: string; groupName: string | null; categoryId: string | null; stockItemId: string | null; category: string | null; stockItem: string | null }[]
+  items: { id: string; type: string; description: string; groupName: string | null; cloudGroup: boolean; categoryId: string | null; stockItemId: string | null; category: string | null; stockItem: string | null }[]
 }
 
 type Option = { id: string; name: string; isActive: boolean }
@@ -200,7 +200,7 @@ function ProfileEditor({ profileId, onChanged, onDeleted }: { profileId: string;
   const [stock, setStock] = useState<Option[]>([])
   const [refresh, setRefresh] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [item, setItem] = useState({ type: 'Hardware', description: '', groupName: '', categoryId: '', stockItemId: '' })
+  const [item, setItem] = useState({ type: 'Hardware', description: '', groupName: '', cloudGroup: false, categoryId: '', stockItemId: '' })
 
   useEffect(() => {
     api<Profile>(`/api/profiles/${profileId}`)
@@ -240,11 +240,12 @@ function ProfileEditor({ profileId, onChanged, onDeleted }: { profileId: string;
           type: item.type,
           description: item.description,
           groupName: item.groupName || null,
+          cloudGroup: needsGroup && !!item.groupName && item.cloudGroup,
           categoryId: item.categoryId || null,
           stockItemId: item.stockItemId || null,
         },
       }),
-    ).then((ok) => ok && setItem({ ...item, description: '', groupName: '' }))
+    ).then((ok) => ok && setItem({ ...item, description: '', groupName: '', cloudGroup: false }))
 
   const needsGroup = item.type === 'SecurityGroup' || item.type === 'LicenceGroup' || item.type === 'Application'
 
@@ -270,7 +271,10 @@ function ProfileEditor({ profileId, onChanged, onDeleted }: { profileId: string;
             <tr key={i.id}>
               <td>{profileItemTypeLabel[i.type] ?? i.type}</td>
               <td>{i.description}</td>
-              <td className="small muted">{i.category ?? i.stockItem ?? i.groupName ?? (i.type === 'Application' ? 'granted by hand' : '')}</td>
+              <td className="small muted">
+                {i.category ?? i.stockItem ?? i.groupName ?? (i.type === 'Application' ? 'granted by hand' : '')}
+                {i.cloudGroup && <span className="tag"> cloud</span>}
+              </td>
               {canAdminister && (
                 <td>
                   <button className="link" onClick={() => call(() => api(`/api/profiles/${profile.id}/items/${i.id}`, { method: 'DELETE' }))}>
@@ -338,6 +342,11 @@ function ProfileEditor({ profileId, onChanged, onDeleted }: { profileId: string;
               <label>
                 {item.type === 'Application' ? 'Access group (optional)' : 'Group name'}
                 <input value={item.groupName} onChange={(e) => setItem({ ...item, groupName: e.target.value })} placeholder="e.g. APP-Xero" />
+              </label>
+            )}
+            {needsGroup && item.groupName && (
+              <label className="inline" title="Made in Entra ID rather than synced from AD: GIIM adds people to it through Graph, not the on-prem agent.">
+                <input type="checkbox" checked={item.cloudGroup} onChange={(e) => setItem({ ...item, cloudGroup: e.target.checked })} /> Cloud-only group (Entra)
               </label>
             )}
             <button className="primary" onClick={addItem} disabled={!item.description.trim()}>

@@ -33,11 +33,19 @@ The checklist comes from the starter's department profile:
 | Task | What to do |
 |---|---|
 | **Allocate and scan: Laptop** (and other devices) | Linked to a device request (REQ-…), raised automatically. Once the manager approves it, hand over a device from stock or order one (see below). The task ticks itself off at handover |
-| **Grant app**, **Add to group**, **Add to licence group** | Do it in Entra / AD / the app, then **Mark done**. Tasks tagged *automated later* will be done by GIIM in a later phase; until then they're yours |
+| **Create AD account**, **Enable remote mailbox**, **Add to group**, **Enable the account** | Tagged *can run automatically*: use **Run automated steps** in the **Automation** panel (below). Or do them by hand and **Mark done**, as before |
+| **Grant app** (without an access group), and anything tagged *automated later* | Do it by hand, then **Mark done** |
 | **Issue from stock** | Issue the item on the **Stock** page (so the count goes down), then **Mark done** |
 
 **Skip** a task that isn't needed; GIIM asks why. **Reopen** undoes a tick. Each step adds a note to the ticket, and
 the ticket can be resolved automatically when the checklist is finished.
+
+**Automation** (starter checklists): the panel on the right shows whether the on-prem agent is connected. **Run
+automated steps** shows exactly what will happen, then GIIM and the agent create the account (disabled), the mailbox
+and the groups, and enable the account at 06:00 on the start date; each task ticks itself off. While **dry run** is
+on, nothing is changed: each step only says what it would do, and the tasks come back to you. If a step fails, the
+task shows why: fix the cause (e.g. ask for the missing group) and **Retry**, or **Stop and do by hand**. GIIM never
+sees the starter's password; give them a Temporary Access Pass on their first morning.
 
 ## Leavers
 

@@ -1,6 +1,6 @@
 // App Service: one Linux plan running two apps.
 //   API     - the web UI and API that staff use. Scales out with the plan.
-//   Workers - background jobs (Intune and staff directory syncs, ServiceDesk Plus, email). Always exactly one
+//   Workers - background jobs (syncs, ServiceDesk Plus, email, automation steps). Always exactly one
 //             instance, not reachable from the internet.
 // Both run as their own managed identity, send outbound traffic through the private network, and have
 // password-based deployment (FTP / basic auth) switched off.
@@ -31,6 +31,9 @@ param intuneSyncInterval string
 param directoryFilter string
 param directoryTrackAttribute string
 param directoryReadLeaveDates bool
+param agentClientId string
+param automationDryRun bool
+param automationStartFromServiceDesk bool
 @description('Mailbox the workers send emails from; empty turns email sending off.')
 param notificationMailbox string
 @description('IT team address(es) for digests, separated by ;')
@@ -62,6 +65,19 @@ var commonSettings = {
 var sharedSettings = { ServiceDesk__Mode: serviceDeskMode, Reminders__ItTeamAddresses: itTeamEmails }
 
 // Both apps: the staff directory from Entra ID (the workers sync on a schedule; an administrator can sync now in the API).
+// Both apps: starter automation. The API plans jobs (dry run or not); the workers run GIIM's own steps, finding new
+// accounts in Entra ID through Graph.
+var automationSettings = {
+  Automation__DryRun: string(automationDryRun)
+  Automation__StartFromServiceDesk: string(automationStartFromServiceDesk)
+  Automation__CloudDirectory__Source: 'Graph'
+}
+
+// The API: the on-prem agent signs in with its own app registration (certificate), holding the Giim.Agent role.
+var agentSettings = empty(agentClientId) || empty(entraClientId)
+  ? { Agent__Auth: 'None' }
+  : { Agent__Auth: 'Entra', Agent__AllowedClientIds__0: agentClientId }
+
 var directorySettings = {
   People__Source: 'Entra'
   People__Entra__Filter: directoryFilter
@@ -69,7 +85,7 @@ var directorySettings = {
   People__Entra__ReadLeaveDates: string(directoryReadLeaveDates)
 }
 
-var apiSettings = union(commonSettings, sharedSettings, directorySettings, {
+var apiSettings = union(commonSettings, sharedSettings, directorySettings, automationSettings, agentSettings, {
   ServiceDesk__WebhookSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-webhook-secret)'
   AZURE_CLIENT_ID: apiIdentity.clientId
   ConnectionStrings__Giim: sqlConnection(sqlServerFqdn, databaseName, apiIdentity.clientId)
@@ -87,7 +103,7 @@ var apiSettings = union(commonSettings, sharedSettings, directorySettings, {
   Intune__SyncInterval: '00:00:00' // the API only syncs on request; the workers run the schedule
 })
 
-var workersSettings = union(commonSettings, sharedSettings, directorySettings, {
+var workersSettings = union(commonSettings, sharedSettings, directorySettings, automationSettings, {
   Giim__PublicBaseUrl: publicBaseUrl // links in ticket notes
   ServiceDesk__ClientId: serviceDeskClientId
   ServiceDesk__ClientSecret: '@Microsoft.KeyVault(SecretUri=${keyVaultUri}secrets/servicedesk-client-secret)'

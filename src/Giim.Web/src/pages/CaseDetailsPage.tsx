@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api } from '../api'
 import { caseStatusLabel, caseTypeLabel, relativeDay } from '../cases'
 import { useNav } from '../nav'
@@ -6,6 +6,7 @@ import { RequestStatusBadge } from '../RequestBadges'
 import { requestReference } from '../requests'
 import { StatusBadge } from '../StatusBadge'
 import { useUser } from '../user'
+import { AutomationPanel } from './AutomationPanel'
 import { Progress } from './CasesPage'
 
 type Task = {
@@ -23,6 +24,8 @@ type Task = {
   completedBy: string | null
   completedAt: string | null
   notes: string | null
+  /** The automation step that can do it (on-prem agent or GIIM), or null. */
+  step: string | null
   request: { id: string; number: number; status: string } | null
   asset: { id: string; assetTag: string | null; serialNumber: string; status: string; stillHeld: boolean } | null
 }
@@ -76,6 +79,7 @@ export function CaseDetailsPage({ caseId, onBack }: { caseId: string; onBack: ()
   const [newTask, setNewTask] = useState('')
   const [cancelling, setCancelling] = useState(false)
   const [busy, setBusy] = useState(false)
+  const refreshCase = useCallback(() => setRefresh((n) => n + 1), [])
 
   useEffect(() => {
     api<CaseDetails>(`/api/cases/${caseId}`)
@@ -164,16 +168,20 @@ export function CaseDetailsPage({ caseId, onBack }: { caseId: string; onBack: ()
             {c.tasks.map((t) => (
               <li key={t.id} className={`task task-${t.status}`}>
                 <span className="task-mark" aria-hidden="true">
-                  {t.status === 'Done' ? '✓' : t.status === 'Skipped' ? '–' : t.status === 'Waiting' ? '…' : ''}
+                  {t.status === 'Done'
+                    ? '✓'
+                    : t.status === 'Skipped'
+                      ? '–'
+                      : t.status === 'Waiting' || t.status === 'Running'
+                        ? '…'
+                        : t.status === 'Failed'
+                          ? '!'
+                          : ''}
                 </span>
                 <div className="task-body">
                   <div>
                     <span className={finished(t) ? 'task-title finished' : 'task-title'}>{t.title}</span>{' '}
-                    {t.kind === 'Automated' && !finished(t) && (
-                      <span className="tag" title="A later phase will do this automatically; until then, do it by hand and tick it off.">
-                        automated later
-                      </span>
-                    )}
+                    {t.kind === 'Automated' && !finished(t) && <AutomationTag task={t} />}
                     {t.requiresApproval && (
                       <span className={`tag ${t.approvedBy ? 'tag-ok' : 'tag-warn'}`}>{t.approvedBy ? `approved by ${t.approvedBy}` : 'needs approval'}</span>
                     )}
@@ -308,7 +316,8 @@ export function CaseDetailsPage({ caseId, onBack }: { caseId: string; onBack: ()
         </section>
 
         <div>
-          <section className="panel" style={{ marginTop: 0 }}>
+          {c.type === 'Onboarding' && <AutomationPanel caseId={c.id} refreshKey={refresh} onChanged={refreshCase} />}
+          <section className="panel" style={c.type === 'Onboarding' ? undefined : { marginTop: 0 }}>
             <h3>{c.type === 'Onboarding' ? 'Starter' : 'Leaver'}</h3>
             <dl className="facts">
               <dt>Name</dt>
@@ -376,5 +385,23 @@ export function CaseDetailsPage({ caseId, onBack }: { caseId: string; onBack: ()
         </div>
       </div>
     </>
+  )
+}
+
+/** What automation means for a task: can run automatically, running, failed, or (leavers, for now) done by hand. */
+function AutomationTag({ task: t }: { task: Task }) {
+  if (!t.step)
+    return (
+      <span className="tag" title="A later phase will do this automatically; until then, do it by hand and tick it off.">
+        automated later
+      </span>
+    )
+  if (t.status === 'Failed') return <span className="tag tag-warn">automation failed</span>
+  if (t.status === 'Running') return <span className="tag">running automatically</span>
+  if (t.status === 'Waiting') return <span className="tag">waiting for the start date</span>
+  return (
+    <span className="tag" title="The on-prem agent or GIIM can do this: see Automation. You can still do it by hand and tick it off.">
+      can run automatically
+    </span>
   )
 }

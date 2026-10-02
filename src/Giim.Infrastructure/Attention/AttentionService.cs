@@ -1,8 +1,10 @@
+using Giim.Domain.Automation;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
 using Giim.Domain.Integration;
 using Giim.Domain.Notifications;
 using Giim.Domain.Requests;
+using Giim.Infrastructure.Automation;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Notifications;
 using Giim.Infrastructure.People;
@@ -30,7 +32,8 @@ public sealed record AttentionSummary(int Total, IReadOnlyList<AttentionGroup> G
 /// What needs the signed-in person now: worked out from the current state each time, so an item disappears as soon
 /// as it is dealt with and there is nothing to mark as read. Each person sees only what their role acts on.
 /// </summary>
-public sealed class AttentionService(GiimDbContext db, IOptions<ReminderOptions> reminders, TimeProvider clock)
+public sealed class AttentionService(GiimDbContext db, IOptions<ReminderOptions> reminders, IOptions<AutomationOptions> automation,
+    TimeProvider clock)
 {
     private const int ItemsPerGroup = 5;
     private const string Action = "action";
@@ -54,10 +57,12 @@ public sealed class AttentionService(GiimDbContext db, IOptions<ReminderOptions>
             groups.Add(await HandoversAsync(now, cancellationToken));
             groups.Add(await ChecklistsAsync(CaseType.Onboarding, today, cancellationToken));
             groups.Add(await ChecklistsAsync(CaseType.Offboarding, today, cancellationToken));
+            groups.Add(await AutomationFailuresAsync(cancellationToken));
         }
         if (actor.IsAdministrator)
         {
             groups.Add(await TaskApprovalsAsync(cancellationToken));
+            groups.Add(await AgentMissingAsync(now, cancellationToken));
             groups.Add(await TicketsAsync(now, cancellationToken));
             groups.Add(await SyncsAsync(now, cancellationToken));
             groups.Add(await EmailsAsync(now, cancellationToken));
@@ -148,6 +153,39 @@ public sealed class AttentionService(GiimDbContext db, IOptions<ReminderOptions>
             .ToListAsync(cancellationToken);
         return new("task-approvals", "Checklist steps for you to approve", Action, count, "cases",
             [.. items.Select(t => new AttentionItem(t.Title, t.Who, AttentionTarget.Case, t.CaseId.ToString()))]);
+    }
+
+    // ---- Automation ------------------------------------------------------------------------------------------------------
+
+    /// <summary>Automated steps that failed and haven't been retried or done by hand since.</summary>
+    private async Task<AttentionGroup?> AutomationFailuresAsync(CancellationToken cancellationToken)
+    {
+        var failed = db.AutomationJobs.AsNoTracking().Where(j => j.Status == JobStatus.Failed
+            && db.ChecklistTasks.Any(t => t.Id == j.TaskId && t.Status == TaskState.Failed)
+            && !db.AutomationJobs.Any(later => later.TaskId == j.TaskId && later.CreatedAt > j.CreatedAt));
+        var count = await failed.CountAsync(cancellationToken);
+        if (count == 0) return null;
+        var items = await failed.OrderByDescending(j => j.CompletedAt).Take(ItemsPerGroup)
+            .Select(j => new { j.CaseId, j.Error, Title = db.ChecklistTasks.Where(t => t.Id == j.TaskId).Select(t => t.Title).First(),
+                Who = db.People.Where(p => p.Id == j.PersonId).Select(p => p.DisplayName).First() })
+            .ToListAsync(cancellationToken);
+        return new("automation-failed", "Automated steps that failed", Problem, count, "cases",
+            [.. items.Select(j => new AttentionItem($"{j.Who}: {j.Title}", j.Error, AttentionTarget.Case, j.CaseId.ToString()))]);
+    }
+
+    /// <summary>AD and Exchange steps are due but no on-prem agent has checked in lately.</summary>
+    private async Task<AttentionGroup?> AgentMissingAsync(DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var seenSince = now - automation.Value.AgentOfflineAfter;
+        if (await db.AgentCheckIns.AnyAsync(a => a.LastSeenAt >= seenSince, cancellationToken)) return null;
+        var waitingSince = now.AddMinutes(-5);
+        var waiting = await db.AutomationJobs.CountAsync(j => j.Runner == AutomationRunner.Agent && j.Status == JobStatus.Queued
+            && (j.NotBefore == null || j.NotBefore <= now) && j.CreatedAt <= waitingSince, cancellationToken);
+        if (waiting == 0) return null;
+        var last = await db.AgentCheckIns.AsNoTracking().OrderByDescending(a => a.LastSeenAt).FirstOrDefaultAsync(cancellationToken);
+        return new("agent-offline", "No on-prem agent connected", Problem, 1, "automation",
+            [Page($"{waiting} AD or Exchange step{(waiting == 1 ? "" : "s")} waiting",
+                last is null ? "No agent has ever connected." : $"{last.Name} last checked in {Age(now, last.LastSeenAt)} ago.", "automation")]);
     }
 
     // ---- Things that went wrong (administrators) ----------------------------------------------------------------------

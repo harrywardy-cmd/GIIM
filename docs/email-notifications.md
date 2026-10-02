@@ -24,6 +24,8 @@ Nobody is emailed about their own action. Every email links straight to the requ
 | A leaver checklist is created | Their manager: last day and the equipment to collect |
 | A device request has waited 2 days for approval | The approver, then every 2 days, at most 3 reminders. If the approver asked a question, the 2 days restart when it is answered |
 | A leaver's last day has passed and equipment is still out | Their manager, the next day, then weekly, at most 3 reminders. Equipment reported lost or stolen isn't included |
+| A device goes for repair, and when the repair is done (repaired, or can't be) | The person it's assigned to: the fault, where it went, the result |
+| A starter's account is enabled on their start date (starter automation) | Their manager |
 | Daily at 07:30 | The IT team: overdue checklists, unreturned equipment, starters and leavers in the next 3 days, device requests held up. **Only sent when something needs attention** |
 | Mondays at 07:30 | The IT team: warranties ending in the next 30 days |
 
@@ -34,7 +36,7 @@ digest straight away (useful to check it); that counts as that day's run.
 | Setting (`Reminders:`) | Default |
 |---|---|
 | `ItTeamAddresses` | Who gets the digests, separated by `;`. In Azure: `itTeamEmails` in the `.bicepparam` file |
-| `Enabled`, `ManagerEmails` | `true`, `true` |
+| `Enabled`, `ManagerEmails`, `RepairEmails` | `true`, `true`, `true` |
 | `DigestTime`, `WarrantyDay`, `TimeZone` | `07:30`, `Monday`, `Australia/Sydney` |
 | `DueSoonDays`, `WarrantyDays` | `3`, `30` |
 | `ApprovalReminderAfter`, `MaxApprovalReminders` | 2 days, `3` |

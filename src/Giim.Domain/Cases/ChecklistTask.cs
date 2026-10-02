@@ -1,3 +1,4 @@
+using Giim.Domain.Automation;
 using Giim.Domain.Common;
 
 namespace Giim.Domain.Cases;
@@ -12,6 +13,8 @@ public enum TaskSource { None, ProfileItem, Asset, Application }
 
 public sealed class ChecklistTask : Entity
 {
+    public const int MaxNotesLength = 4000;
+
     public Guid CaseId { get; set; }
     public int Order { get; set; }
     public required string Title { get; set; }
@@ -34,6 +37,12 @@ public sealed class ChecklistTask : Entity
     public Guid? DeviceRequestId { get; set; }
 
     public string? ServiceDeskTaskId { get; set; }
+
+    /// <summary>The automation step that can do this task (on-prem agent or GIIM itself); null if it's always by hand.</summary>
+    public AutomationStep? Step { get; set; }
+
+    /// <summary>What the step acts on, e.g. the AD group for an "add to group" step.</summary>
+    public string? StepTarget { get; set; }
 
     public string? AssignedTo { get; set; }
     public string? CompletedBy { get; set; }

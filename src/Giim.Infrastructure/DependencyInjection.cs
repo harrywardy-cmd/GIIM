@@ -1,6 +1,7 @@
 using Giim.Infrastructure.Activity;
 using Giim.Infrastructure.Assets;
 using Giim.Infrastructure.Attention;
+using Giim.Infrastructure.Automation;
 using Giim.Infrastructure.Attachments;
 using Giim.Infrastructure.Cases;
 using Giim.Infrastructure.Devices;
@@ -44,6 +45,8 @@ public static class DependencyInjection
         services.AddScoped<IntuneSyncService>();
         services.AddScoped<ReconciliationService>();
         services.AddScoped<AttentionService>();
+        services.AddScoped<AutomationService>();
+        services.AddScoped<DashboardHistory>();
 
         return services;
     }

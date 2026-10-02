@@ -10,7 +10,8 @@ namespace Giim.Infrastructure.Provisioning;
 
 public sealed record ProfileDetails(string Name, string? JobTitle, ProvisioningTrack Track);
 
-public sealed record ProfileItemDetails(ProfileItemType Type, string Description, string? GroupName, Guid? CategoryId, Guid? StockItemId);
+public sealed record ProfileItemDetails(ProfileItemType Type, string Description, string? GroupName, Guid? CategoryId, Guid? StockItemId,
+    bool CloudGroup = false);
 
 public sealed record ProfileImportResult(int DepartmentsAdded, int ProfilesAdded, int ProfilesReplaced, int Items, IReadOnlyList<string> Warnings);
 
@@ -146,6 +147,7 @@ public sealed class ProfileService(GiimDbContext db)
                     {
                         RoleProfileId = profile.Id, Type = type, Description = Text(i, "description") ?? type.ToString(),
                         GroupName = Text(i, "groupName"),
+                        CloudGroup = i.TryGetProperty("cloudGroup", out var cloud) && cloud.ValueKind == JsonValueKind.True,
                     };
                     if (type == ProfileItemType.Hardware)
                     {
@@ -220,6 +222,7 @@ public sealed class ProfileService(GiimDbContext db)
         item.Type = details.Type;
         item.Description = description;
         item.GroupName = details.Type is ProfileItemType.Hardware or ProfileItemType.StockItem or ProfileItemType.ManualTask ? null : group;
+        item.CloudGroup = item.GroupName is not null && details.CloudGroup;
         item.CategoryId = categoryId;
         item.StockItemId = stockItemId;
     }

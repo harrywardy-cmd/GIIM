@@ -66,6 +66,16 @@ param directoryTrackAttribute string = ''
 @description('Read leave dates from Entra. Needs User-LifeCycleInfo.Read.All: run Grant-GraphAccess.ps1 with -IncludeLeaveDates first.')
 param directoryReadLeaveDates bool = false
 
+// Starter automation through the on-prem agent (docs/onprem-agent.md).
+@description('The on-prem agent\'s app registration (client ID), from New-GiimAgentRegistration.ps1. Empty: no agent can connect.')
+param agentClientId string = ''
+
+@description('Automated steps only report what they would do. Turn off once the AD administrators are happy with the dry runs.')
+param automationDryRun bool = true
+
+@description('Start a starter\'s automation as soon as their ServiceDesk Plus ticket creates the checklist (dry run still applies).')
+param automationStartFromServiceDesk bool = false
+
 @description('Mailbox GIIM sends emails from, e.g. giim@company.com.au. Empty: emails wait in the outbox (see docs/email-notifications.md).')
 param notificationMailbox string = ''
 
@@ -218,6 +228,9 @@ module apps 'modules/apps.bicep' = {
     directoryFilter: directoryFilter
     directoryTrackAttribute: directoryTrackAttribute
     directoryReadLeaveDates: directoryReadLeaveDates
+    agentClientId: agentClientId
+    automationDryRun: automationDryRun
+    automationStartFromServiceDesk: automationStartFromServiceDesk
     notificationMailbox: notificationMailbox
     itTeamEmails: itTeamEmails
     serviceDeskMode: serviceDeskMode

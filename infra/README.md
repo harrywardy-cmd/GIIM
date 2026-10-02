@@ -147,6 +147,12 @@ Do this **before printing asset labels**: QR codes contain this address.
 Follow [docs/servicedesk-setup.md](../docs/servicedesk-setup.md): set `serviceDeskMode = 'Api'` and the client ID in the
 `.bicepparam` file, then run `./infra/deploy.ps1 -Environment prod -SetServiceDeskSecrets`.
 
+### 9. The on-prem agent (when the AD administrators are ready)
+
+Follow [docs/onprem-agent.md](../docs/onprem-agent.md), "Turning it on in Azure": the agent's certificate and app
+registration (`New-GiimAgentRegistration.ps1`), `agentClientId` in the `.bicepparam` file, and the service on its
+server. Starter automation stays in dry-run mode until you set `automationDryRun = false`.
+
 Repeat steps 2-6 with `-Environment prod` when test looks right.
 
 ---
@@ -187,7 +193,6 @@ MFA") after adding their IP address under SQL server → **Networking**. Remove 
 
 | Item | When |
 |---|---|
-| Service Bus (queues for the on-premises AD/Exchange agent and SDP webhooks) | Phase 2-3, with the agent |
 | Standby database in Australia Southeast (geo-replica) | If a regional outage must be recovered in minutes rather than hours (backups are already copied there) |
 | Staging slot (zero-downtime deployments) | If the few seconds of restart during a deployment become a problem |
 | Web application firewall (Front Door) | If GIIM must be reachable from anywhere and attracts attack traffic; `allowedIpRanges` can restrict it to office/VPN addresses meanwhile |

@@ -8,6 +8,7 @@
     to grant admin consent), after infra/deploy.ps1 has created the environment. It sets up:
       - sign-in and sign-out addresses, and the My Apps home page (which starts sign-in straight away)
       - the four GIIM app roles: Administrator, Technician, Manager, Viewer
+      - the Giim.Agent app role and an API address (api://<client id>), for the on-prem agent (New-GiimAgentRegistration.ps1)
       - "assignment required", so only people you assign (directly or through a group) can sign in or see the tile
       - trust in GIIM's managed identity as the app's credential, so there is no client secret to store or renew
       - the email claim, and admin consent for the openid, profile and email permissions sign-in needs
@@ -73,6 +74,18 @@ foreach ($role in $roles.GetEnumerator()) {
     }
 }
 
+# For the on-prem agent: an app (not a person) holds this role; GIIM's /agent endpoints accept only tokens carrying it.
+if (-not ($existingRoles | Where-Object { $_.Value -eq 'Giim.Agent' })) {
+    $appRoles += @{
+        Id                 = [guid]::NewGuid()
+        Value              = 'Giim.Agent'
+        DisplayName        = 'GIIM on-prem agent'
+        Description        = 'The on-prem agent: takes starter automation jobs and reports the results'
+        AllowedMemberTypes = @('Application')
+        IsEnabled          = $true
+    }
+}
+
 $graphAppId = '00000003-0000-0000-c000-000000000000'
 $settings = @{
     DisplayName            = $DisplayName
@@ -104,6 +117,16 @@ else {
     Write-Host "Created app registration '$DisplayName'." -ForegroundColor Green
 }
 $app = Get-MgApplication -ApplicationId $app.Id
+
+# The address the on-prem agent asks for a token for (api://<client id>), with v2 tokens.
+if (-not ($app.IdentifierUris -contains "api://$($app.AppId)")) {
+    Update-MgApplication -ApplicationId $app.Id -BodyParameter @{
+        IdentifierUris = @("api://$($app.AppId)")
+        Api            = @{ RequestedAccessTokenVersion = 2 }
+    }
+    $app = Get-MgApplication -ApplicationId $app.Id
+    Write-Host "Set the API address api://$($app.AppId) for the on-prem agent." -ForegroundColor Green
+}
 
 # Trust GIIM's managed identity as this app's credential (no client secret).
 $issuer = "https://login.microsoftonline.com/$tenantId/v2.0"

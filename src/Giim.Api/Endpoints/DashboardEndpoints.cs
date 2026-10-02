@@ -2,6 +2,7 @@ using Giim.Domain.Assets;
 using Giim.Domain.People;
 using Giim.Infrastructure.Devices;
 using Giim.Infrastructure.Persistence;
+using Giim.Infrastructure.Reports;
 using Giim.Infrastructure.Stock;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +12,8 @@ internal static class DashboardEndpoints
 {
     public static void MapDashboardEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/dashboard", async (GiimDbContext db, StockService stock, TimeProvider clock, CancellationToken ct) =>
+        app.MapGet("/api/dashboard", async (GiimDbContext db, StockService stock, DashboardHistory history, TimeProvider clock,
+            CancellationToken ct) =>
         {
             var now = clock.GetUtcNow();
             var today = DateOnly.FromDateTime(now.UtcDateTime);
@@ -46,18 +48,10 @@ internal static class DashboardEndpoints
 
             return Results.Ok(new
             {
-                Totals = new
-                {
-                    InService = Count(AssetStatus.Received, AssetStatus.ReadyToDeploy, AssetStatus.Assigned, AssetStatus.ReturnRequested,
-                        AssetStatus.Returned, AssetStatus.Wiped, AssetStatus.InRepair, AssetStatus.Lost, AssetStatus.Stolen),
-                    Assigned = Count(AssetStatus.Assigned, AssetStatus.ReturnRequested),
-                    Available = Count(AssetStatus.ReadyToDeploy),
-                    InRepair = Count(AssetStatus.InRepair),
-                    Retired = Count(AssetStatus.Retired),
-                    Disposed = Count(AssetStatus.Disposed),
-                    PendingApproval = await db.DeviceRequests.CountAsync(r =>
-                        r.Status == Domain.Requests.RequestStatus.PendingApproval || r.Status == Domain.Requests.RequestStatus.InfoRequested, ct),
-                },
+                Totals = DashboardTotals.From(byStatus, await db.DeviceRequests.CountAsync(r =>
+                    r.Status == Domain.Requests.RequestStatus.PendingApproval || r.Status == Domain.Requests.RequestStatus.InfoRequested, ct)),
+                // The same totals on an earlier day (about a week ago), for the arrows on the cards.
+                Trend = await history.TrendAsync(ct),
                 // Part-to-whole of assets in service, in a fixed category order so colours never move.
                 StatusBreakdown = new[]
                 {

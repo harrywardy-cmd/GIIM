@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <!--
+    The on-prem agent: a Windows service on a domain-joined server. It connects out to GIIM over HTTPS (no inbound
+    access), takes the AD and Exchange steps of starter checklists, carries them out and reports back. Deliberately
+    standalone (no reference to GIIM's projects) so it can be deployed and updated on its own.
+  -->
+  <PropertyGroup>
+    <RootNamespace>Giim.Agent</RootNamespace>
+    <UserSecretsId>giim-agent-6b1f2f3a-1c7e-4d3e-9a51-5f0d2b8c7e10</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Giim.Agent.Tests" />
+  </ItemGroup>
+
+</Project>

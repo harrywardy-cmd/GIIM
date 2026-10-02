@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Bell,
+  Bot,
   Boxes,
   ChartColumn,
   ClipboardCheck,
@@ -39,6 +40,7 @@ import { ImportPage } from './pages/ImportPage'
 import { LocationsPage } from './pages/LocationsPage'
 import { PeoplePage } from './pages/PeoplePage'
 import { NotificationsPage } from './pages/NotificationsPage'
+import { AutomationPage } from './pages/AutomationPage'
 import { PersonProfile } from './pages/PersonProfile'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ReconciliationPage } from './pages/ReconciliationPage'
@@ -67,6 +69,7 @@ export type PageKey =
   | 'profiles'
   | 'servicedesk'
   | 'notifications'
+  | 'automation'
 
 type NavItem = { key: PageKey; label: string; icon: ReactNode; later?: string; adminOnly?: boolean; approversOnly?: boolean }
 
@@ -105,6 +108,7 @@ const navigation: { section: string; items: NavItem[] }[] = [
       { key: 'profiles', label: 'Starter profiles', icon: <ListChecks size={18} /> },
       { key: 'servicedesk', label: 'ServiceDesk Plus', icon: <Link2 size={18} />, adminOnly: true },
       { key: 'notifications', label: 'Notifications', icon: <Bell size={18} />, adminOnly: true },
+      { key: 'automation', label: 'Automation', icon: <Bot size={18} />, adminOnly: true },
     ],
   },
 ]
@@ -268,6 +272,7 @@ function Shell({ user }: { user: User }) {
     profiles: <ProfilesPage />,
     servicedesk: <ServiceDeskPage />,
     notifications: <NotificationsPage />,
+    automation: <AutomationPage />,
     imports: <ImportPage />,
     categories: <CategoriesPage />,
     locations: <LocationsPage />,

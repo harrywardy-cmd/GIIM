@@ -15,7 +15,8 @@ internal sealed record OffboardingRequest(Guid PersonId, DateOnly? LastDay, stri
 internal sealed record CaseTextRequest(string? Text);
 internal sealed record RaiseRequestBody(Guid? CategoryId, string? DeviceDescription);
 internal sealed record ProfileRequest(Guid DepartmentId, string? Name, string? JobTitle, ProvisioningTrack Track);
-internal sealed record ProfileItemRequest(ProfileItemType Type, string? Description, string? GroupName, Guid? CategoryId, Guid? StockItemId);
+internal sealed record ProfileItemRequest(ProfileItemType Type, string? Description, string? GroupName, Guid? CategoryId, Guid? StockItemId,
+    bool? CloudGroup = null);
 
 /// <summary>
 /// Starter and leaver checklists (technicians and administrators), and the starter profiles they come from
@@ -65,7 +66,7 @@ internal static class CaseEndpoints
                 Tasks = c.Tasks.OrderBy(t => t.Order).Select(t => new
                 {
                     t.Id, t.Order, t.Title, t.Kind, t.Status, t.RequiresApproval, t.ApprovedBy, t.ApprovedAt, t.Source, t.SourceId,
-                    t.CategoryId, t.CompletedBy, t.CompletedAt, t.Notes,
+                    t.CategoryId, t.CompletedBy, t.CompletedAt, t.Notes, t.Step, t.StepTarget,
                     Request = t.DeviceRequestId is { } r && requests.TryGetValue(r, out var request) ? request : null,
                     Asset = t.Source == TaskSource.Asset && t.SourceId is { } a && assets.TryGetValue(a, out var asset) ? asset : null,
                 }),
@@ -143,7 +144,7 @@ internal static class CaseEndpoints
                     Department = db.Departments.Where(d => d.Id == p.DepartmentId).Select(d => d.Name).First(),
                     Items = p.Items.OrderBy(i => i.CreatedAt).Select(i => new
                     {
-                        i.Id, i.Type, i.Description, i.GroupName, i.CategoryId, i.StockItemId,
+                        i.Id, i.Type, i.Description, i.GroupName, i.CloudGroup, i.CategoryId, i.StockItemId,
                         Category = db.AssetCategories.Where(c => c.Id == i.CategoryId).Select(c => c.Name).FirstOrDefault(),
                         StockItem = db.StockItems.Where(s => s.Id == i.StockItemId).Select(s => s.Name).FirstOrDefault(),
                     }).ToList(),
@@ -210,7 +211,7 @@ internal static class CaseEndpoints
     }
 
     private static ProfileItemDetails Item(ProfileItemRequest body) =>
-        new(body.Type, body.Description ?? "", body.GroupName, body.CategoryId, body.StockItemId);
+        new(body.Type, body.Description ?? "", body.GroupName, body.CategoryId, body.StockItemId, body.CloudGroup ?? false);
 
     private static Task<IResult> Act(CaseService service, Guid id, Action<ServiceCase, DateTimeOffset> action, CancellationToken ct) =>
         Handle(async () =>

@@ -1,6 +1,7 @@
 using Giim.Domain.Assets;
 using Giim.Domain.Assignments;
 using Giim.Domain.Auditing;
+using Giim.Domain.Automation;
 using Giim.Domain.Cases;
 using Giim.Domain.Devices;
 using Giim.Domain.Integration;
@@ -9,6 +10,7 @@ using Giim.Domain.Notifications;
 using Giim.Domain.People;
 using Giim.Domain.Repairs;
 using Giim.Domain.Provisioning;
+using Giim.Domain.Reporting;
 using Giim.Domain.Requests;
 using Giim.Domain.Software;
 using Giim.Domain.Stock;
@@ -66,6 +68,9 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
     public DbSet<ServiceDeskInboundEvent> ServiceDeskInbound => Set<ServiceDeskInboundEvent>();
     public DbSet<ServiceDeskUpdate> ServiceDeskUpdates => Set<ServiceDeskUpdate>();
     public DbSet<ScheduledJobRun> ScheduledJobRuns => Set<ScheduledJobRun>();
+    public DbSet<AutomationJob> AutomationJobs => Set<AutomationJob>();
+    public DbSet<AgentCheckIn> AgentCheckIns => Set<AgentCheckIn>();
+    public DbSet<DashboardSnapshot> DashboardSnapshots => Set<DashboardSnapshot>();
 
     /// <summary>Numbers device requests REQ1001, REQ1002...</summary>
     public const string RequestNumberSequence = "DeviceRequestNumbers";
@@ -316,7 +321,8 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.HasIndex(t => new { t.Source, t.SourceId });
             e.HasIndex(t => t.DeviceRequestId);
             e.Property(t => t.Title).HasMaxLength(300);
-            e.Property(t => t.Notes).HasMaxLength(4000);
+            e.Property(t => t.Notes).HasMaxLength(ChecklistTask.MaxNotesLength);
+            e.Property(t => t.StepTarget).HasMaxLength(256);
             e.Property(t => t.ServiceDeskTaskId).HasMaxLength(50);
             foreach (var who in new[] { nameof(ChecklistTask.ApprovedBy), nameof(ChecklistTask.CompletedBy), nameof(ChecklistTask.AssignedTo) })
                 e.Property(who).HasMaxLength(200);
@@ -400,6 +406,38 @@ public sealed class GiimDbContext(DbContextOptions<GiimDbContext> options) : DbC
             e.Property(x => x.RequestKey).HasMaxLength(30);
             e.Property(x => x.Content).HasMaxLength(4000);
             e.Property(x => x.LastError).HasMaxLength(1000);
+        });
+
+        modelBuilder.Entity<AutomationJob>(e =>
+        {
+            // What runners look for: due jobs of their kind.
+            e.HasIndex(j => new { j.Runner, j.Status, j.NotBefore });
+            e.HasIndex(j => j.CaseId);
+            // One active job per checklist task, guaranteed by the database (two people starting at once can't double it).
+            e.HasIndex(j => j.TaskId, "UX_AutomationJobs_OneActivePerTask").IsUnique().HasFilter("[Status] IN ('Queued', 'Running')");
+            e.Property(j => j.ParametersJson).HasMaxLength(4000);
+            e.Property(j => j.ResultJson).HasMaxLength(4000);
+            e.Property(j => j.Error).HasMaxLength(2000);
+            e.Property(j => j.Log).HasMaxLength(AutomationJob.MaxLogLength);
+            e.Property(j => j.ClaimedBy).HasMaxLength(100);
+            e.Property(j => j.CreatedBy).HasMaxLength(200);
+            e.Ignore(j => j.IsFinished);
+            e.HasOne<ServiceCase>().WithMany().HasForeignKey(j => j.CaseId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<ChecklistTask>().WithMany().HasForeignKey(j => j.TaskId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<Person>().WithMany().HasForeignKey(j => j.PersonId).OnDelete(DeleteBehavior.Restrict);
+            e.HasOne<AutomationJob>().WithMany().HasForeignKey(j => j.DependsOnJobId).OnDelete(DeleteBehavior.Restrict);
+            // Two runners claiming the same job at once: the second save fails and it moves on.
+            e.Property<byte[]>("RowVersion").IsRowVersion();
+        });
+
+        modelBuilder.Entity<DashboardSnapshot>(e => e.HasKey(s => s.Date));
+
+        modelBuilder.Entity<AgentCheckIn>(e =>
+        {
+            e.HasKey(a => a.Name);
+            e.Property(a => a.Name).HasMaxLength(100);
+            e.Property(a => a.Version).HasMaxLength(50);
+            e.Property(a => a.Directory).HasMaxLength(50);
         });
 
         modelBuilder.Entity<ScheduledJobRun>(e =>

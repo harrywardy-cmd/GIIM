@@ -79,6 +79,12 @@ With real (copied) data, by the pilot group:
 - [ ] Check the first leavers' returns and reminders went as expected.
 - [ ] Review who holds the Administrator role; remove anyone who only needed it for set-up.
 
+## 7. Starter automation (when the AD administrators are ready)
+
+- [ ] Agree the decisions in [onprem-agent.md](onprem-agent.md) (username format, OUs, groups, service account, server).
+- [ ] Set up the agent on test, run a few starters as **dry runs** with the AD administrators, and check the plans.
+- [ ] Turn dry run off on test (`automationDryRun = false`), automate a test starter end to end, then do the same on prod.
+
 ## If it has to be rolled back
 
 GIIM doesn't change anything outside itself except notes on SDP tickets and emails it sends, so stopping it is safe:
